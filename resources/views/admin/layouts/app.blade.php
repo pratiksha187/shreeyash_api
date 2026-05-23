@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>@yield('title', 'Admin Panel')</title>
+    <style>
+        :root {
+            --bg: #f3f6fb;
+            --panel: #ffffff;
+            --text: #1f2937;
+            --muted: #64748b;
+            --line: #e2e8f0;
+            --primary: #1d4ed8;
+            --primary-dark: #1e3a8a;
+            --sidebar: #111827;
+            --sidebar-soft: #1f2937;
+            --success-bg: #dcfce7;
+            --success-text: #166534;
+            --danger: #b91c1c;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+        }
+
+        a {
+            color: inherit;
+        }
+
+        .admin-shell {
+            min-height: 100vh;
+            display: grid;
+            grid-template-columns: 260px minmax(0, 1fr);
+        }
+
+        .sidebar {
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            padding: 22px 16px;
+            background: var(--sidebar);
+            color: #f8fafc;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 8px 24px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+        }
+
+        .brand-mark {
+            display: grid;
+            width: 42px;
+            height: 42px;
+            place-items: center;
+            border-radius: 8px;
+            background: var(--primary);
+            font-weight: 800;
+        }
+
+        .brand strong {
+            display: block;
+            font-size: 17px;
+        }
+
+        .brand span {
+            display: block;
+            margin-top: 3px;
+            color: #cbd5e1;
+            font-size: 12px;
+        }
+
+        .nav {
+            display: grid;
+            gap: 6px;
+            margin-top: 22px;
+        }
+
+        .nav a {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-height: 42px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            color: #cbd5e1;
+            text-decoration: none;
+            font-weight: 700;
+        }
+
+        .nav a.active,
+        .nav a:hover {
+            background: var(--sidebar-soft);
+            color: #fff;
+        }
+
+        .content-shell {
+            display: grid;
+            min-width: 0;
+            grid-template-rows: auto 1fr auto;
+        }
+
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 5;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            min-height: 72px;
+            padding: 0 28px;
+            border-bottom: 1px solid var(--line);
+            background: rgba(255, 255, 255, 0.94);
+            backdrop-filter: blur(10px);
+        }
+
+        .topbar-title {
+            min-width: 0;
+        }
+
+        .topbar-title strong {
+            display: block;
+            font-size: 18px;
+        }
+
+        .topbar-title span {
+            display: block;
+            margin-top: 3px;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .admin-user {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--muted);
+            font-weight: 700;
+        }
+
+        .avatar {
+            display: grid;
+            width: 36px;
+            height: 36px;
+            place-items: center;
+            border-radius: 50%;
+            background: #dbeafe;
+            color: var(--primary-dark);
+        }
+
+        .logout-form {
+            margin: 0;
+        }
+
+        .logout-button {
+            min-height: 36px;
+            padding: 8px 12px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: #fff;
+            color: #334155;
+            cursor: pointer;
+            font-weight: 800;
+        }
+
+        .main {
+            width: 100%;
+            max-width: 1180px;
+            padding: 28px;
+        }
+
+        .page-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 18px;
+            margin-bottom: 22px;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 28px;
+            line-height: 1.2;
+        }
+
+        p {
+            margin: 6px 0 0;
+            color: var(--muted);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 40px;
+            padding: 10px 14px;
+            border: 0;
+            border-radius: 8px;
+            background: var(--primary);
+            color: #fff;
+            cursor: pointer;
+            font-weight: 800;
+            text-decoration: none;
+        }
+
+        .btn.secondary {
+            background: #e2e8f0;
+            color: #1f2937;
+        }
+
+        .card {
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: var(--panel);
+            box-shadow: 0 1px 4px rgba(15, 23, 42, 0.06);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 16px;
+            margin-bottom: 22px;
+        }
+
+        .stat-card {
+            padding: 18px;
+        }
+
+        .stat-card span {
+            color: var(--muted);
+            font-size: 13px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .stat-card strong {
+            display: block;
+            margin-top: 10px;
+            font-size: 30px;
+        }
+
+        .alert-success {
+            margin-bottom: 18px;
+            padding: 12px 14px;
+            border-radius: 8px;
+            background: var(--success-bg);
+            color: var(--success-text);
+            font-weight: 700;
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--line);
+            text-align: left;
+            white-space: nowrap;
+        }
+
+        th {
+            background: #f8fafc;
+            color: var(--muted);
+            font-size: 12px;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        tr:last-child td {
+            border-bottom: 0;
+        }
+
+        .empty {
+            padding: 28px;
+            text-align: center;
+            color: var(--muted);
+        }
+
+        .form-card {
+            max-width: none;
+            padding: 24px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 18px;
+        }
+
+        .form-grid.three {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .field.full {
+            grid-column: 1 / -1;
+        }
+
+        .form-section {
+            margin-bottom: 28px;
+        }
+
+        .form-section:last-of-type {
+            margin-bottom: 0;
+        }
+
+        .section-title {
+            margin: 0 0 18px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #c88f32;
+            color: #0f172a;
+            font-size: 24px;
+            line-height: 1.2;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 800;
+        }
+
+        input,
+        select {
+            width: 100%;
+            min-height: 42px;
+            padding: 10px 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 15px;
+            background: #fff;
+        }
+
+        input:focus,
+        select:focus {
+            border-color: var(--primary);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
+        }
+
+        .error {
+            margin-top: 6px;
+            color: var(--danger);
+            font-size: 14px;
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 22px;
+        }
+
+        .footer {
+            padding: 18px 28px;
+            border-top: 1px solid var(--line);
+            color: var(--muted);
+            background: #fff;
+            font-size: 13px;
+        }
+
+        .pagination {
+            margin-top: 18px;
+        }
+
+        @media (max-width: 900px) {
+            .admin-shell {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                position: relative;
+                height: auto;
+            }
+
+            .nav {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .topbar {
+                padding: 0 18px;
+            }
+
+            .main {
+                padding: 22px 18px;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .page-header,
+            .topbar {
+                align-items: flex-start;
+                flex-direction: column;
+                justify-content: center;
+                padding-top: 14px;
+                padding-bottom: 14px;
+            }
+
+            .nav,
+            .stats-grid,
+            .form-grid,
+            .form-grid.three {
+                grid-template-columns: 1fr;
+            }
+
+            .actions {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-shell">
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="brand-mark">A</div>
+                <div>
+                    <strong>Attendance Admin</strong>
+                    <span>Employee management</span>
+                </div>
+            </div>
+
+            <nav class="nav">
+                <a class="{{ request()->routeIs('admin.dashboard') ? 'active' : '' }}" href="{{ route('admin.dashboard') }}">Dashboard</a>
+                <a class="{{ request()->routeIs('admin.employees.*') ? 'active' : '' }}" href="{{ route('admin.employees.index') }}">Employees</a>
+            </nav>
+        </aside>
+
+        <div class="content-shell">
+            <header class="topbar">
+                <div class="topbar-title">
+                    <strong>@yield('headerTitle', 'Admin Panel')</strong>
+                    <span>@yield('headerSubtitle', 'Manage attendance app data')</span>
+                </div>
+                <div class="admin-user">
+                    <div class="avatar">AD</div>
+                    <span>{{ session('admin_email', 'Admin') }}</span>
+                    <form class="logout-form" method="POST" action="{{ route('admin.logout') }}">
+                        @csrf
+                        <button class="logout-button" type="submit">Logout</button>
+                    </form>
+                </div>
+            </header>
+
+            <main class="main">
+                @yield('content')
+            </main>
+
+            <footer class="footer">
+                Attendance Admin Panel - {{ now()->format('Y') }}
+            </footer>
+        </div>
+    </div>
+</body>
+</html>

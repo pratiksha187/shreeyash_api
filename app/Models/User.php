@@ -21,6 +21,21 @@ class User extends Authenticatable
         'name',
         'email',
         'mobile',
+        'gender',
+        'marital_status',
+        'date_of_birth',
+        'join_date',
+        'confirmation_date',
+        'probation_months',
+        'aadhaar_number',
+        'hours_per_day',
+        'days_per_week',
+        'salary',
+        'insurance',
+        'pt',
+        'advance',
+        'pf',
+        'designation',
         'password',
         'api_token',
     ];
@@ -50,6 +65,15 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            'date_of_birth' => 'date',
+            'join_date' => 'date',
+            'confirmation_date' => 'date',
+            'hours_per_day' => 'decimal:2',
+            'salary' => 'decimal:2',
+            'insurance' => 'decimal:2',
+            'pt' => 'decimal:2',
+            'advance' => 'decimal:2',
+            'pf' => 'decimal:2',
             'password' => 'hashed',
         ];
     }
