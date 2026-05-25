@@ -299,6 +299,10 @@
             padding: 24px;
         }
 
+        .report-filter {
+            margin-bottom: 22px;
+        }
+
         .form-grid {
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -445,6 +449,7 @@
 
             <nav class="nav">
                 <a class="{{ request()->routeIs('admin.dashboard') ? 'active' : '' }}" href="{{ route('admin.dashboard') }}">Dashboard</a>
+                <a class="{{ request()->routeIs('admin.attendance-reports.*') ? 'active' : '' }}" href="{{ route('admin.attendance-reports.index') }}">Attendance Reports</a>
                 <a class="{{ request()->routeIs('admin.employees.*') ? 'active' : '' }}" href="{{ route('admin.employees.index') }}">Employees</a>
             </nav>
         </aside>
