@@ -20,4 +20,5 @@ Route::middleware(AuthenticateApiToken::class)->group(function () {
     Route::get('/payments', [PaymentController::class, 'index'])->name('api.payments.index');
     Route::get('/payments/{payment}', [PaymentController::class, 'show'])->name('api.payments.show');
     Route::get('/payments/{payment}/slip', [PaymentController::class, 'slip'])->name('api.payments.slip');
+    Route::get('/payments/{payment}/slip-data', [PaymentController::class, 'slipData'])->name('api.payments.slip-data');
 });

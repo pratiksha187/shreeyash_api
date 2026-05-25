@@ -53,6 +53,27 @@ class PaymentController extends Controller
         ]);
     }
 
+    public function slipData(Request $request, Payment $payment): JsonResponse
+    {
+        if ($payment->user_id !== $request->user()->id) {
+            abort(404);
+        }
+
+        $payment->load('user');
+        $pdf = app(PaymentSlipPdfService::class)->build($payment);
+        $fileName = 'payment-slip-' . $payment->user_id . '-' . $payment->from_date->format('Ymd') . '-' . $payment->to_date->format('Ymd') . '.pdf';
+
+        return response()->json([
+            'message' => 'Payment slip PDF fetched successfully.',
+            'payment_id' => $payment->id,
+            'file_name' => $fileName,
+            'mime_type' => 'application/pdf',
+            'pdf_base64' => base64_encode($pdf),
+            'pdf_url' => route('api.payments.slip', $payment),
+            'pdf_path' => '/api/payments/' . $payment->id . '/slip',
+        ]);
+    }
+
     private function paymentPayload(Payment $payment, bool $includeDetails = true): array
     {
         $payload = [
@@ -69,6 +90,7 @@ class PaymentController extends Controller
             'net_payable' => $payment->net_payable,
             'pdf_url' => route('api.payments.slip', $payment),
             'pdf_path' => '/api/payments/' . $payment->id . '/slip',
+            'pdf_data_path' => '/api/payments/' . $payment->id . '/slip-data',
             'generated_at' => $payment->created_at,
         ];
 
