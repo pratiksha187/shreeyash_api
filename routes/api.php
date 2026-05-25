@@ -16,7 +16,7 @@ Route::middleware(AuthenticateApiToken::class)->group(function () {
     Route::post('/attendance/leave', [AttendanceController::class, 'applyLeave']);
     Route::post('/attendance/clock-in', [AttendanceController::class, 'clockIn']);
     Route::post('/attendance/clock-out', [AttendanceController::class, 'clockOut']);
-    Route::post('/attendance/update', [AttendanceController::class, 'update']);
+    Route::post('/payments', [PaymentController::class, 'store'])->name('api.payments.store');
     Route::get('/payments', [PaymentController::class, 'index'])->name('api.payments.index');
     Route::get('/payments/{payment}', [PaymentController::class, 'show'])->name('api.payments.show');
     Route::get('/payments/{payment}/slip', [PaymentController::class, 'slip'])->name('api.payments.slip');
