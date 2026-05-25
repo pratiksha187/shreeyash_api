@@ -12,6 +12,7 @@ use Carbon\CarbonPeriod;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class PaymentController extends Controller
@@ -52,6 +53,14 @@ class PaymentController extends Controller
 
         $user = User::query()->findOrFail($data['user_id']);
         $payment = Payment::query()->create($this->calculatePayment($user, $from, $to));
+
+        $payment->load('user');
+        $pdf = app(PaymentSlipPdfService::class)->build($payment);
+        $fileName = 'payment-slip-' . $payment->user_id . '-' . $from->format('Ymd') . '-' . $to->format('Ymd') . '.pdf';
+        $relativePath = 'payments/' . $payment->user_id . '/' . $fileName;
+
+        Storage::disk('local')->put($relativePath, $pdf);
+        $payment->update(['pdf_file_path' => $relativePath]);
 
         return redirect()
             ->route('admin.payments.index')
