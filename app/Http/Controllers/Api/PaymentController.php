@@ -11,6 +11,7 @@ use Carbon\CarbonPeriod;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Storage;
 
 class PaymentController extends Controller
 {
@@ -59,17 +60,37 @@ class PaymentController extends Controller
             ->first();
 
         if ($existingPayment) {
+            $existingPayment->load('user');
+
+            if (! $existingPayment->pdf_file_path) {
+                $pdf = app(PaymentSlipPdfService::class)->build($existingPayment);
+                $fileName = 'payment-slip-' . $existingPayment->user_id . '-' . $from->format('Ymd') . '-' . $to->format('Ymd') . '.pdf';
+                $relativePath = 'payments/' . $existingPayment->user_id . '/' . $fileName;
+                Storage::disk('local')->put($relativePath, $pdf);
+                $existingPayment->update(['pdf_file_path' => $relativePath]);
+            }
+
             return response()->json([
                 'message' => 'Payment slip already exists for this period.',
                 'payment' => $this->paymentPayload($existingPayment),
+                'pdf_file_path' => $existingPayment->pdf_file_path,
             ]);
         }
 
         $payment = Payment::query()->create($this->calculatePayment($user, $from, $to));
 
+        $payment->load('user');
+        $pdf = app(PaymentSlipPdfService::class)->build($payment);
+        $fileName = 'payment-slip-' . $payment->user_id . '-' . $from->format('Ymd') . '-' . $to->format('Ymd') . '.pdf';
+        $relativePath = 'payments/' . $payment->user_id . '/' . $fileName;
+
+        Storage::disk('local')->put($relativePath, $pdf);
+        $payment->update(['pdf_file_path' => $relativePath]);
+
         return response()->json([
             'message' => 'Payment slip generated and saved successfully.',
             'payment' => $this->paymentPayload($payment),
+            'pdf_file_path' => $relativePath,
         ], 201);
     }
 
@@ -217,6 +238,7 @@ class PaymentController extends Controller
             'pdf_url' => route('api.payments.slip', $payment),
             'pdf_path' => '/api/payments/' . $payment->id . '/slip',
             'pdf_data_path' => '/api/payments/' . $payment->id . '/slip-data',
+            'pdf_file_path' => $payment->pdf_file_path,
             'generated_at' => $payment->created_at,
         ];
 

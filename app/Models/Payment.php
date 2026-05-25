@@ -37,6 +37,7 @@ class Payment extends Model
         'advance',
         'total_deduction',
         'net_payable',
+        'pdf_file_path',
     ];
 
     protected function casts(): array
