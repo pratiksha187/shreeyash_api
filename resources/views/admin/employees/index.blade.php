@@ -34,7 +34,11 @@
                 @forelse ($employees as $employee)
                     <tr>
                         <td>{{ $employee->id }}</td>
-                        <td>{{ $employee->name }}</td>
+                        <td>
+                            <a class="table-link" href="{{ route('admin.employees.show', $employee) }}">
+                                {{ $employee->name }}
+                            </a>
+                        </td>
                         <td>{{ $employee->email }}</td>
                         <td>{{ $employee->mobile ?? '-' }}</td>
                         <td>{{ $employee->designation ?? '-' }}</td>

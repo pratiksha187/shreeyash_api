@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AttendanceController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\PaymentController;
 use App\Http\Middleware\AuthenticateApiToken;
 use Illuminate\Support\Facades\Route;
 
@@ -16,4 +17,7 @@ Route::middleware(AuthenticateApiToken::class)->group(function () {
     Route::post('/attendance/clock-in', [AttendanceController::class, 'clockIn']);
     Route::post('/attendance/clock-out', [AttendanceController::class, 'clockOut']);
     Route::post('/attendance/update', [AttendanceController::class, 'update']);
+    Route::get('/payments', [PaymentController::class, 'index'])->name('api.payments.index');
+    Route::get('/payments/{payment}', [PaymentController::class, 'show'])->name('api.payments.show');
+    Route::get('/payments/{payment}/slip', [PaymentController::class, 'slip'])->name('api.payments.slip');
 });

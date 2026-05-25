@@ -23,7 +23,7 @@ class AttendanceReportController extends Controller
             : now()->startOfMonth()->toDateString();
         $toDate = isset($filters['to_date'])
             ? Carbon::parse($filters['to_date'])->toDateString()
-            : today()->toDateString();
+            : now()->endOfMonth()->toDateString();
 
         $attendances = Attendance::query()
             ->with('user:id,name,email,mobile,designation')

@@ -259,8 +259,28 @@
             font-weight: 700;
         }
 
+        .alert-error {
+            margin-bottom: 18px;
+            padding: 12px 14px;
+            border-radius: 8px;
+            background: #fee2e2;
+            color: #991b1b;
+            font-weight: 700;
+        }
+
         .table-wrap {
             overflow-x: auto;
+        }
+
+        .table-link {
+            color: var(--primary);
+            font-weight: 800;
+            text-decoration: none;
+        }
+
+        .table-link:hover {
+            color: var(--primary-dark);
+            text-decoration: underline;
         }
 
         table {
@@ -382,6 +402,116 @@
             margin-top: 18px;
         }
 
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 14px;
+            margin-bottom: 22px;
+        }
+
+        .detail-item {
+            padding: 16px;
+        }
+
+        .detail-item span {
+            display: block;
+            color: var(--muted);
+            font-size: 12px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .detail-item strong {
+            display: block;
+            margin-top: 8px;
+            font-size: 16px;
+            overflow-wrap: anywhere;
+        }
+
+        .calendar-card {
+            overflow: hidden;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, minmax(120px, 1fr));
+            overflow-x: auto;
+        }
+
+        .calendar-head,
+        .calendar-day,
+        .calendar-empty {
+            min-height: 112px;
+            padding: 12px;
+            border-right: 1px solid var(--line);
+            border-bottom: 1px solid var(--line);
+        }
+
+        .calendar-head {
+            min-height: auto;
+            background: #f8fafc;
+            color: var(--muted);
+            font-size: 12px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .calendar-empty {
+            background: #f8fafc;
+        }
+
+        .calendar-date {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            font-weight: 800;
+        }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            margin-top: 10px;
+            padding: 5px 8px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 800;
+            text-transform: capitalize;
+        }
+
+        .status-present {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .status-leave {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .status-absent {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .status-half_day {
+            background: #dbeafe;
+            color: #1e3a8a;
+        }
+
+        .status-empty {
+            background: #e2e8f0;
+            color: #475569;
+        }
+
+        .calendar-meta {
+            margin-top: 8px;
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.45;
+            white-space: normal;
+        }
+
         @media (max-width: 900px) {
             .admin-shell {
                 grid-template-columns: 1fr;
@@ -397,6 +527,10 @@
             }
 
             .stats-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .detail-grid {
                 grid-template-columns: repeat(2, minmax(0, 1fr));
             }
 
@@ -421,6 +555,7 @@
 
             .nav,
             .stats-grid,
+            .detail-grid,
             .form-grid,
             .form-grid.three {
                 grid-template-columns: 1fr;
@@ -450,6 +585,7 @@
             <nav class="nav">
                 <a class="{{ request()->routeIs('admin.dashboard') ? 'active' : '' }}" href="{{ route('admin.dashboard') }}">Dashboard</a>
                 <a class="{{ request()->routeIs('admin.attendance-reports.*') ? 'active' : '' }}" href="{{ route('admin.attendance-reports.index') }}">Attendance Reports</a>
+                <a class="{{ request()->routeIs('admin.payments.*') ? 'active' : '' }}" href="{{ route('admin.payments.index') }}">Payments</a>
                 <a class="{{ request()->routeIs('admin.employees.*') ? 'active' : '' }}" href="{{ route('admin.employees.index') }}">Employees</a>
             </nav>
         </aside>

@@ -91,7 +91,11 @@
                         $employeeLeaves = $employeeAttendances->where('status', 'leave');
                     @endphp
                     <tr>
-                        <td>{{ $employee->name }}</td>
+                        <td>
+                            <a class="table-link" href="{{ route('admin.employees.show', $employee) }}">
+                                {{ $employee->name }}
+                            </a>
+                        </td>
                         <td>{{ $employee->mobile ?? '-' }}</td>
                         <td>{{ $employee->designation ?? '-' }}</td>
                         <td>{{ $employeeAttendances->count() }}</td>

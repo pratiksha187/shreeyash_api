@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use Carbon\Carbon;
+use Carbon\CarbonPeriod;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -25,6 +27,53 @@ class EmployeeController extends Controller
     public function create(): View
     {
         return view('admin.employees.create');
+    }
+
+    public function show(Request $request, User $employee): View
+    {
+        $filters = $request->validate([
+            'month' => ['nullable', 'date_format:Y-m'],
+        ]);
+
+        $selectedMonth = $filters['month'] ?? now()->format('Y-m');
+        $monthStart = Carbon::createFromFormat('Y-m', $selectedMonth)->startOfMonth();
+        $monthEnd = $monthStart->copy()->endOfMonth();
+
+        $attendances = $employee->attendances()
+            ->whereBetween('attendance_date', [
+                $monthStart->toDateString(),
+                $monthEnd->toDateString(),
+            ])
+            ->orderBy('attendance_date')
+            ->get()
+            ->keyBy(fn ($attendance) => $attendance->attendance_date->toDateString());
+
+        $calendarDays = collect(CarbonPeriod::create($monthStart, $monthEnd))
+            ->map(function (Carbon $date) use ($attendances) {
+                $dateString = $date->toDateString();
+
+                return [
+                    'date' => $date->copy(),
+                    'attendance' => $attendances->get($dateString),
+                ];
+            });
+
+        return view('admin.employees.show', [
+            'employee' => $employee,
+            'selectedMonth' => $selectedMonth,
+            'monthLabel' => $monthStart->format('F Y'),
+            'calendarDays' => $calendarDays,
+            'blankDays' => $monthStart->dayOfWeek > 0
+                ? range(1, $monthStart->dayOfWeek)
+                : [],
+            'summary' => [
+                'total_days' => $attendances->count(),
+                'present' => $attendances->where('status', 'present')->count(),
+                'absent' => $attendances->where('status', 'absent')->count(),
+                'leave' => $attendances->where('status', 'leave')->count(),
+                'half_day' => $attendances->where('status', 'half_day')->count(),
+            ],
+        ]);
     }
 
     public function store(Request $request): RedirectResponse
