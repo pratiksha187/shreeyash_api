@@ -143,6 +143,10 @@ class AttendanceController extends Controller
             ->orderByDesc('attendance_date')
             ->get();
 
+        $leaveAttendances = $attendances
+            ->where('status', 'leave')
+            ->values();
+
         return response()->json([
             'message' => 'Daily attendance report fetched successfully.',
             'from_date' => $fromDate,
@@ -151,8 +155,12 @@ class AttendanceController extends Controller
                 'total_days' => $attendances->count(),
                 'present' => $attendances->where('status', 'present')->count(),
                 'absent' => $attendances->where('status', 'absent')->count(),
-                'leave' => $attendances->where('status', 'leave')->count(),
+                'leave' => $leaveAttendances->count(),
                 'half_day' => $attendances->where('status', 'half_day')->count(),
+            ],
+            'leave_report' => [
+                'total_days' => $leaveAttendances->count(),
+                'leaves' => $leaveAttendances,
             ],
             'attendances' => $attendances,
         ]);
