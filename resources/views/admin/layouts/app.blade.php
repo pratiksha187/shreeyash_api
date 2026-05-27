@@ -283,6 +283,71 @@
             text-decoration: underline;
         }
 
+        .table-subtext {
+            margin-top: 4px;
+            color: var(--muted);
+            font-size: 12px;
+            font-weight: 700;
+            white-space: normal;
+        }
+
+        .text-wrap {
+            min-width: 220px;
+            max-width: 340px;
+            line-height: 1.5;
+            overflow-wrap: anywhere;
+            white-space: normal;
+        }
+
+        .hour-list {
+            display: grid;
+            gap: 12px;
+            min-width: 320px;
+            max-width: 520px;
+        }
+
+        .hour-item {
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--line);
+            white-space: normal;
+        }
+
+        .hour-item:last-child {
+            padding-bottom: 0;
+            border-bottom: 0;
+        }
+
+        .hour-item strong {
+            display: block;
+            margin-bottom: 4px;
+            color: #0f172a;
+            font-size: 13px;
+        }
+
+        .hour-item p {
+            margin: 0;
+            font-size: 13px;
+            line-height: 1.5;
+            white-space: normal;
+        }
+
+        .thumb-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .thumb {
+            display: block;
+            width: 72px;
+            height: 72px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            object-fit: cover;
+            background: #f8fafc;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
@@ -361,7 +426,8 @@
         }
 
         input,
-        select {
+        select,
+        textarea {
             width: 100%;
             min-height: 42px;
             padding: 10px 12px;
@@ -372,10 +438,16 @@
         }
 
         input:focus,
-        select:focus {
+        select:focus,
+        textarea:focus {
             border-color: var(--primary);
             outline: none;
             box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
+        }
+
+        textarea {
+            min-height: 90px;
+            resize: vertical;
         }
 
         .error {
@@ -407,6 +479,50 @@
             grid-template-columns: repeat(4, minmax(0, 1fr));
             gap: 14px;
             margin-bottom: 22px;
+        }
+
+        .sheet-summary-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+            gap: 22px;
+            margin-top: 28px;
+        }
+
+        .vehicle-sheet-table td,
+        .vehicle-sheet-table th {
+            padding: 10px 12px;
+        }
+
+        .editable-sheet th {
+            background: #1f2937;
+            color: #fff;
+            letter-spacing: 0;
+        }
+
+        .editable-sheet input {
+            min-width: 108px;
+            min-height: 34px;
+            padding: 6px 8px;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .editable-sheet .sheet-number {
+            min-width: 94px;
+        }
+
+        .editable-sheet input[readonly] {
+            background: #f8fafc;
+        }
+
+        .sheet-actions {
+            display: flex;
+            gap: 10px;
+            padding: 18px;
+        }
+
+        .vehicle-sheet-table tr.selected-row td {
+            background: #eff6ff;
         }
 
         .detail-item {
@@ -534,6 +650,10 @@
                 grid-template-columns: repeat(2, minmax(0, 1fr));
             }
 
+            .sheet-summary-grid {
+                grid-template-columns: 1fr;
+            }
+
             .topbar {
                 padding: 0 18px;
             }
@@ -585,7 +705,9 @@
             <nav class="nav">
                 <a class="{{ request()->routeIs('admin.dashboard') ? 'active' : '' }}" href="{{ route('admin.dashboard') }}">Dashboard</a>
                 <a class="{{ request()->routeIs('admin.attendance-reports.*') ? 'active' : '' }}" href="{{ route('admin.attendance-reports.index') }}">Attendance Reports</a>
+                <a class="{{ request()->routeIs('admin.dpr-reports.*') ? 'active' : '' }}" href="{{ route('admin.dpr-reports.index') }}">DPR Reports</a>
                 <a class="{{ request()->routeIs('admin.payments.*') ? 'active' : '' }}" href="{{ route('admin.payments.index') }}">Payments</a>
+                <a class="{{ request()->routeIs('admin.vehicles.*') ? 'active' : '' }}" href="{{ route('admin.vehicles.index') }}">Vehicles</a>
                 <a class="{{ request()->routeIs('admin.employees.*') ? 'active' : '' }}" href="{{ route('admin.employees.index') }}">Employees</a>
             </nav>
         </aside>

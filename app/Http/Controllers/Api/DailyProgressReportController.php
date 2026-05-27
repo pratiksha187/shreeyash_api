@@ -1,0 +1,345 @@
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use App\Models\DailyProgressReport;
+use App\Models\DailyProgressReportPhoto;
+use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpFoundation\StreamedResponse;
+
+class DailyProgressReportController extends Controller
+{
+    public function index(Request $request): JsonResponse
+    {
+        $filters = $request->validate([
+            'from_date' => ['nullable', 'date'],
+            'to_date' => ['nullable', 'date', 'after_or_equal:from_date'],
+            'limit' => ['nullable', 'integer', 'min:1', 'max:100'],
+        ]);
+
+        $query = DailyProgressReport::query()
+            ->with(['hours.photos'])
+            ->where('user_id', $request->user()->id);
+
+        if (isset($filters['from_date'])) {
+            $query->whereDate('dpr_date', '>=', Carbon::parse($filters['from_date'])->toDateString());
+        }
+
+        if (isset($filters['to_date'])) {
+            $query->whereDate('dpr_date', '<=', Carbon::parse($filters['to_date'])->toDateString());
+        }
+
+        $reports = $query
+            ->orderByDesc('dpr_date')
+            ->orderByDesc('id')
+            ->limit($filters['limit'] ?? 30)
+            ->get()
+            ->map(fn (DailyProgressReport $report) => $this->reportPayload($report));
+
+        return response()->json([
+            'message' => 'DPR reports fetched successfully.',
+            'dprs' => $reports,
+        ]);
+    }
+
+    public function show(Request $request, DailyProgressReport $dailyProgressReport): JsonResponse
+    {
+        if ($dailyProgressReport->user_id !== $request->user()->id) {
+            abort(404);
+        }
+
+        $dailyProgressReport->load(['hours.photos']);
+
+        return response()->json([
+            'message' => 'DPR report fetched successfully.',
+            'dpr' => $this->reportPayload($dailyProgressReport),
+        ]);
+    }
+
+    public function store(Request $request): JsonResponse
+    {
+        $this->normalizeInput($request);
+
+        $data = $request->validate([
+            'dpr_date' => ['required', 'date'],
+            'site_project' => ['required', 'string', 'max:255'],
+            'work_summary' => ['required', 'string', 'max:5000'],
+            'hours' => ['required', 'array', 'min:1', 'max:24'],
+            'hours.*.hour_number' => ['nullable', 'integer', 'min:1', 'max:24'],
+            'hours.*.time' => ['required', 'string', 'max:20'],
+            'hours.*.remark' => ['nullable', 'string', 'max:2000'],
+            'hours.*.photos' => ['nullable', 'array'],
+            'hours.*.photos.*' => ['image', 'max:5120'],
+            'photos' => ['nullable', 'array'],
+            'photos.*' => ['image', 'max:5120'],
+        ]);
+
+        $hours = collect($data['hours'])
+            ->values()
+            ->map(function (array $hour, int $index) {
+                return [
+                    'hour_number' => (int) ($hour['hour_number'] ?? $index + 1),
+                    'work_time' => $this->parseTime($hour['time'], 'hours.' . $index . '.time'),
+                    'remark' => $hour['remark'] ?? null,
+                ];
+            });
+
+        if ($hours->pluck('hour_number')->duplicates()->isNotEmpty()) {
+            throw ValidationException::withMessages([
+                'hours' => 'Hour numbers must be unique for one DPR.',
+            ]);
+        }
+
+        $user = $request->user();
+        $storedPaths = [];
+        $oldPhotoPaths = [];
+        $created = false;
+        $report = null;
+
+        try {
+            DB::transaction(function () use ($request, $data, $hours, $user, &$storedPaths, &$oldPhotoPaths, &$created, &$report) {
+                $report = DailyProgressReport::query()
+                    ->with('photos')
+                    ->where('user_id', $user->id)
+                    ->whereDate('dpr_date', Carbon::parse($data['dpr_date'])->toDateString())
+                    ->first();
+
+                $created = ! $report;
+
+                if ($report) {
+                    $oldPhotoPaths = $report->photos->pluck('photo_path')->all();
+                    $report->hours()->delete();
+                } else {
+                    $report = new DailyProgressReport([
+                        'user_id' => $user->id,
+                        'dpr_date' => Carbon::parse($data['dpr_date'])->toDateString(),
+                    ]);
+                }
+
+                $report->fill([
+                    'site_project' => $data['site_project'],
+                    'work_summary' => $data['work_summary'],
+                ]);
+                $report->save();
+
+                foreach ($hours as $index => $hour) {
+                    $hourModel = $report->hours()->create($hour);
+
+                    foreach ($this->filesForHour($request, $index) as $photo) {
+                        $path = $photo->store(
+                            'dpr/' . $user->id . '/' . $report->id . '/hour-' . $hour['hour_number'],
+                            'public'
+                        );
+                        $storedPaths[] = $path;
+
+                        $hourModel->photos()->create([
+                            'photo_path' => $path,
+                            'original_name' => $photo->getClientOriginalName(),
+                            'mime_type' => $photo->getClientMimeType(),
+                            'file_size' => $photo->getSize(),
+                        ]);
+                    }
+                }
+            });
+        } catch (\Throwable $exception) {
+            Storage::disk('public')->delete($storedPaths);
+
+            throw $exception;
+        }
+
+        if ($oldPhotoPaths) {
+            Storage::disk('public')->delete($oldPhotoPaths);
+        }
+
+        $report->load(['hours.photos']);
+
+        return response()->json([
+            'message' => $created ? 'DPR submitted successfully.' : 'DPR updated successfully.',
+            'dpr' => $this->reportPayload($report),
+        ], $created ? 201 : 200);
+    }
+
+    public function photo(Request $request, DailyProgressReportPhoto $photo): StreamedResponse
+    {
+        $photo->load('hour.report');
+
+        if ($photo->hour?->report?->user_id !== $request->user()->id) {
+            abort(404);
+        }
+
+        if (! Storage::disk('public')->exists($photo->photo_path)) {
+            abort(404);
+        }
+
+        return Storage::disk('public')->response($photo->photo_path);
+    }
+
+    private function normalizeInput(Request $request): void
+    {
+        $data = [];
+
+        if (! $request->has('dpr_date')) {
+            foreach (['date', 'dprDate', 'dpr_date'] as $key) {
+                if ($request->has($key)) {
+                    $data['dpr_date'] = $request->input($key);
+                    break;
+                }
+            }
+        }
+
+        if (! $request->has('site_project')) {
+            foreach (['site', 'project', 'project_name', 'site_name', 'siteProject'] as $key) {
+                if ($request->has($key)) {
+                    $data['site_project'] = $request->input($key);
+                    break;
+                }
+            }
+        }
+
+        if (! $request->has('work_summary')) {
+            foreach (['summary', 'workSummary', 'work_summary'] as $key) {
+                if ($request->has($key)) {
+                    $data['work_summary'] = $request->input($key);
+                    break;
+                }
+            }
+        }
+
+        $hours = $request->input('hours');
+
+        if (is_string($hours)) {
+            $decodedHours = json_decode($hours, true);
+
+            if (json_last_error() === JSON_ERROR_NONE) {
+                $hours = $decodedHours;
+            }
+        }
+
+        if (is_array($hours)) {
+            $data['hours'] = collect($hours)
+                ->map(function ($hour) {
+                    if (! is_array($hour)) {
+                        return $hour;
+                    }
+
+                    if (! isset($hour['time'])) {
+                        foreach (['work_time', 'hour_time'] as $key) {
+                            if (isset($hour[$key])) {
+                                $hour['time'] = $hour[$key];
+                                break;
+                            }
+                        }
+                    }
+
+                    if (! isset($hour['remark']) && isset($hour['remarks'])) {
+                        $hour['remark'] = $hour['remarks'];
+                    }
+
+                    if (! isset($hour['hour_number'])) {
+                        foreach (['hour', 'number'] as $key) {
+                            if (isset($hour[$key])) {
+                                $hour['hour_number'] = $hour[$key];
+                                break;
+                            }
+                        }
+                    }
+
+                    return $hour;
+                })
+                ->all();
+        }
+
+        if ($data) {
+            $request->merge($data);
+        }
+    }
+
+    private function parseTime(string $time, string $field): string
+    {
+        $time = trim($time);
+        $formats = ['H:i:s', 'H:i', 'h:i A', 'h:iA', 'g:i A', 'g:iA'];
+
+        foreach ($formats as $format) {
+            try {
+                $parsed = Carbon::createFromFormat($format, strtoupper($time));
+
+                if ($parsed !== false && $parsed->format($format) === strtoupper($time)) {
+                    return $parsed->format('H:i:s');
+                }
+            } catch (\Throwable) {
+            }
+        }
+
+        try {
+            return Carbon::parse($time)->format('H:i:s');
+        } catch (\Throwable) {
+            throw ValidationException::withMessages([
+                $field => 'The hour time must be a valid time.',
+            ]);
+        }
+    }
+
+    /**
+     * @return array<int, UploadedFile>
+     */
+    private function filesForHour(Request $request, int $index): array
+    {
+        $files = $request->file('hours.' . $index . '.photos', []);
+        $files = $files instanceof UploadedFile ? [$files] : (array) $files;
+
+        if ($index === 0) {
+            $topLevelFiles = $request->file('photos', []);
+            $topLevelFiles = $topLevelFiles instanceof UploadedFile ? [$topLevelFiles] : (array) $topLevelFiles;
+            $files = array_merge($files, $topLevelFiles);
+        }
+
+        return array_values(array_filter($files, fn ($file) => $file instanceof UploadedFile));
+    }
+
+    private function reportPayload(DailyProgressReport $report): array
+    {
+        $report->loadMissing(['user:id,name,mobile,designation', 'hours.photos']);
+
+        return [
+            'id' => $report->id,
+            'dpr_date' => $report->dpr_date?->toDateString(),
+            'date_display' => $report->dpr_date?->format('d M Y'),
+            'site_project' => $report->site_project,
+            'work_summary' => $report->work_summary,
+            'engineer' => [
+                'id' => $report->user?->id,
+                'name' => $report->user?->name,
+                'mobile' => $report->user?->mobile,
+                'designation' => $report->user?->designation,
+            ],
+            'photo_count' => $report->hours->sum(fn ($hour) => $hour->photos->count()),
+            'hours' => $report->hours
+                ->sortBy('hour_number')
+                ->values()
+                ->map(fn ($hour) => [
+                    'id' => $hour->id,
+                    'hour_number' => $hour->hour_number,
+                    'time' => $hour->work_time,
+                    'time_display' => Carbon::parse($hour->work_time)->format('h:i A'),
+                    'remark' => $hour->remark,
+                    'photos' => $hour->photos->map(fn (DailyProgressReportPhoto $photo) => [
+                        'id' => $photo->id,
+                        'url' => route('api.dpr-photos.show', $photo),
+                        'path' => $photo->photo_path,
+                        'original_name' => $photo->original_name,
+                        'mime_type' => $photo->mime_type,
+                        'file_size' => $photo->file_size,
+                    ])->values(),
+                ]),
+            'submitted_at' => $report->created_at,
+            'updated_at' => $report->updated_at,
+        ];
+    }
+}

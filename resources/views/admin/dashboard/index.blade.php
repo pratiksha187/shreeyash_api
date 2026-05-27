@@ -30,6 +30,18 @@
             <span>Today Absent</span>
             <strong>{{ $todayAbsent }}</strong>
         </div>
+        <div class="card stat-card">
+            <span>Total Vehicles</span>
+            <strong>{{ $totalVehicles }}</strong>
+        </div>
+        <div class="card stat-card">
+            <span>Vehicle Entries Today</span>
+            <strong>{{ $todayVehicles }}</strong>
+        </div>
+        <div class="card stat-card">
+            <span>Vehicles Inside</span>
+            <strong>{{ $vehiclesInside }}</strong>
+        </div>
     </section>
 
     <div class="page-header">
@@ -61,6 +73,41 @@
                 @empty
                     <tr>
                         <td class="empty" colspan="4">No employees added yet.</td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+
+    <div class="page-header" style="margin-top: 28px;">
+        <div>
+            <h1>Recent Vehicles</h1>
+            <p>Latest vehicle in and out records.</p>
+        </div>
+        <a class="btn secondary" href="{{ route('admin.vehicles.index') }}">View All</a>
+    </div>
+
+    <div class="card table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Vehicle Number</th>
+                    <th>Driver</th>
+                    <th>In Time</th>
+                    <th>Out Time</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse ($recentVehicleLogs as $vehicleLog)
+                    <tr>
+                        <td>{{ $vehicleLog->vehicle?->vehicle_number ?? $vehicleLog->vehicle_number }}</td>
+                        <td>{{ $vehicleLog->driver_name ?? '-' }}</td>
+                        <td>{{ $vehicleLog->in_at?->format('d M Y h:i A') }}</td>
+                        <td>{{ $vehicleLog->out_at?->format('d M Y h:i A') ?? 'Inside' }}</td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td class="empty" colspan="4">No vehicle logs added yet.</td>
                     </tr>
                 @endforelse
             </tbody>

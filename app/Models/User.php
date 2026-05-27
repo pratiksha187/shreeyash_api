@@ -61,6 +61,11 @@ class User extends Authenticatable
         return $this->hasMany(Payment::class);
     }
 
+    public function dailyProgressReports()
+    {
+        return $this->hasMany(DailyProgressReport::class);
+    }
+
     /**
      * Get the attributes that should be cast.
      *
