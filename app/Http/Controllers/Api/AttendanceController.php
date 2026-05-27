@@ -115,6 +115,46 @@ class AttendanceController extends Controller
         ]);
     }
 
+    public function loginReminder(Request $request): JsonResponse
+    {
+        $timezone = config('app.timezone', 'Asia/Kolkata');
+        $now = Carbon::now($timezone);
+        $today = $now->toDateString();
+        $windowStart = $now->copy()->setTime(9, 0);
+        $windowEnd = $now->copy()->setTime(9, 15, 59);
+
+        $attendance = Attendance::query()
+            ->where('user_id', $request->user()->id)
+            ->whereDate('attendance_date', $today)
+            ->first();
+
+        $hasClockedIn = (bool) $attendance?->check_in_at;
+        $isReminderWindow = $now->betweenIncluded($windowStart, $windowEnd);
+        $shouldNotify = $isReminderWindow && ! $hasClockedIn;
+
+        return response()->json([
+            'message' => $shouldNotify
+                ? 'Login reminder is active.'
+                : 'Login reminder is not needed right now.',
+            'should_notify' => $shouldNotify,
+            'notification' => [
+                'title' => 'Attendance Reminder',
+                'body' => 'Please clock in for today attendance.',
+            ],
+            'reminder_key' => 'login-reminder-' . $request->user()->id . '-' . $today,
+            'date' => $today,
+            'current_time' => $now->format('H:i:s'),
+            'timezone' => $timezone,
+            'window' => [
+                'from' => $windowStart->format('H:i:s'),
+                'to' => $windowEnd->format('H:i:s'),
+            ],
+            'is_reminder_window' => $isReminderWindow,
+            'has_clocked_in' => $hasClockedIn,
+            'attendance' => $attendance,
+        ]);
+    }
+
     public function dailyReport(Request $request): JsonResponse
     {
         $validator = Validator::make($request->query(), [

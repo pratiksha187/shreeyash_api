@@ -756,6 +756,7 @@
                 <a class="{{ request()->routeIs('admin.dashboard') ? 'active' : '' }}" href="{{ route('admin.dashboard') }}">Dashboard</a>
                 <a class="{{ request()->routeIs('admin.attendance-reports.*') ? 'active' : '' }}" href="{{ route('admin.attendance-reports.index') }}">Attendance Reports</a>
                 <a class="{{ request()->routeIs('admin.missed-requests.*') ? 'active' : '' }}" href="{{ route('admin.missed-requests.index') }}">Missed Requests</a>
+                <a class="{{ request()->routeIs('admin.labour-attendance.*') ? 'active' : '' }}" href="{{ route('admin.labour-attendance.index') }}">Labour Attendance</a>
                 <a class="{{ request()->routeIs('admin.dpr-reports.*') ? 'active' : '' }}" href="{{ route('admin.dpr-reports.index') }}">DPR Reports</a>
                 <a class="{{ request()->routeIs('admin.complaints.*') ? 'active' : '' }}" href="{{ route('admin.complaints.index') }}">Complaints</a>
                 <a class="{{ request()->routeIs('admin.payments.*') ? 'active' : '' }}" href="{{ route('admin.payments.index') }}">Payments</a>

@@ -76,6 +76,11 @@ class User extends Authenticatable
         return $this->hasMany(MissedAttendanceRequest::class);
     }
 
+    public function submittedLabourAttendances()
+    {
+        return $this->hasMany(LabourAttendance::class, 'engineer_user_id');
+    }
+
     /**
      * Get the attributes that should be cast.
      *
