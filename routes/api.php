@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AttendanceController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\ComplaintController;
 use App\Http\Controllers\Api\DailyProgressReportController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Middleware\AuthenticateApiToken;
@@ -17,6 +18,12 @@ Route::middleware(AuthenticateApiToken::class)->group(function () {
     Route::post('/attendance/leave', [AttendanceController::class, 'applyLeave']);
     Route::post('/attendance/clock-in', [AttendanceController::class, 'clockIn']);
     Route::post('/attendance/clock-out', [AttendanceController::class, 'clockOut']);
+    Route::get('/complaints', [ComplaintController::class, 'index'])->name('api.complaints.index');
+    Route::post('/complaints', [ComplaintController::class, 'store'])->name('api.complaints.store');
+    Route::get('/complaints/{complaint}', [ComplaintController::class, 'show'])->name('api.complaints.show');
+    Route::get('/complaint', [ComplaintController::class, 'index'])->name('api.complaint.index');
+    Route::post('/complaint', [ComplaintController::class, 'store'])->name('api.complaint.store');
+    Route::get('/complaint/{complaint}', [ComplaintController::class, 'show'])->name('api.complaint.show');
     Route::get('/dprs', [DailyProgressReportController::class, 'index'])->name('api.dprs.index');
     Route::post('/dprs', [DailyProgressReportController::class, 'store'])->name('api.dprs.store');
     Route::get('/dprs/{dailyProgressReport}', [DailyProgressReportController::class, 'show'])->name('api.dprs.show');

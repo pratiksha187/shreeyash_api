@@ -66,6 +66,11 @@ class User extends Authenticatable
         return $this->hasMany(DailyProgressReport::class);
     }
 
+    public function complaints()
+    {
+        return $this->hasMany(Complaint::class);
+    }
+
     /**
      * Get the attributes that should be cast.
      *

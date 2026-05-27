@@ -348,6 +348,29 @@
             background: #f8fafc;
         }
 
+        .inline-status-form {
+            display: grid;
+            gap: 8px;
+            min-width: 260px;
+        }
+
+        .inline-status-form select,
+        .inline-status-form textarea {
+            min-height: 36px;
+            padding: 7px 9px;
+            font-size: 13px;
+        }
+
+        .inline-status-form textarea {
+            min-height: 64px;
+        }
+
+        .inline-status-form .btn {
+            min-height: 34px;
+            padding: 7px 10px;
+            font-size: 13px;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
@@ -620,6 +643,26 @@
             color: #475569;
         }
 
+        .status-open {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .status-in_progress {
+            background: #dbeafe;
+            color: #1e3a8a;
+        }
+
+        .status-resolved {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .status-closed {
+            background: #e2e8f0;
+            color: #475569;
+        }
+
         .calendar-meta {
             margin-top: 8px;
             color: var(--muted);
@@ -706,6 +749,7 @@
                 <a class="{{ request()->routeIs('admin.dashboard') ? 'active' : '' }}" href="{{ route('admin.dashboard') }}">Dashboard</a>
                 <a class="{{ request()->routeIs('admin.attendance-reports.*') ? 'active' : '' }}" href="{{ route('admin.attendance-reports.index') }}">Attendance Reports</a>
                 <a class="{{ request()->routeIs('admin.dpr-reports.*') ? 'active' : '' }}" href="{{ route('admin.dpr-reports.index') }}">DPR Reports</a>
+                <a class="{{ request()->routeIs('admin.complaints.*') ? 'active' : '' }}" href="{{ route('admin.complaints.index') }}">Complaints</a>
                 <a class="{{ request()->routeIs('admin.payments.*') ? 'active' : '' }}" href="{{ route('admin.payments.index') }}">Payments</a>
                 <a class="{{ request()->routeIs('admin.vehicles.*') ? 'active' : '' }}" href="{{ route('admin.vehicles.index') }}">Vehicles</a>
                 <a class="{{ request()->routeIs('admin.employees.*') ? 'active' : '' }}" href="{{ route('admin.employees.index') }}">Employees</a>

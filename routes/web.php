@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\AttendanceReportController;
+use App\Http\Controllers\Admin\ComplaintController;
 use App\Http\Controllers\Admin\DailyProgressReportController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\EmployeeController;
@@ -25,6 +26,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/attendance-reports', [AttendanceReportController::class, 'index'])->name('attendance-reports.index');
         Route::get('/dpr-reports', [DailyProgressReportController::class, 'index'])->name('dpr-reports.index');
         Route::get('/dpr-reports/photos/{photo}', [DailyProgressReportController::class, 'photo'])->name('dpr-reports.photo');
+        Route::get('/complaints', [ComplaintController::class, 'index'])->name('complaints.index');
+        Route::patch('/complaints/{complaint}', [ComplaintController::class, 'update'])->name('complaints.update');
         Route::get('/payments', [PaymentController::class, 'index'])->name('payments.index');
         Route::post('/payments/generate', [PaymentController::class, 'generate'])->name('payments.generate');
         Route::get('/payments/{payment}/slip', [PaymentController::class, 'slip'])->name('payments.slip');
