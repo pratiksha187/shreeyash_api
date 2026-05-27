@@ -648,16 +648,23 @@
             color: #991b1b;
         }
 
+        .status-pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
         .status-in_progress {
             background: #dbeafe;
             color: #1e3a8a;
         }
 
+        .status-approved,
         .status-resolved {
             background: #dcfce7;
             color: #166534;
         }
 
+        .status-rejected,
         .status-closed {
             background: #e2e8f0;
             color: #475569;
@@ -748,6 +755,7 @@
             <nav class="nav">
                 <a class="{{ request()->routeIs('admin.dashboard') ? 'active' : '' }}" href="{{ route('admin.dashboard') }}">Dashboard</a>
                 <a class="{{ request()->routeIs('admin.attendance-reports.*') ? 'active' : '' }}" href="{{ route('admin.attendance-reports.index') }}">Attendance Reports</a>
+                <a class="{{ request()->routeIs('admin.missed-requests.*') ? 'active' : '' }}" href="{{ route('admin.missed-requests.index') }}">Missed Requests</a>
                 <a class="{{ request()->routeIs('admin.dpr-reports.*') ? 'active' : '' }}" href="{{ route('admin.dpr-reports.index') }}">DPR Reports</a>
                 <a class="{{ request()->routeIs('admin.complaints.*') ? 'active' : '' }}" href="{{ route('admin.complaints.index') }}">Complaints</a>
                 <a class="{{ request()->routeIs('admin.payments.*') ? 'active' : '' }}" href="{{ route('admin.payments.index') }}">Payments</a>

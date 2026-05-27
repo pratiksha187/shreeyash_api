@@ -71,6 +71,11 @@ class User extends Authenticatable
         return $this->hasMany(Complaint::class);
     }
 
+    public function missedAttendanceRequests()
+    {
+        return $this->hasMany(MissedAttendanceRequest::class);
+    }
+
     /**
      * Get the attributes that should be cast.
      *
