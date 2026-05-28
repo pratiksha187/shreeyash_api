@@ -98,13 +98,15 @@ class ChallanController extends Controller
         }
 
         $this->generatePdfForChallan($challan);
+        $pdfPath = $challan->pdf_file_path;
 
-        $pdf = app(ChallanPdfService::class)->build($challan);
-        $fileName = 'challan-' . $challan->id . '-' . preg_replace('/[^A-Za-z0-9_-]+/', '-', $challan->challan_no ?: 'challan') . '.pdf';
+        if (! $pdfPath || ! Storage::disk('local')->exists($pdfPath)) {
+            abort(404);
+        }
 
-        return response($pdf, 200, [
+        return response(Storage::disk('local')->get($pdfPath), 200, [
             'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'inline; filename="' . $fileName . '"',
+            'Content-Disposition' => 'inline; filename="' . app(ChallanPdfService::class)->fileName($challan) . '"',
         ]);
     }
 
@@ -115,9 +117,14 @@ class ChallanController extends Controller
         }
 
         $this->generatePdfForChallan($challan);
+        $pdfPath = $challan->pdf_file_path;
 
-        $pdf = app(ChallanPdfService::class)->build($challan);
-        $fileName = 'challan-' . $challan->id . '-' . preg_replace('/[^A-Za-z0-9_-]+/', '-', $challan->challan_no ?: 'challan') . '.pdf';
+        if (! $pdfPath || ! Storage::disk('local')->exists($pdfPath)) {
+            abort(404);
+        }
+
+        $pdf = Storage::disk('local')->get($pdfPath);
+        $fileName = app(ChallanPdfService::class)->fileName($challan);
 
         return response()->json([
             'message' => 'Challan PDF fetched successfully.',
@@ -190,15 +197,10 @@ class ChallanController extends Controller
     {
         $challan->loadMissing('user');
 
-        $pdf = app(ChallanPdfService::class)->build($challan);
-        $safeChallanNo = preg_replace('/[^A-Za-z0-9_-]+/', '-', (string) ($challan->challan_no ?? 'challan'));
-        $safeChallanNo = trim($safeChallanNo, '-');
-        $fileName = 'challan-' . $challan->id . '-' . ($safeChallanNo !== '' ? $safeChallanNo : 'challan') . '.pdf';
-        $relativePath = 'challans/' . $challan->user_id . '/' . $fileName;
+        if (! $challan->pdf_file_path || ! Storage::disk('local')->exists($challan->pdf_file_path)) {
+            app(ChallanPdfService::class)->store($challan);
+        }
 
-        Storage::disk('local')->makeDirectory(dirname($relativePath));
-        Storage::disk('local')->put($relativePath, $pdf);
-        $challan->update(['pdf_file_path' => $relativePath]);
         $challan->refresh();
     }
 

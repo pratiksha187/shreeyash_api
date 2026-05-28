@@ -157,11 +157,9 @@
                             @endif
                         </td>
                         <td>
-                            @if ($challan->pdf_file_path)
-                                <a class="table-link" href="{{ route('admin.challans.download', $challan) }}">Download {{ basename($challan->pdf_file_path) }}</a>
-                            @else
-                                -
-                            @endif
+                            <a class="table-link" href="{{ route('admin.challans.download', $challan) }}">
+                                {{ $challan->pdf_file_path ? 'Download PDF' : 'Generate PDF' }}
+                            </a>
                         </td>
                     </tr>
                 @empty

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Challan;
 use App\Models\User;
+use App\Services\ChallanPdfService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -113,12 +114,11 @@ class ChallanController extends Controller
         $pdfPath = $challan->pdf_file_path;
 
         if (! $pdfPath || ! Storage::disk('local')->exists($pdfPath)) {
-            abort(404);
+            $pdfPath = app(ChallanPdfService::class)->store($challan);
+            $challan->refresh();
         }
 
-        $fileName = 'challan-' . $challan->id . '-' . preg_replace('/[^A-Za-z0-9_-]+/', '-', (string) ($challan->challan_no ?? 'challan')) . '.pdf';
-
-        return Storage::disk('local')->download($pdfPath, $fileName);
+        return Storage::disk('local')->download($pdfPath, app(ChallanPdfService::class)->fileName($challan));
     }
 
     private function filteredQuery(array $filters)
