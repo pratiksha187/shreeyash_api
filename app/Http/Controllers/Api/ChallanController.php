@@ -197,11 +197,8 @@ class ChallanController extends Controller
         $relativePath = 'challans/' . $challan->user_id . '/' . $fileName;
 
         Storage::disk('local')->put($relativePath, $pdf);
-
-        if ($challan->pdf_file_path !== $relativePath) {
-            $challan->update(['pdf_file_path' => $relativePath]);
-            $challan->refresh();
-        }
+        $challan->update(['pdf_file_path' => $relativePath]);
+        $challan->refresh();
     }
 
     private function parseDate(string $date): string
