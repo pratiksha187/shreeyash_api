@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Support\AdminNavigation;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -36,13 +37,14 @@ class AuthController extends Controller
         $request->session()->regenerate();
         $request->session()->put('admin_logged_in', true);
         $request->session()->put('admin_email', $adminEmail);
+        $request->session()->put('admin_permissions', app(AdminNavigation::class)->configuredPermissions());
 
         return redirect()->route('admin.dashboard');
     }
 
     public function logout(Request $request): RedirectResponse
     {
-        $request->session()->forget(['admin_logged_in', 'admin_email']);
+        $request->session()->forget(['admin_logged_in', 'admin_email', 'admin_permissions']);
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 

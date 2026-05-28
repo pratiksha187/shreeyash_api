@@ -46,6 +46,7 @@
             position: sticky;
             top: 0;
             height: 100vh;
+            overflow-y: auto;
             padding: 22px 16px;
             background: var(--sidebar);
             color: #f8fafc;
@@ -83,7 +84,7 @@
 
         .nav {
             display: grid;
-            gap: 6px;
+            gap: 12px;
             margin-top: 22px;
         }
 
@@ -96,6 +97,7 @@
             border-radius: 8px;
             color: #cbd5e1;
             text-decoration: none;
+            font-size: 14px;
             font-weight: 700;
         }
 
@@ -103,6 +105,58 @@
         .nav a:hover {
             background: var(--sidebar-soft);
             color: #fff;
+        }
+
+        .nav-group {
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            background: rgba(15, 23, 42, 0.35);
+        }
+
+        .nav-group summary {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            min-height: 38px;
+            padding: 10px 12px;
+            color: #f8fafc;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 900;
+            letter-spacing: 0.08em;
+            list-style: none;
+            text-transform: uppercase;
+        }
+
+        .nav-group summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .nav-group summary::after {
+            content: '+';
+            color: #94a3b8;
+            font-size: 16px;
+            line-height: 1;
+        }
+
+        .nav-group[open] summary::after {
+            content: '-';
+        }
+
+        .nav-group.active {
+            border-color: rgba(59, 130, 246, 0.45);
+        }
+
+        .nav-group-links {
+            display: grid;
+            gap: 4px;
+            padding: 0 6px 8px;
+        }
+
+        .nav-group-links a {
+            min-height: 36px;
+            padding: 8px 10px;
+            border-radius: 6px;
         }
 
         .content-shell {
@@ -771,6 +825,7 @@
 
             .nav {
                 grid-template-columns: repeat(2, minmax(0, 1fr));
+                align-items: start;
             }
 
             .stats-grid {
@@ -834,18 +889,18 @@
             </div>
 
             <nav class="nav">
-                <a class="{{ request()->routeIs('admin.dashboard') ? 'active' : '' }}" href="{{ route('admin.dashboard') }}">Dashboard</a>
-                <a class="{{ request()->routeIs('admin.attendance-reports.*') ? 'active' : '' }}" href="{{ route('admin.attendance-reports.index') }}">Attendance Reports</a>
-                <a class="{{ request()->routeIs('admin.missed-requests.*') ? 'active' : '' }}" href="{{ route('admin.missed-requests.index') }}">Missed Requests</a>
-                <a class="{{ request()->routeIs('admin.labour-attendance.*') ? 'active' : '' }}" href="{{ route('admin.labour-attendance.index') }}">Labour Attendance</a>
-                <a class="{{ request()->routeIs('admin.dpr-reports.*') ? 'active' : '' }}" href="{{ route('admin.dpr-reports.index') }}">DPR Reports</a>
-                <a class="{{ request()->routeIs('admin.fdd-test-records.*') ? 'active' : '' }}" href="{{ route('admin.fdd-test-records.index') }}">FDD Test Records</a>
-                <a class="{{ request()->routeIs('admin.mir-file-reports.*') ? 'active' : '' }}" href="{{ route('admin.mir-file-reports.index') }}">MIR File Reports</a>
-                <a class="{{ request()->routeIs('admin.challans.*') ? 'active' : '' }}" href="{{ route('admin.challans.index') }}">Challans</a>
-                <a class="{{ request()->routeIs('admin.complaints.*') ? 'active' : '' }}" href="{{ route('admin.complaints.index') }}">Complaints</a>
-                <a class="{{ request()->routeIs('admin.payments.*') ? 'active' : '' }}" href="{{ route('admin.payments.index') }}">Payments</a>
-                <a class="{{ request()->routeIs('admin.vehicles.*') ? 'active' : '' }}" href="{{ route('admin.vehicles.index') }}">Vehicles</a>
-                <a class="{{ request()->routeIs('admin.employees.*') ? 'active' : '' }}" href="{{ route('admin.employees.index') }}">Employees</a>
+                @foreach (app(\App\Support\AdminNavigation::class)->groups(request()) as $group)
+                    <details class="nav-group {{ $group['active'] ? 'active' : '' }}" {{ $group['active'] ? 'open' : '' }}>
+                        <summary>{{ $group['label'] }}</summary>
+                        <div class="nav-group-links">
+                            @foreach ($group['items'] as $item)
+                                <a class="{{ $item['active'] ? 'active' : '' }}" href="{{ $item['url'] }}">
+                                    {{ $item['label'] }}
+                                </a>
+                            @endforeach
+                        </div>
+                    </details>
+                @endforeach
             </nav>
         </aside>
 
