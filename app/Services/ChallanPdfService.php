@@ -3,13 +3,13 @@
 namespace App\Services;
 
 use App\Models\Challan;
-use Barryvdh\DomPDF\Facade as PDF;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class ChallanPdfService
 {
     public function build(Challan $challan): string
     {
-        $pdf = PDF::loadView('pdf.challan', ['challan' => $challan]);
+        $pdf = Pdf::loadView('pdf.challan', ['challan' => $challan]);
         return $pdf->output();
     }
 }
