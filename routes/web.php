@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\AttendanceReportController;
 use App\Http\Controllers\Admin\ChallanController;
 use App\Http\Controllers\Admin\ComplaintController;
 use App\Http\Controllers\Admin\DailyProgressReportController;
+use App\Http\Controllers\Admin\DailyDieselPurchaseController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\EmployeeController;
 use App\Http\Controllers\Admin\FddTestRecordController;
@@ -60,6 +61,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/payments', [PaymentController::class, 'index'])->name('payments.index');
         Route::post('/payments/generate', [PaymentController::class, 'generate'])->name('payments.generate');
         Route::get('/payments/{payment}/slip', [PaymentController::class, 'slip'])->name('payments.slip');
+        Route::get('/diesel-purchases', [DailyDieselPurchaseController::class, 'index'])->name('diesel-purchases.index');
+        Route::post('/diesel-purchases/monthly-entries', [DailyDieselPurchaseController::class, 'storeMonthly'])->name('diesel-purchases.monthly');
         Route::get('/vehicles', [VehicleController::class, 'index'])->name('vehicles.index');
         Route::get('/vehicles/create', [VehicleController::class, 'create'])->name('vehicles.create');
         Route::post('/vehicles', [VehicleController::class, 'store'])->name('vehicles.store');
