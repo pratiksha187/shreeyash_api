@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Attendance;
+use App\Models\Location;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Illuminate\Http\JsonResponse;
@@ -13,11 +14,15 @@ use Illuminate\Validation\Rule;
 
 class AttendanceController extends Controller
 {
+    private const ATTENDANCE_LOCATION_RADIUS_METERS = 50;
+
     public function clockIn(Request $request): JsonResponse
     {
+        $this->normalizeLocationInput($request);
+
         $validator = Validator::make($request->all(), [
-            'latitude' => ['nullable', 'numeric', 'between:-90,90'],
-            'longitude' => ['nullable', 'numeric', 'between:-180,180'],
+            'latitude' => ['required', 'numeric', 'between:-90,90'],
+            'longitude' => ['required', 'numeric', 'between:-180,180'],
             'remarks' => ['nullable', 'string', 'max:500'],
         ]);
 
@@ -28,6 +33,7 @@ class AttendanceController extends Controller
             ], 422);
         }
 
+        $data = $validator->validated();
         $attendance = Attendance::query()
             ->where('user_id', $request->user()->id)
             ->whereDate('attendance_date', today())
@@ -40,12 +46,16 @@ class AttendanceController extends Controller
             ], 409);
         }
 
+        if ($locationError = $this->locationErrorResponse((float) $data['latitude'], (float) $data['longitude'])) {
+            return $locationError;
+        }
+
         $attendance = Attendance::query()->updateOrCreate(
             [
                 'user_id' => $request->user()->id,
                 'attendance_date' => today()->toDateString(),
             ],
-            array_merge($validator->validated(), [
+            array_merge($data, [
                 'status' => 'present',
                 'check_in_at' => now(),
                 'check_out_at' => null,
@@ -60,9 +70,11 @@ class AttendanceController extends Controller
 
     public function clockOut(Request $request): JsonResponse
     {
+        $this->normalizeLocationInput($request);
+
         $validator = Validator::make($request->all(), [
-            'latitude' => ['nullable', 'numeric', 'between:-90,90'],
-            'longitude' => ['nullable', 'numeric', 'between:-180,180'],
+            'latitude' => ['required', 'numeric', 'between:-90,90'],
+            'longitude' => ['required', 'numeric', 'between:-180,180'],
             'remarks' => ['nullable', 'string', 'max:500'],
         ]);
 
@@ -73,6 +85,7 @@ class AttendanceController extends Controller
             ], 422);
         }
 
+        $data = $validator->validated();
         $attendance = Attendance::query()
             ->where('user_id', $request->user()->id)
             ->whereDate('attendance_date', today())
@@ -91,7 +104,11 @@ class AttendanceController extends Controller
             ], 409);
         }
 
-        $attendance->fill(array_merge($validator->validated(), [
+        if ($locationError = $this->locationErrorResponse((float) $data['latitude'], (float) $data['longitude'])) {
+            return $locationError;
+        }
+
+        $attendance->fill(array_merge($data, [
             'check_out_at' => now(),
         ]));
         $attendance->save();
@@ -100,6 +117,94 @@ class AttendanceController extends Controller
             'message' => 'Clock out successful.',
             'attendance' => $attendance,
         ]);
+    }
+
+    private function normalizeLocationInput(Request $request): void
+    {
+        $data = [];
+
+        if (! $request->filled('latitude')) {
+            foreach (['lat', 'user_latitude'] as $key) {
+                if ($request->filled($key)) {
+                    $data['latitude'] = $request->input($key);
+                    break;
+                }
+            }
+        }
+
+        if (! $request->filled('longitude')) {
+            foreach (['lng', 'long', 'lon', 'user_longitude'] as $key) {
+                if ($request->filled($key)) {
+                    $data['longitude'] = $request->input($key);
+                    break;
+                }
+            }
+        }
+
+        if ($data) {
+            $request->merge($data);
+        }
+    }
+
+    private function locationErrorResponse(float $latitude, float $longitude): ?JsonResponse
+    {
+        $nearestLocation = $this->nearestLocation($latitude, $longitude);
+
+        if (! $nearestLocation) {
+            return response()->json([
+                'message' => 'Attendance location is not configured. Please contact admin.',
+            ], 422);
+        }
+
+        if ($nearestLocation['distance_meters'] <= self::ATTENDANCE_LOCATION_RADIUS_METERS) {
+            return null;
+        }
+
+        return response()->json([
+            'message' => 'You are outside the allowed attendance location. Clock in/out is allowed within 50 meters only.',
+            'allowed_radius_meters' => self::ATTENDANCE_LOCATION_RADIUS_METERS,
+            'nearest_location' => [
+                'id' => $nearestLocation['location']->id,
+                'name' => $nearestLocation['location']->name,
+                'latitude' => $nearestLocation['location']->latitude,
+                'longitude' => $nearestLocation['location']->longitude,
+            ],
+            'distance_meters' => round($nearestLocation['distance_meters'], 2),
+        ], 422);
+    }
+
+    /**
+     * @return array{location: Location, distance_meters: float}|null
+     */
+    private function nearestLocation(float $latitude, float $longitude): ?array
+    {
+        return Location::query()
+            ->get()
+            ->map(fn (Location $location) => [
+                'location' => $location,
+                'distance_meters' => $this->distanceInMeters(
+                    $latitude,
+                    $longitude,
+                    (float) $location->latitude,
+                    (float) $location->longitude
+                ),
+            ])
+            ->sortBy('distance_meters')
+            ->first();
+    }
+
+    private function distanceInMeters(float $fromLatitude, float $fromLongitude, float $toLatitude, float $toLongitude): float
+    {
+        $earthRadiusMeters = 6371000;
+        $fromLatitudeRad = deg2rad($fromLatitude);
+        $toLatitudeRad = deg2rad($toLatitude);
+        $latitudeDelta = deg2rad($toLatitude - $fromLatitude);
+        $longitudeDelta = deg2rad($toLongitude - $fromLongitude);
+
+        $a = sin($latitudeDelta / 2) ** 2
+            + cos($fromLatitudeRad) * cos($toLatitudeRad) * sin($longitudeDelta / 2) ** 2;
+
+        return $earthRadiusMeters * 2 * atan2(sqrt($a), sqrt(1 - $a));
     }
 
     public function me(Request $request): JsonResponse
