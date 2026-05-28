@@ -7,6 +7,7 @@ use App\Models\Challan;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -105,6 +106,19 @@ class ChallanController extends Controller
         }, $filename, [
             'Content-Type' => 'text/csv',
         ]);
+    }
+
+    public function download(Challan $challan)
+    {
+        $pdfPath = $challan->pdf_file_path;
+
+        if (! $pdfPath || ! Storage::disk('local')->exists($pdfPath)) {
+            abort(404);
+        }
+
+        $fileName = 'challan-' . $challan->id . '-' . preg_replace('/[^A-Za-z0-9_-]+/', '-', (string) ($challan->challan_no ?? 'challan')) . '.pdf';
+
+        return Storage::disk('local')->download($pdfPath, $fileName);
     }
 
     private function filteredQuery(array $filters)

@@ -137,6 +137,7 @@
                     <th>Vehicle No.</th>
                     <th>Location</th>
                     <th>Submitted By</th>
+                    <th>PDF</th>
                 </tr>
             </thead>
             <tbody>
@@ -155,10 +156,17 @@
                                 -
                             @endif
                         </td>
+                        <td>
+                            @if ($challan->pdf_file_path)
+                                <a class="table-link" href="{{ route('admin.challans.download', $challan) }}">Download PDF</a>
+                            @else
+                                -
+                            @endif
+                        </td>
                     </tr>
                 @empty
                     <tr>
-                        <td class="empty" colspan="7">No challans added yet.</td>
+                        <td class="empty" colspan="8">No challans added yet.</td>
                     </tr>
                 @endforelse
             </tbody>

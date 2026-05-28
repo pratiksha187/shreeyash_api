@@ -126,6 +126,7 @@
                     <th>Location / Time</th>
                     <th>Receiver / Driver</th>
                     <th>Submitted By</th>
+                    <th>PDF</th>
                 </tr>
             </thead>
             <tbody>
@@ -162,10 +163,17 @@
                                 -
                             @endif
                         </td>
+                        <td>
+                            @if ($challan->pdf_file_path)
+                                <a class="table-link" href="{{ route('admin.challans.download', $challan) }}">Download PDF</a>
+                            @else
+                                -
+                            @endif
+                        </td>
                     </tr>
                 @empty
                     <tr>
-                        <td class="empty" colspan="8">No challans found for this filter.</td>
+                        <td class="empty" colspan="9">No challans found for this filter.</td>
                     </tr>
                 @endforelse
             </tbody>

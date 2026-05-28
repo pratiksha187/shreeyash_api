@@ -46,6 +46,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::delete('/mir-file-reports/{mirFileReport}', [MirFileReportController::class, 'destroy'])->name('mir-file-reports.destroy');
         Route::get('/challans', [ChallanController::class, 'index'])->name('challans.index');
         Route::get('/challans/export', [ChallanController::class, 'export'])->name('challans.export');
+        Route::get('/challans/{challan}/download', [ChallanController::class, 'download'])->name('challans.download');
         Route::get('/complaints', [ComplaintController::class, 'index'])->name('complaints.index');
         Route::patch('/complaints/{complaint}', [ComplaintController::class, 'update'])->name('complaints.update');
         Route::get('/missed-requests', [MissedAttendanceRequestController::class, 'index'])->name('missed-requests.index');
