@@ -37,6 +37,8 @@ Route::middleware(AuthenticateApiToken::class)->group(function () {
     Route::get('/challans', [ChallanController::class, 'index'])->name('api.challans.index');
     Route::post('/challans', [ChallanController::class, 'store'])->name('api.challans.store');
     Route::get('/challans/{challan}', [ChallanController::class, 'show'])->name('api.challans.show');
+    Route::get('/challans/{challan}/pdf', [ChallanController::class, 'pdf'])->name('api.challans.pdf');
+    Route::get('/challans/{challan}/pdf-data', [ChallanController::class, 'pdfData'])->name('api.challans.pdf-data');
     Route::get('/challan', [ChallanController::class, 'index'])->name('api.challan.index');
     Route::post('/challan', [ChallanController::class, 'store'])->name('api.challan.store');
     Route::get('/challan/{challan}', [ChallanController::class, 'show'])->name('api.challan.show');

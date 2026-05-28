@@ -22,6 +22,7 @@ class Challan extends Model
         'delivery_time',
         'receiver_name',
         'driver_name',
+        'pdf_file_path',
     ];
 
     protected function casts(): array

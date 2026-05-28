@@ -4,9 +4,12 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Challan;
+use App\Services\ChallanPdfService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -79,10 +82,53 @@ class ChallanController extends Controller
             'challan_date' => Carbon::parse($data['challan_date'])->toDateString(),
         ]);
 
+        $this->generatePdfForChallan($challan);
+        $challan->refresh();
+
         return response()->json([
             'message' => 'Challan saved successfully.',
             'challan' => $this->challanPayload($challan),
         ], 201);
+    }
+
+    public function pdf(Request $request, Challan $challan): Response
+    {
+        if ($challan->user_id !== $request->user()->id) {
+            abort(404);
+        }
+
+        $this->generatePdfForChallan($challan);
+
+        $pdf = app(ChallanPdfService::class)->build($challan);
+        $fileName = 'challan-' . $challan->id . '-' . preg_replace('/[^A-Za-z0-9_-]+/', '-', $challan->challan_no ?: 'challan') . '.pdf';
+
+        return response($pdf, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="' . $fileName . '"',
+        ]);
+    }
+
+    public function pdfData(Request $request, Challan $challan): JsonResponse
+    {
+        if ($challan->user_id !== $request->user()->id) {
+            abort(404);
+        }
+
+        $this->generatePdfForChallan($challan);
+
+        $pdf = app(ChallanPdfService::class)->build($challan);
+        $fileName = 'challan-' . $challan->id . '-' . preg_replace('/[^A-Za-z0-9_-]+/', '-', $challan->challan_no ?: 'challan') . '.pdf';
+
+        return response()->json([
+            'message' => 'Challan PDF fetched successfully.',
+            'challan_id' => $challan->id,
+            'file_name' => $fileName,
+            'mime_type' => 'application/pdf',
+            'pdf_base64' => base64_encode($pdf),
+            'pdf_url' => route('api.challans.pdf', $challan),
+            'pdf_path' => '/api/challans/' . $challan->id . '/pdf',
+            'pdf_file_path' => $challan->pdf_file_path,
+        ]);
     }
 
     private function normalizeInput(Request $request): void
@@ -132,6 +178,30 @@ class ChallanController extends Controller
         if ($data) {
             $request->merge($data);
         }
+
+        if ($request->filled('challan_date')) {
+            $request->merge([
+                'challan_date' => $this->parseDate((string) $request->input('challan_date')),
+            ]);
+        }
+    }
+
+    private function generatePdfForChallan(Challan $challan): void
+    {
+        $challan->loadMissing('user');
+
+        $pdf = app(ChallanPdfService::class)->build($challan);
+        $safeChallanNo = preg_replace('/[^A-Za-z0-9_-]+/', '-', (string) ($challan->challan_no ?? 'challan'));
+        $safeChallanNo = trim($safeChallanNo, '-');
+        $fileName = 'challan-' . $challan->id . '-' . ($safeChallanNo !== '' ? $safeChallanNo : 'challan') . '.pdf';
+        $relativePath = 'challans/' . $challan->user_id . '/' . $fileName;
+
+        Storage::disk('local')->put($relativePath, $pdf);
+
+        if ($challan->pdf_file_path !== $relativePath) {
+            $challan->update(['pdf_file_path' => $relativePath]);
+            $challan->refresh();
+        }
     }
 
     private function parseDate(string $date): string
@@ -177,6 +247,9 @@ class ChallanController extends Controller
             'time' => $challan->delivery_time,
             'receiver_name' => $challan->receiver_name,
             'driver_name' => $challan->driver_name,
+            'pdf_file_path' => $challan->pdf_file_path,
+            'pdf_url' => $challan->pdf_file_path ? route('api.challans.pdf', $challan) : null,
+            'pdf_path' => $challan->pdf_file_path ? '/api/challans/' . $challan->id . '/pdf' : null,
             'submitted_by' => [
                 'id' => $challan->user?->id,
                 'name' => $challan->user?->name,
