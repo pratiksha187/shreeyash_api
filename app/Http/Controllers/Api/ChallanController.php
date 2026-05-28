@@ -196,6 +196,7 @@ class ChallanController extends Controller
         $fileName = 'challan-' . $challan->id . '-' . ($safeChallanNo !== '' ? $safeChallanNo : 'challan') . '.pdf';
         $relativePath = 'challans/' . $challan->user_id . '/' . $fileName;
 
+        Storage::disk('local')->makeDirectory(dirname($relativePath));
         Storage::disk('local')->put($relativePath, $pdf);
         $challan->update(['pdf_file_path' => $relativePath]);
         $challan->refresh();
