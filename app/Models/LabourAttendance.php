@@ -23,6 +23,7 @@ class LabourAttendance extends Model
         'status',
         'work_hours',
         'remarks',
+        'photo_path',
         'approval_status',
         'admin_note',
         'reviewed_at',

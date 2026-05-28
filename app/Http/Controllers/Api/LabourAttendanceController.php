@@ -10,8 +10,11 @@ use App\Models\LabourSite;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class LabourAttendanceController extends Controller
 {
@@ -105,6 +108,7 @@ class LabourAttendanceController extends Controller
             'status' => ['required', Rule::in(LabourAttendance::ATTENDANCE_STATUSES)],
             'work_hours' => ['nullable', 'numeric', 'min:0', 'max:24'],
             'remarks' => ['nullable', 'string', 'max:2000'],
+            'photo' => ['nullable', 'image', 'max:5120'],
         ]);
 
         $contractor = Contractor::query()
@@ -160,6 +164,17 @@ class LabourAttendanceController extends Controller
             ]
         );
 
+        if ($photo = $this->attendancePhoto($request)) {
+            $oldPhotoPath = $attendance->photo_path;
+            $photoPath = $photo->store('labour-attendance/' . $request->user()->id . '/' . $attendance->id, 'public');
+
+            $attendance->update(['photo_path' => $photoPath]);
+
+            if ($oldPhotoPath && $oldPhotoPath !== $photoPath) {
+                Storage::disk('public')->delete($oldPhotoPath);
+            }
+        }
+
         $attendance->load(['site', 'contractor', 'labour', 'engineer:id,name,mobile,designation']);
 
         return response()->json([
@@ -168,6 +183,19 @@ class LabourAttendanceController extends Controller
                 : 'Labour attendance updated and sent for approval.',
             'labour_attendance' => $this->attendancePayload($attendance),
         ], $attendance->wasRecentlyCreated ? 201 : 200);
+    }
+
+    public function photo(Request $request, LabourAttendance $labourAttendance): StreamedResponse
+    {
+        if ($labourAttendance->engineer_user_id !== $request->user()->id) {
+            abort(404);
+        }
+
+        if (! $labourAttendance->photo_path || ! Storage::disk('public')->exists($labourAttendance->photo_path)) {
+            abort(404);
+        }
+
+        return Storage::disk('public')->response($labourAttendance->photo_path);
     }
 
     public function show(Request $request, LabourAttendance $labourAttendance): JsonResponse
@@ -219,9 +247,25 @@ class LabourAttendanceController extends Controller
             }
         }
 
+        if (! $request->hasFile('photo')) {
+            foreach (['image', 'labour_image', 'labor_image', 'attendance_photo'] as $key) {
+                if ($request->hasFile($key)) {
+                    $request->files->set('photo', $request->file($key));
+                    break;
+                }
+            }
+        }
+
         if ($data) {
             $request->merge($data);
         }
+    }
+
+    private function attendancePhoto(Request $request): ?UploadedFile
+    {
+        $photo = $request->file('photo');
+
+        return $photo instanceof UploadedFile ? $photo : null;
     }
 
     private function sitePayload(?LabourSite $site): ?array
@@ -278,6 +322,8 @@ class LabourAttendanceController extends Controller
             'status' => $attendance->status,
             'work_hours' => $attendance->work_hours,
             'remarks' => $attendance->remarks,
+            'photo_path' => $attendance->photo_path,
+            'photo_url' => $attendance->photo_path ? route('api.labour-attendances.photo', $attendance) : null,
             'approval_status' => $attendance->approval_status,
             'admin_note' => $attendance->admin_note,
             'reviewed_at' => $attendance->reviewed_at,

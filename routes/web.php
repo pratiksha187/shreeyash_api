@@ -55,6 +55,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('/labour-sites', [LabourAttendanceController::class, 'storeSite'])->name('labour-sites.store');
         Route::post('/contractors', [LabourAttendanceController::class, 'storeContractor'])->name('contractors.store');
         Route::post('/labours', [LabourAttendanceController::class, 'storeLabour'])->name('labours.store');
+        Route::get('/labour-attendance/{labourAttendance}/photo', [LabourAttendanceController::class, 'photo'])->name('labour-attendance.photo');
         Route::patch('/labour-attendance/{labourAttendance}', [LabourAttendanceController::class, 'update'])->name('labour-attendance.update');
         Route::get('/payments', [PaymentController::class, 'index'])->name('payments.index');
         Route::post('/payments/generate', [PaymentController::class, 'generate'])->name('payments.generate');

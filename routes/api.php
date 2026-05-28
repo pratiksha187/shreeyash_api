@@ -54,12 +54,14 @@ Route::middleware(AuthenticateApiToken::class)->group(function () {
     Route::get('/labour/contractors/{contractor}/labours', [LabourAttendanceController::class, 'labours'])->name('api.labour.labours');
     Route::get('/labour/attendances', [LabourAttendanceController::class, 'index'])->name('api.labour-attendances.index');
     Route::post('/labour/attendances', [LabourAttendanceController::class, 'store'])->name('api.labour-attendances.store');
+    Route::get('/labour/attendances/{labourAttendance}/photo', [LabourAttendanceController::class, 'photo'])->name('api.labour-attendances.photo');
     Route::get('/labour/attendances/{labourAttendance}', [LabourAttendanceController::class, 'show'])->name('api.labour-attendances.show');
     Route::get('/labor/sites', [LabourAttendanceController::class, 'sites'])->name('api.labor.sites');
     Route::get('/labor/sites/{labourSite}/contractors', [LabourAttendanceController::class, 'contractors'])->name('api.labor.contractors');
     Route::get('/labor/contractors/{contractor}/labors', [LabourAttendanceController::class, 'labours'])->name('api.labor.labors');
     Route::get('/labor/attendances', [LabourAttendanceController::class, 'index'])->name('api.labor-attendances.index');
     Route::post('/labor/attendances', [LabourAttendanceController::class, 'store'])->name('api.labor-attendances.store');
+    Route::get('/labor/attendances/{labourAttendance}/photo', [LabourAttendanceController::class, 'photo'])->name('api.labor-attendances.photo');
     Route::get('/labor/attendances/{labourAttendance}', [LabourAttendanceController::class, 'show'])->name('api.labor-attendances.show');
     Route::post('/payments', [PaymentController::class, 'store'])->name('api.payments.store');
     Route::get('/payments', [PaymentController::class, 'index'])->name('api.payments.index');

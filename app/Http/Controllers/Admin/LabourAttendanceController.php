@@ -11,8 +11,10 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class LabourAttendanceController extends Controller
 {
@@ -132,5 +134,14 @@ class LabourAttendanceController extends Controller
         $labourAttendance->save();
 
         return back()->with('success', 'Labour attendance updated successfully.');
+    }
+
+    public function photo(LabourAttendance $labourAttendance): StreamedResponse
+    {
+        if (! $labourAttendance->photo_path || ! Storage::disk('public')->exists($labourAttendance->photo_path)) {
+            abort(404);
+        }
+
+        return Storage::disk('public')->response($labourAttendance->photo_path);
     }
 }

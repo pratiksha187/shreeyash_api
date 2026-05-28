@@ -217,6 +217,7 @@
                     <th>Site</th>
                     <th>Contractor</th>
                     <th>Labour</th>
+                    <th>Photo</th>
                     <th>Attendance</th>
                     <th>Engineer</th>
                     <th>Approval</th>
@@ -242,6 +243,15 @@
                                     <br>{{ $attendance->labour->mobile }}
                                 @endif
                             </div>
+                        </td>
+                        <td>
+                            @if ($attendance->photo_path)
+                                <a href="{{ route('admin.labour-attendance.photo', $attendance) }}" target="_blank">
+                                    <img class="thumb" src="{{ route('admin.labour-attendance.photo', $attendance) }}" alt="Labour attendance photo">
+                                </a>
+                            @else
+                                -
+                            @endif
                         </td>
                         <td>
                             <span class="status-pill status-{{ $attendance->status }}">
@@ -286,7 +296,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td class="empty" colspan="8">No labour attendance entries found.</td>
+                        <td class="empty" colspan="9">No labour attendance entries found.</td>
                     </tr>
                 @endforelse
             </tbody>
