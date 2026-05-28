@@ -111,12 +111,8 @@ class ChallanController extends Controller
 
     public function download(Challan $challan)
     {
-        $pdfPath = $challan->pdf_file_path;
-
-        if (! $pdfPath || ! Storage::disk('local')->exists($pdfPath)) {
-            $pdfPath = app(ChallanPdfService::class)->store($challan);
-            $challan->refresh();
-        }
+        $pdfPath = app(ChallanPdfService::class)->store($challan);
+        $challan->refresh();
 
         return Storage::disk('local')->download($pdfPath, app(ChallanPdfService::class)->fileName($challan));
     }

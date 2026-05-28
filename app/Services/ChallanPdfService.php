@@ -11,41 +11,78 @@ class ChallanPdfService
     {
         $challan->loadMissing('user');
 
-        $content = "0.2 w\n";
-        $content .= $this->pdfText('Delivery Challan', 50, 805, 18);
-        $content .= $this->pdfText('Generated on: ' . now()->format('d M Y h:i A'), 365, 805, 9);
-        $content .= $this->pdfLine(50, 790, 545, 790);
+        $formX = 72;
+        $formY = 78;
+        $formW = 451;
+        $formH = 700;
+        $right = $formX + $formW;
+        $center = $formX + ($formW / 2);
+        $top = $formY + $formH;
 
-        $y = 765;
-        $y = $this->twoColumnRow(
+        $content = "0 0 0 RG\n0 0 0 rg\n";
+        $content .= "0.8 w\n";
+        $content .= $this->pdfRect($formX, $formY, $formW, $formH);
+
+        $content .= $this->pdfCenteredText('DELIVERY CHALLAN', $center, $top - 18, 12, 'F2');
+        $content .= $this->pdfCenteredText('Shreeyash Construction', $center, $top - 41, 22, 'F4');
+        $content .= $this->pdfCenteredText('Khopoli, Tal- Khalapur, Dist - Raigad', $center, $top - 62, 10, 'F2');
+        $content .= $this->pdfCenteredText('Contact No. 9923299301 / 9326216153', $center, $top - 79, 10, 'F2');
+        $content .= $this->pdfLine($formX, $top - 94, $right, $top - 94);
+
+        $this->formField(
             $content,
-            $y,
-            'Challan No.',
+            'Challan No.  :',
             (string) $challan->challan_no,
-            'Date',
-            $challan->challan_date?->format('d/m/Y') ?? '-'
+            92,
+            176,
+            261,
+            $top - 128,
+            14,
+            12,
         );
-        $y = $this->fullRow($content, $y, 'Name Of Party', $challan->party_name);
-        $y = $this->fullRow($content, $y, 'Material / M/c', $challan->material_machine);
-        $y = $this->twoColumnRow($content, $y, 'Vehicle No.', $challan->vehicle_no, 'Measurement', $challan->measurement);
-        $y = $this->fullRow($content, $y, 'Location', $challan->location);
-        $y = $this->fullRow($content, $y, 'Time', $challan->delivery_time);
-        $y = $this->twoColumnRow($content, $y, 'Receiver Name', $challan->receiver_name, 'Driver Name', $challan->driver_name);
 
-        $submittedBy = trim(implode(' ', array_filter([
-            $challan->user?->name,
-            $challan->user?->mobile ? '(' . $challan->user->mobile . ')' : null,
-            $challan->user?->designation ? '- ' . $challan->user->designation : null,
-        ])));
+        $this->formField(
+            $content,
+            'Date:',
+            $challan->challan_date?->format('d/m/Y') ?? '-',
+            314,
+            354,
+            505,
+            $top - 128,
+            13,
+            16,
+        );
 
-        $this->fullRow($content, $y, 'Submitted By', $submittedBy ?: '-');
+        $this->formField($content, 'Name Of Party :', $challan->party_name, 92, 205, 505, $top - 185, 13, 34);
+        $this->formField($content, 'Material /M/c. :', $challan->material_machine, 92, 205, 505, $top - 242, 13, 34);
+        $this->formField($content, 'Vehical No.     :', $challan->vehicle_no, 92, 205, 505, $top - 299, 13, 34);
+        $this->formField($content, 'Measurement   :', $challan->measurement, 92, 205, 505, $top - 356, 13, 34);
+        $this->formField($content, 'Location          :', $challan->location, 92, 205, 505, $top - 413, 13, 34);
+        $this->formField($content, 'Time               :', $this->formatDeliveryTime($challan->delivery_time), 92, 205, 505, $top - 484, 13, 34);
+
+        $content .= $this->pdfLine(106, $formY + 50, 215, $formY + 50);
+        $content .= $this->pdfLine(368, $formY + 50, 477, $formY + 50);
+
+        if ($challan->receiver_name) {
+            $content .= $this->pdfCenteredText($challan->receiver_name, 160, $formY + 58, 11, 'F3', '0.05 0.12 0.45');
+        }
+
+        if ($challan->driver_name) {
+            $content .= $this->pdfCenteredText($challan->driver_name, 422, $formY + 58, 11, 'F3', '0.05 0.12 0.45');
+        }
+
+        $content .= $this->pdfCenteredText('Receiver Sign.', 160, $formY + 28, 11, 'F2');
+        $content .= $this->pdfCenteredText('Driver Sign.', 422, $formY + 28, 11, 'F2');
 
         $objects = [
             "1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n",
             "2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n",
-            "3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>\nendobj\n",
+            "3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R /F2 5 0 R /F3 6 0 R /F4 7 0 R >> >> /Contents 8 0 R >>\nendobj\n",
             "4 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n",
-            "5 0 obj\n<< /Length " . strlen($content) . " >>\nstream\n" . $content . "endstream\nendobj\n",
+            "5 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>\nendobj\n",
+            "6 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Oblique >>\nendobj\n",
+            "7 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-BoldOblique >>\nendobj\n",
+            "8 0 obj\n<< /Length " . strlen($content) . " >>\nstream\n" . $content . "endstream\nendobj\n",
         ];
 
         $pdf = "%PDF-1.4\n";
@@ -95,47 +132,33 @@ class ChallanPdfService
         return 'challans/' . $challan->user_id . '/' . $this->fileName($challan);
     }
 
-    private function fullRow(string &$content, float $y, string $label, ?string $value): float
-    {
-        $x = 50;
-        $labelWidth = 125;
-        $valueWidth = 370;
-        $lines = $this->wrapText($value ?: '-', 72);
-        $height = max(28, 14 + (count($lines) * 13));
+    private function formField(
+        string &$content,
+        string $label,
+        ?string $value,
+        float $labelX,
+        float $lineStartX,
+        float $lineEndX,
+        float $lineY,
+        int $fontSize,
+        int $wrapLimit
+    ): void {
+        $content .= $this->pdfText($label, $labelX, $lineY + 5, 11);
 
-        $content .= "{$x} " . ($y - $height) . " {$labelWidth} {$height} re S\n";
-        $content .= ($x + $labelWidth) . ' ' . ($y - $height) . " {$valueWidth} {$height} re S\n";
-        $content .= $this->pdfText($label, $x + 6, $y - 18, 10);
-
-        $textY = $y - 18;
-        foreach ($lines as $line) {
-            $content .= $this->pdfText($line, $x + $labelWidth + 6, $textY, 10);
-            $textY -= 13;
+        foreach ($this->wrapText($value ?: '-', $wrapLimit) as $index => $line) {
+            $currentLineY = $lineY - ($index * 18);
+            $content .= $this->pdfLine($lineStartX, $currentLineY, $lineEndX, $currentLineY);
+            $content .= $this->pdfText($line, $lineStartX + 14, $currentLineY + 5, $fontSize, 'F3', '0.05 0.12 0.45');
         }
-
-        return $y - $height;
     }
 
-    private function twoColumnRow(
-        string &$content,
-        float $y,
-        string $labelA,
-        ?string $valueA,
-        string $labelB,
-        ?string $valueB
-    ): float {
-        $x = 50;
-        $height = 28;
-        $widths = [90, 155, 95, 155];
-        $values = [$labelA, $valueA ?: '-', $labelB, $valueB ?: '-'];
-
-        foreach ($widths as $index => $width) {
-            $content .= "{$x} " . ($y - $height) . " {$width} {$height} re S\n";
-            $content .= $this->pdfText((string) $values[$index], $x + 6, $y - 18, 10);
-            $x += $width;
+    private function formatDeliveryTime(?string $value): string
+    {
+        if (! $value) {
+            return '-';
         }
 
-        return $y - $height;
+        return preg_replace('/\s*,\s*/', "\n", trim($value)) ?: '-';
     }
 
     /**
@@ -143,11 +166,14 @@ class ChallanPdfService
      */
     private function wrapText(string $text, int $limit): array
     {
-        $text = $this->normalizeText($text);
         $lines = [];
 
-        foreach (explode("\n", wordwrap($text, $limit, "\n", true)) as $line) {
-            $lines[] = $line !== '' ? $line : ' ';
+        foreach (preg_split('/\r\n|\r|\n/', trim($text) ?: '-') as $paragraph) {
+            $paragraph = $this->normalizeText($paragraph);
+
+            foreach (explode("\n", wordwrap($paragraph, $limit, "\n", true)) as $line) {
+                $lines[] = $line !== '' ? $line : ' ';
+            }
         }
 
         return $lines ?: ['-'];
@@ -173,13 +199,32 @@ class ChallanPdfService
         return str_replace(['\\', '(', ')'], ['\\\\', '\\(', '\\)'], $this->normalizeText($text));
     }
 
-    private function pdfText(string $text, float $x, float $y, int $size = 10): string
+    private function pdfText(string $text, float $x, float $y, int $size = 10, string $font = 'F1', string $color = '0 0 0'): string
     {
-        return "BT\n/F1 {$size} Tf\n{$x} {$y} Td\n(" . $this->escapePdfText($text) . ") Tj\nET\n";
+        return "q\n{$color} rg\nBT\n/{$font} {$size} Tf\n{$x} {$y} Td\n(" . $this->escapePdfText($text) . ") Tj\nET\nQ\n";
+    }
+
+    private function pdfCenteredText(string $text, float $centerX, float $y, int $size = 10, string $font = 'F1', string $color = '0 0 0'): string
+    {
+        $x = $centerX - $this->textWidth($text, $size, $font) / 2;
+
+        return $this->pdfText($text, $x, $y, $size, $font, $color);
+    }
+
+    private function textWidth(string $text, int $size, string $font): float
+    {
+        $factor = in_array($font, ['F2', 'F4'], true) ? 0.58 : 0.52;
+
+        return strlen($this->normalizeText($text)) * $size * $factor;
     }
 
     private function pdfLine(float $x1, float $y1, float $x2, float $y2): string
     {
         return "{$x1} {$y1} m {$x2} {$y2} l S\n";
+    }
+
+    private function pdfRect(float $x, float $y, float $width, float $height): string
+    {
+        return "{$x} {$y} {$width} {$height} re S\n";
     }
 }

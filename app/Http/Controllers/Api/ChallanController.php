@@ -197,10 +197,7 @@ class ChallanController extends Controller
     {
         $challan->loadMissing('user');
 
-        if (! $challan->pdf_file_path || ! Storage::disk('local')->exists($challan->pdf_file_path)) {
-            app(ChallanPdfService::class)->store($challan);
-        }
-
+        app(ChallanPdfService::class)->store($challan);
         $challan->refresh();
     }
 
