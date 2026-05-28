@@ -219,6 +219,16 @@
             color: #1f2937;
         }
 
+        .btn.danger {
+            background: #dc2626;
+        }
+
+        .btn.small {
+            min-height: 34px;
+            padding: 7px 10px;
+            font-size: 13px;
+        }
+
         .card {
             border: 1px solid var(--line);
             border-radius: 8px;
@@ -548,6 +558,77 @@
             background: #eff6ff;
         }
 
+        .fdd-report-title,
+        .sheet-report-title {
+            padding: 14px 18px;
+            border-bottom: 2px solid #111827;
+            color: #020617;
+            font-size: 26px;
+            font-weight: 900;
+            text-align: center;
+        }
+
+        .fdd-table th,
+        .fdd-table td,
+        .sheet-table th,
+        .sheet-table td {
+            border: 1px solid #111827;
+            white-space: normal;
+        }
+
+        .fdd-table th,
+        .sheet-table th {
+            background: #d9d9d9;
+            color: #020617;
+            font-size: 14px;
+            letter-spacing: 0;
+            text-align: center;
+            text-transform: none;
+        }
+
+        .fdd-table td,
+        .sheet-table td {
+            padding: 8px 10px;
+            color: #020617;
+            font-size: 14px;
+            vertical-align: middle;
+        }
+
+        .fdd-table .fdd-sr,
+        .fdd-table .fdd-date,
+        .fdd-table .fdd-material,
+        .sheet-table .sheet-center {
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        .sheet-table .sheet-text {
+            min-width: 240px;
+            text-align: center;
+        }
+
+        .fdd-table .fdd-section-row td {
+            background: #fff;
+        }
+
+        .fdd-table .fdd-section-name {
+            background: #ffff00;
+            font-size: 18px;
+            font-weight: 800;
+            text-align: center;
+        }
+
+        .table-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            min-width: 130px;
+        }
+
+        .table-actions form {
+            margin: 0;
+        }
+
         .detail-item {
             padding: 16px;
         }
@@ -758,6 +839,9 @@
                 <a class="{{ request()->routeIs('admin.missed-requests.*') ? 'active' : '' }}" href="{{ route('admin.missed-requests.index') }}">Missed Requests</a>
                 <a class="{{ request()->routeIs('admin.labour-attendance.*') ? 'active' : '' }}" href="{{ route('admin.labour-attendance.index') }}">Labour Attendance</a>
                 <a class="{{ request()->routeIs('admin.dpr-reports.*') ? 'active' : '' }}" href="{{ route('admin.dpr-reports.index') }}">DPR Reports</a>
+                <a class="{{ request()->routeIs('admin.fdd-test-records.*') ? 'active' : '' }}" href="{{ route('admin.fdd-test-records.index') }}">FDD Test Records</a>
+                <a class="{{ request()->routeIs('admin.mir-file-reports.*') ? 'active' : '' }}" href="{{ route('admin.mir-file-reports.index') }}">MIR File Reports</a>
+                <a class="{{ request()->routeIs('admin.challans.*') ? 'active' : '' }}" href="{{ route('admin.challans.index') }}">Challans</a>
                 <a class="{{ request()->routeIs('admin.complaints.*') ? 'active' : '' }}" href="{{ route('admin.complaints.index') }}">Complaints</a>
                 <a class="{{ request()->routeIs('admin.payments.*') ? 'active' : '' }}" href="{{ route('admin.payments.index') }}">Payments</a>
                 <a class="{{ request()->routeIs('admin.vehicles.*') ? 'active' : '' }}" href="{{ route('admin.vehicles.index') }}">Vehicles</a>

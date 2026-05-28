@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Attendance;
+use App\Models\Challan;
 use App\Models\User;
 use App\Models\Vehicle;
 use App\Models\VehicleLog;
@@ -28,6 +29,7 @@ class DashboardController extends Controller
                 ->where('status', 'absent')
                 ->count(),
             'totalVehicles' => Vehicle::query()->count(),
+            'totalChallans' => Challan::query()->count(),
             'todayVehicles' => VehicleLog::query()
                 ->whereDate('in_at', today())
                 ->count(),
@@ -41,6 +43,11 @@ class DashboardController extends Controller
             'recentVehicleLogs' => VehicleLog::query()
                 ->with('vehicle')
                 ->latest('in_at')
+                ->take(5)
+                ->get(),
+            'recentChallans' => Challan::query()
+                ->with('user:id,name,mobile')
+                ->latest()
                 ->take(5)
                 ->get(),
         ]);

@@ -2,12 +2,15 @@
 
 use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\AttendanceReportController;
+use App\Http\Controllers\Admin\ChallanController;
 use App\Http\Controllers\Admin\ComplaintController;
 use App\Http\Controllers\Admin\DailyProgressReportController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\EmployeeController;
+use App\Http\Controllers\Admin\FddTestRecordController;
 use App\Http\Controllers\Admin\LabourAttendanceController;
 use App\Http\Controllers\Admin\MissedAttendanceRequestController;
+use App\Http\Controllers\Admin\MirFileReportController;
 use App\Http\Controllers\Admin\PaymentController;
 use App\Http\Controllers\Admin\VehicleController;
 use App\Http\Controllers\Admin\VehicleLogController;
@@ -28,6 +31,21 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/attendance-reports', [AttendanceReportController::class, 'index'])->name('attendance-reports.index');
         Route::get('/dpr-reports', [DailyProgressReportController::class, 'index'])->name('dpr-reports.index');
         Route::get('/dpr-reports/photos/{photo}', [DailyProgressReportController::class, 'photo'])->name('dpr-reports.photo');
+        Route::get('/fdd-test-records', [FddTestRecordController::class, 'index'])->name('fdd-test-records.index');
+        Route::post('/fdd-test-records', [FddTestRecordController::class, 'store'])->name('fdd-test-records.store');
+        Route::post('/fdd-road-sections', [FddTestRecordController::class, 'storeRoadSection'])->name('fdd-road-sections.store');
+        Route::get('/fdd-test-records/export', [FddTestRecordController::class, 'export'])->name('fdd-test-records.export');
+        Route::get('/fdd-test-records/{fddTestRecord}/edit', [FddTestRecordController::class, 'edit'])->name('fdd-test-records.edit');
+        Route::put('/fdd-test-records/{fddTestRecord}', [FddTestRecordController::class, 'update'])->name('fdd-test-records.update');
+        Route::delete('/fdd-test-records/{fddTestRecord}', [FddTestRecordController::class, 'destroy'])->name('fdd-test-records.destroy');
+        Route::get('/mir-file-reports', [MirFileReportController::class, 'index'])->name('mir-file-reports.index');
+        Route::post('/mir-file-reports', [MirFileReportController::class, 'store'])->name('mir-file-reports.store');
+        Route::get('/mir-file-reports/export', [MirFileReportController::class, 'export'])->name('mir-file-reports.export');
+        Route::get('/mir-file-reports/{mirFileReport}/edit', [MirFileReportController::class, 'edit'])->name('mir-file-reports.edit');
+        Route::put('/mir-file-reports/{mirFileReport}', [MirFileReportController::class, 'update'])->name('mir-file-reports.update');
+        Route::delete('/mir-file-reports/{mirFileReport}', [MirFileReportController::class, 'destroy'])->name('mir-file-reports.destroy');
+        Route::get('/challans', [ChallanController::class, 'index'])->name('challans.index');
+        Route::get('/challans/export', [ChallanController::class, 'export'])->name('challans.export');
         Route::get('/complaints', [ComplaintController::class, 'index'])->name('complaints.index');
         Route::patch('/complaints/{complaint}', [ComplaintController::class, 'update'])->name('complaints.update');
         Route::get('/missed-requests', [MissedAttendanceRequestController::class, 'index'])->name('missed-requests.index');

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AttendanceController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\ChallanController;
 use App\Http\Controllers\Api\ComplaintController;
 use App\Http\Controllers\Api\DailyProgressReportController;
 use App\Http\Controllers\Api\LabourAttendanceController;
@@ -33,6 +34,12 @@ Route::middleware(AuthenticateApiToken::class)->group(function () {
     Route::get('/complaint', [ComplaintController::class, 'index'])->name('api.complaint.index');
     Route::post('/complaint', [ComplaintController::class, 'store'])->name('api.complaint.store');
     Route::get('/complaint/{complaint}', [ComplaintController::class, 'show'])->name('api.complaint.show');
+    Route::get('/challans', [ChallanController::class, 'index'])->name('api.challans.index');
+    Route::post('/challans', [ChallanController::class, 'store'])->name('api.challans.store');
+    Route::get('/challans/{challan}', [ChallanController::class, 'show'])->name('api.challans.show');
+    Route::get('/challan', [ChallanController::class, 'index'])->name('api.challan.index');
+    Route::post('/challan', [ChallanController::class, 'store'])->name('api.challan.store');
+    Route::get('/challan/{challan}', [ChallanController::class, 'show'])->name('api.challan.show');
     Route::get('/dprs', [DailyProgressReportController::class, 'index'])->name('api.dprs.index');
     Route::post('/dprs', [DailyProgressReportController::class, 'store'])->name('api.dprs.store');
     Route::get('/dprs/{dailyProgressReport}', [DailyProgressReportController::class, 'show'])->name('api.dprs.show');

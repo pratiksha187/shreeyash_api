@@ -35,6 +35,10 @@
             <strong>{{ $totalVehicles }}</strong>
         </div>
         <div class="card stat-card">
+            <span>Total Challans</span>
+            <strong>{{ $totalChallans }}</strong>
+        </div>
+        <div class="card stat-card">
             <span>Vehicle Entries Today</span>
             <strong>{{ $todayVehicles }}</strong>
         </div>
@@ -108,6 +112,53 @@
                 @empty
                     <tr>
                         <td class="empty" colspan="4">No vehicle logs added yet.</td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+
+    <div class="page-header" style="margin-top: 28px;">
+        <div>
+            <h1>Recent Challans</h1>
+            <p>Latest challan records added to the system.</p>
+        </div>
+        <a class="btn secondary" href="{{ route('admin.challans.index') }}">View All</a>
+    </div>
+
+    <div class="card table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Challan No.</th>
+                    <th>Date</th>
+                    <th>Party Name</th>
+                    <th>Material / M/c</th>
+                    <th>Vehicle No.</th>
+                    <th>Location</th>
+                    <th>Submitted By</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse ($recentChallans as $challan)
+                    <tr>
+                        <td>{{ $challan->challan_no }}</td>
+                        <td>{{ $challan->challan_date?->format('d M Y') }}</td>
+                        <td class="text-wrap">{{ $challan->party_name }}</td>
+                        <td class="text-wrap">{{ $challan->material_machine }}</td>
+                        <td>{{ $challan->vehicle_no ?? '-' }}</td>
+                        <td>{{ $challan->location ?? '-' }}</td>
+                        <td>
+                            @if ($challan->user)
+                                <a class="table-link" href="{{ route('admin.employees.show', $challan->user) }}">{{ $challan->user->name }}</a>
+                            @else
+                                -
+                            @endif
+                        </td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td class="empty" colspan="7">No challans added yet.</td>
                     </tr>
                 @endforelse
             </tbody>
