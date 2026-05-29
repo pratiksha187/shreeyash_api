@@ -17,10 +17,9 @@ class PaymentSlipPdfService
         $content .= $this->pdfFillColor(0.85, 0.63, 0.12);
         $content .= $this->pdfRect(35, 730, 525, 9, true);
 
-        $content .= $this->pdfCompanyLogo(62, 748);
-        $content .= $this->pdfCenteredText('Shreeyash Construction', 307, 782, 20, 'F2', [0.20, 0.20, 0.20]);
-        $content .= $this->pdfCenteredText('Khopoli, Tal- Khalapur, Dist - Raigad', 307, 762, 11, 'F2', [0.28, 0.28, 0.28]);
-        $content .= $this->pdfCenteredText('Contact No. 9923299301 / 9326216153', 307, 746, 11, 'F2', [0.28, 0.28, 0.28]);
+        $content .= $this->pdfCenteredText('Shreeyash Construction', 297.5, 782, 20, 'F2', [0.20, 0.20, 0.20]);
+        $content .= $this->pdfCenteredText('Khopoli, Tal- Khalapur, Dist - Raigad', 297.5, 762, 11, 'F2', [0.28, 0.28, 0.28]);
+        $content .= $this->pdfCenteredText('Contact No. 9923299301 / 9326216153', 297.5, 746, 11, 'F2', [0.28, 0.28, 0.28]);
 
         $content .= $this->pdfFillColor(0.30, 0.30, 0.30);
         $content .= $this->pdfRect(220, 705, 155, 28, true);
@@ -151,21 +150,6 @@ class PaymentSlipPdfService
         $content .= $this->pdfFillColor(0.85, 0.63, 0.12);
         $content .= $this->pdfRect($x, $y, 5, 20, true);
         $content .= $this->pdfText($title, $x + 8, $y + 6, 11, 'F2', [1, 1, 1]);
-
-        return $content;
-    }
-
-    private function pdfCompanyLogo(float $x, float $y): string
-    {
-        $content = $this->pdfFillColor(0.85, 0.63, 0.12);
-        $content .= $this->pdfRect($x, $y, 46, 42, true);
-        $content .= $this->pdfFillColor(0.30, 0.30, 0.30);
-        $content .= $this->pdfRect($x + 6, $y + 7, 34, 24, true);
-        $content .= $this->pdfFillColor(0.95, 0.95, 0.93);
-        $content .= $this->pdfRect($x + 11, $y + 12, 6, 14, true);
-        $content .= $this->pdfRect($x + 20, $y + 12, 6, 14, true);
-        $content .= $this->pdfRect($x + 29, $y + 12, 6, 14, true);
-        $content .= $this->pdfText('SC', $x + 9, $y + 30, 13, 'F2', [1, 1, 1]);
 
         return $content;
     }
