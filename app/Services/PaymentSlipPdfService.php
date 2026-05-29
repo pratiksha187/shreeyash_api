@@ -9,31 +9,40 @@ class PaymentSlipPdfService
     public function build(Payment $payment): string
     {
         $user = $payment->user;
-        $content = "0.2 w\n";
-        $content .= $this->pdfCenteredText('Shreeyash Construction', 297.5, 812, 18, 'F2');
-        $content .= $this->pdfCenteredText('Khopoli, Tal- Khalapur, Dist - Raigad', 297.5, 792, 11, 'F2');
-        $content .= $this->pdfCenteredText('Contact No. 9923299301 / 9326216153', 297.5, 776, 11, 'F2');
-        $content .= $this->pdfCenteredText('Salary Slip', 297.5, 748, 16, 'F2');
-        $content .= $this->pdfLine(50, 732, 545, 732);
+        $content = "0.4 w\n";
+        $content .= $this->pdfStrokeColor(0.76, 0.80, 0.78);
+        $content .= $this->pdfRect(35, 35, 525, 772);
+        $content .= $this->pdfFillColor(0.91, 0.95, 0.93);
+        $content .= $this->pdfRect(35, 730, 525, 77, true);
+        $content .= $this->pdfFillColor(0.08, 0.33, 0.22);
+        $content .= $this->pdfRect(35, 730, 525, 9, true);
 
-        $content .= $this->pdfText('Employee Details', 50, 710, 12, 'F2');
-        $y = $this->pdfTable($content, 50, 693, [120, 160, 100, 115], [
+        $content .= $this->pdfCenteredText('Shreeyash Construction', 297.5, 782, 20, 'F2', [0.08, 0.20, 0.16]);
+        $content .= $this->pdfCenteredText('Khopoli, Tal- Khalapur, Dist - Raigad', 297.5, 762, 11, 'F2', [0.18, 0.18, 0.18]);
+        $content .= $this->pdfCenteredText('Contact No. 9923299301 / 9326216153', 297.5, 746, 11, 'F2', [0.18, 0.18, 0.18]);
+
+        $content .= $this->pdfFillColor(0.08, 0.33, 0.22);
+        $content .= $this->pdfRect(220, 705, 155, 28, true);
+        $content .= $this->pdfCenteredText('SALARY SLIP', 297.5, 713, 15, 'F2', [1, 1, 1]);
+
+        $content .= $this->pdfSectionTitle('Employee Details', 50, 680, 495);
+        $y = $this->pdfTable($content, 50, 656, [120, 160, 100, 115], [
             ['Employee Name', $user->name, 'Mobile', $user->mobile ?? '-'],
             ['Designation', $user->designation ?? '-', 'Employee ID', (string) $user->id],
             ['Period From', $payment->from_date->format('d M Y'), 'Period To', $payment->to_date->format('d M Y')],
-        ]);
+        ], 24, 10, [0, 2]);
 
-        $content .= $this->pdfText('Attendance Summary', 50, $y - 20, 12, 'F2');
-        $y = $this->pdfTable($content, 50, $y - 37, [165, 82, 165, 83], [
+        $content .= $this->pdfSectionTitle('Attendance Summary', 50, $y - 16, 495);
+        $y = $this->pdfTable($content, 50, $y - 40, [165, 82, 165, 83], [
             ['Paid Days', (string) $payment->present_days, 'Present Days', (string) $payment->present_days_in_month],
             ['Week Offs', (string) $payment->weekoff_count, 'Leaves', (string) $payment->leave_total],
             ['Half Days', (string) $payment->half_day_count, 'C.Offs', (string) $payment->c_off_count],
-        ]);
+        ], 24, 10, [0, 2]);
 
-        $content .= $this->pdfText('Earnings', 50, $y - 20, 12, 'F2');
-        $content .= $this->pdfText('Deductions', 315, $y - 20, 12, 'F2');
+        $content .= $this->pdfSectionTitle('Earnings', 50, $y - 16, 245);
+        $content .= $this->pdfSectionTitle('Deductions', 315, $y - 16, 230);
 
-        $earningsY = $this->pdfTable($content, 50, $y - 37, [145, 100], [
+        $earningsY = $this->pdfTable($content, 50, $y - 40, [145, 100], [
             ['Gross Salary', 'Rs. ' . number_format((float) $payment->gross_salary, 2)],
             ['Per Day Rate', 'Rs. ' . number_format((float) $payment->per_day_rate, 2)],
             ['Basic 60%', 'Rs. ' . number_format((float) $payment->basic_60, 2)],
@@ -41,23 +50,27 @@ class PaymentSlipPdfService
             ['Conveyance 20%', 'Rs. ' . number_format((float) $payment->conveyance_20, 2)],
             ['Other Allowance', 'Rs. ' . number_format((float) $payment->other_allowance, 2)],
             ['Gross Payable', 'Rs. ' . number_format((float) $payment->gross_payable, 2)],
-        ]);
-        $deductionsY = $this->pdfTable($content, 315, $y - 37, [130, 100], [
+        ], 24, 10, [0]);
+        $deductionsY = $this->pdfTable($content, 315, $y - 40, [130, 100], [
             ['PF', 'Rs. ' . number_format((float) $payment->pf_12, 2)],
             ['Insurance', 'Rs. ' . number_format((float) $payment->insurance, 2)],
             ['PT', 'Rs. ' . number_format((float) $payment->pt, 2)],
             ['Advance', 'Rs. ' . number_format((float) $payment->advance, 2)],
             ['Total Deduction', 'Rs. ' . number_format((float) $payment->total_deduction, 2)],
-        ]);
-        $y = min($earningsY, $deductionsY) - 25;
+        ], 24, 10, [0]);
+        $y = min($earningsY, $deductionsY) - 28;
 
+        $content .= $this->pdfFillColor(0.91, 0.95, 0.93);
+        $content .= $this->pdfRect(50, $y - 30, 495, 34, true);
         $this->pdfTable($content, 50, $y, [245, 250], [
             ['Net Payable', 'Rs. ' . number_format((float) $payment->net_payable, 2)],
-        ], 30, 13);
+        ], 30, 13, [0]);
 
-        $content .= $this->pdfText('Generated on: ' . now()->format('d M Y h:i A'), 50, 55, 9);
-        $content .= $this->pdfText('This is a system generated salary slip.', 315, 55, 9);
-        $content .= $this->pdfCenteredText('Powered by ConstructKaro', 297.5, 32, 9, 'F2');
+        $content .= $this->pdfStrokeColor(0.76, 0.80, 0.78);
+        $content .= $this->pdfLine(50, 76, 545, 76);
+        $content .= $this->pdfText('Generated on: ' . now()->format('d M Y h:i A'), 50, 58, 9, 'F1', [0.28, 0.28, 0.28]);
+        $content .= $this->pdfText('This is a system generated salary slip.', 348, 58, 9, 'F1', [0.28, 0.28, 0.28]);
+        $content .= $this->pdfCenteredText('Powered by ConstructKaro', 297.5, 42, 9, 'F2', [0.08, 0.33, 0.22]);
 
         $objects = [
             "1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n",
@@ -92,16 +105,16 @@ class PaymentSlipPdfService
         return str_replace(['\\', '(', ')'], ['\\\\', '\\(', '\\)'], $text);
     }
 
-    private function pdfText(string $text, float $x, float $y, int $size = 10, string $font = 'F1'): string
+    private function pdfText(string $text, float $x, float $y, int $size = 10, string $font = 'F1', array $color = [0, 0, 0]): string
     {
-        return "BT\n/{$font} {$size} Tf\n{$x} {$y} Td\n(" . $this->escapePdfText($text) . ") Tj\nET\n";
+        return "BT\n{$color[0]} {$color[1]} {$color[2]} rg\n/{$font} {$size} Tf\n{$x} {$y} Td\n(" . $this->escapePdfText($text) . ") Tj\nET\n";
     }
 
-    private function pdfCenteredText(string $text, float $centerX, float $y, int $size = 10, string $font = 'F1'): string
+    private function pdfCenteredText(string $text, float $centerX, float $y, int $size = 10, string $font = 'F1', array $color = [0, 0, 0]): string
     {
         $estimatedWidth = strlen($text) * $size * 0.5;
 
-        return $this->pdfText($text, $centerX - ($estimatedWidth / 2), $y, $size, $font);
+        return $this->pdfText($text, $centerX - ($estimatedWidth / 2), $y, $size, $font, $color);
     }
 
     private function pdfLine(float $x1, float $y1, float $x2, float $y2): string
@@ -109,18 +122,57 @@ class PaymentSlipPdfService
         return "{$x1} {$y1} m {$x2} {$y2} l S\n";
     }
 
+    private function pdfRect(float $x, float $y, float $width, float $height, bool $fill = false): string
+    {
+        return "{$x} {$y} {$width} {$height} re " . ($fill ? "f\n" : "S\n");
+    }
+
+    private function pdfFillColor(float $red, float $green, float $blue): string
+    {
+        return "{$red} {$green} {$blue} rg\n";
+    }
+
+    private function pdfStrokeColor(float $red, float $green, float $blue): string
+    {
+        return "{$red} {$green} {$blue} RG\n";
+    }
+
+    private function pdfSectionTitle(string $title, float $x, float $y, float $width): string
+    {
+        $content = $this->pdfFillColor(0.08, 0.33, 0.22);
+        $content .= $this->pdfRect($x, $y, $width, 20, true);
+        $content .= $this->pdfText($title, $x + 8, $y + 6, 11, 'F2', [1, 1, 1]);
+
+        return $content;
+    }
+
     /**
      * @param array<int, float> $columnWidths
      * @param array<int, array<int, string>> $rows
+     * @param array<int, int> $labelColumns
      */
-    private function pdfTable(string &$content, float $x, float $y, array $columnWidths, array $rows, int $rowHeight = 24, int $fontSize = 10): float
+    private function pdfTable(string &$content, float $x, float $y, array $columnWidths, array $rows, int $rowHeight = 24, int $fontSize = 10, array $labelColumns = []): float
     {
-        foreach ($rows as $row) {
+        foreach ($rows as $rowIndex => $row) {
             $cellX = $x;
 
             foreach ($columnWidths as $index => $width) {
+                if ($rowIndex % 2 === 0) {
+                    $content .= $this->pdfFillColor(0.98, 0.99, 0.98);
+                    $content .= $this->pdfRect($cellX, $y - $rowHeight, $width, $rowHeight, true);
+                }
+
+                $content .= $this->pdfStrokeColor(0.82, 0.85, 0.83);
                 $content .= "{$cellX} " . ($y - $rowHeight) . " {$width} {$rowHeight} re S\n";
-                $content .= $this->pdfText((string) ($row[$index] ?? ''), $cellX + 6, $y - 16, $fontSize);
+                $isLabel = in_array($index, $labelColumns, true);
+                $content .= $this->pdfText(
+                    (string) ($row[$index] ?? ''),
+                    $cellX + 6,
+                    $y - 16,
+                    $fontSize,
+                    $isLabel ? 'F2' : 'F1',
+                    $isLabel ? [0.12, 0.20, 0.16] : [0.12, 0.12, 0.12]
+                );
                 $cellX += $width;
             }
 
