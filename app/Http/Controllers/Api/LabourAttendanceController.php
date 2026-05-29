@@ -108,7 +108,8 @@ class LabourAttendanceController extends Controller
             'status' => ['required', Rule::in(LabourAttendance::ATTENDANCE_STATUSES)],
             'work_hours' => ['nullable', 'numeric', 'min:0', 'max:24'],
             'remarks' => ['nullable', 'string', 'max:2000'],
-            'photo' => ['nullable', 'image', 'max:5120'],
+            'photo' => $request->hasFile('photo') ? ['nullable', 'image', 'max:5120'] : ['nullable', 'string'],
+            'photo_base64' => ['nullable', 'string'],
         ]);
 
         $contractor = Contractor::query()
@@ -164,9 +165,8 @@ class LabourAttendanceController extends Controller
             ]
         );
 
-        if ($photo = $this->attendancePhoto($request)) {
+        if ($photoPath = $this->storeAttendancePhoto($request, $attendance)) {
             $oldPhotoPath = $attendance->photo_path;
-            $photoPath = $photo->store('labour-attendance/' . $request->user()->id . '/' . $attendance->id, 'public');
 
             $attendance->update(['photo_path' => $photoPath]);
 
@@ -248,9 +248,19 @@ class LabourAttendanceController extends Controller
         }
 
         if (! $request->hasFile('photo')) {
-            foreach (['image', 'labour_image', 'labor_image', 'attendance_photo'] as $key) {
+            foreach (['image', 'labour_photo', 'labor_photo', 'labour_image', 'labor_image', 'attendance_photo'] as $key) {
                 if ($request->hasFile($key)) {
                     $request->files->set('photo', $request->file($key));
+                    break;
+                }
+            }
+        }
+
+        if (! $request->hasFile('photo') && ! $request->filled('photo_base64')) {
+            foreach (['photo', 'image', 'labour_photo', 'labor_photo', 'labour_image', 'labor_image', 'attendance_photo'] as $key) {
+                if ($request->filled($key)) {
+                    $data['photo_base64'] = $request->input($key);
+                    $data['photo'] = null;
                     break;
                 }
             }
@@ -261,11 +271,67 @@ class LabourAttendanceController extends Controller
         }
     }
 
-    private function attendancePhoto(Request $request): ?UploadedFile
+    private function storeAttendancePhoto(Request $request, LabourAttendance $attendance): ?string
     {
         $photo = $request->file('photo');
 
-        return $photo instanceof UploadedFile ? $photo : null;
+        if ($photo instanceof UploadedFile) {
+            return $photo->store('labour-attendance/' . $request->user()->id . '/' . $attendance->id, 'public');
+        }
+
+        $base64Photo = $request->input('photo_base64');
+
+        if (! is_string($base64Photo) || trim($base64Photo) === '') {
+            return null;
+        }
+
+        return $this->storeBase64AttendancePhoto($base64Photo, $request, $attendance);
+    }
+
+    private function storeBase64AttendancePhoto(string $base64Photo, Request $request, LabourAttendance $attendance): string
+    {
+        $base64Photo = trim($base64Photo);
+        $extension = 'jpg';
+
+        if (preg_match('/^data:image\/(jpeg|jpg|png|webp);base64,(.+)$/i', $base64Photo, $matches)) {
+            $extension = strtolower($matches[1]) === 'jpeg' ? 'jpg' : strtolower($matches[1]);
+            $base64Photo = $matches[2];
+        }
+
+        $base64Photo = preg_replace('/\s+/', '', $base64Photo) ?? '';
+        $decodedPhoto = base64_decode($base64Photo, true);
+
+        if ($decodedPhoto === false) {
+            throw ValidationException::withMessages([
+                'photo' => 'The labour photo must be a valid image.',
+            ]);
+        }
+
+        if (strlen($decodedPhoto) > 5 * 1024 * 1024) {
+            throw ValidationException::withMessages([
+                'photo' => 'The labour photo must not be greater than 5 MB.',
+            ]);
+        }
+
+        $imageInfo = @getimagesizefromstring($decodedPhoto);
+
+        if (! $imageInfo || ! in_array($imageInfo['mime'], ['image/jpeg', 'image/png', 'image/webp'], true)) {
+            throw ValidationException::withMessages([
+                'photo' => 'The labour photo must be a valid JPG, PNG, or WEBP image.',
+            ]);
+        }
+
+        $extension = match ($imageInfo['mime']) {
+            'image/png' => 'png',
+            'image/webp' => 'webp',
+            default => $extension,
+        };
+
+        $path = 'labour-attendance/' . $request->user()->id . '/' . $attendance->id . '/photo-' . now()->format('YmdHis') . '.' . $extension;
+
+        Storage::disk('public')->put($path, $decodedPhoto);
+
+        return $path;
     }
 
     private function sitePayload(?LabourSite $site): ?array

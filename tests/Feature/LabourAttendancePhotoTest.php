@@ -64,4 +64,46 @@ class LabourAttendancePhotoTest extends TestCase
             ->assertSee('Labour attendance photo')
             ->assertSee('/admin/labour-attendance/' . $attendance->id . '/photo');
     }
+
+    public function test_labour_attendance_base64_photo_is_saved(): void
+    {
+        Storage::fake('public');
+
+        $engineer = User::factory()->create([
+            'api_token' => hash('sha256', 'mobile-token'),
+        ]);
+        $site = LabourSite::query()->create(['name' => 'Khopoli Site']);
+        $contractor = Contractor::query()->create([
+            'labour_site_id' => $site->id,
+            'name' => 'Test Contractor',
+        ]);
+        $labour = Labour::query()->create([
+            'contractor_id' => $contractor->id,
+            'name' => 'Test Labour',
+            'trade' => 'Mason',
+        ]);
+
+        $onePixelPng = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=';
+
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer mobile-token',
+        ])->postJson('/api/labour/attendances', [
+            'labour_site_id' => $site->id,
+            'contractor_id' => $contractor->id,
+            'labour_id' => $labour->id,
+            'attendance_date' => '2026-05-28',
+            'status' => 'present',
+            'work_hours' => 8,
+            'photo' => $onePixelPng,
+        ]);
+
+        $attendance = LabourAttendance::query()->first();
+
+        $response->assertCreated()
+            ->assertJsonPath('labour_attendance.photo_url', fn ($value) => is_string($value) && str_contains($value, '/api/labour/attendances/'));
+
+        $this->assertNotNull($attendance);
+        $this->assertNotNull($attendance->photo_path);
+        Storage::disk('public')->assertExists($attendance->photo_path);
+    }
 }
