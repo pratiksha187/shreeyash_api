@@ -18,9 +18,9 @@ class PaymentSlipPdfService
         $content .= $this->pdfRect(35, 730, 525, 9, true);
 
         $content .= $this->pdfCompanyLogo(62, 748);
-        $content .= $this->pdfCenteredText('Shreeyash Construction', 315, 782, 20, 'F2', [0.20, 0.20, 0.20]);
-        $content .= $this->pdfCenteredText('Khopoli, Tal- Khalapur, Dist - Raigad', 315, 762, 11, 'F2', [0.28, 0.28, 0.28]);
-        $content .= $this->pdfCenteredText('Contact No. 9923299301 / 9326216153', 315, 746, 11, 'F2', [0.28, 0.28, 0.28]);
+        $content .= $this->pdfCenteredText('Shreeyash Construction', 307, 782, 20, 'F2', [0.20, 0.20, 0.20]);
+        $content .= $this->pdfCenteredText('Khopoli, Tal- Khalapur, Dist - Raigad', 307, 762, 11, 'F2', [0.28, 0.28, 0.28]);
+        $content .= $this->pdfCenteredText('Contact No. 9923299301 / 9326216153', 307, 746, 11, 'F2', [0.28, 0.28, 0.28]);
 
         $content .= $this->pdfFillColor(0.30, 0.30, 0.30);
         $content .= $this->pdfRect(220, 705, 155, 28, true);
@@ -28,24 +28,28 @@ class PaymentSlipPdfService
         $content .= $this->pdfRect(220, 705, 155, 5, true);
         $content .= $this->pdfCenteredText('SALARY SLIP', 297.5, 715, 15, 'F2', [1, 1, 1]);
 
-        $content .= $this->pdfSectionTitle('Employee Details', 50, 680, 495);
-        $y = $this->pdfTable($content, 50, 656, [120, 160, 100, 115], [
+        $sectionY = 676;
+        $content .= $this->pdfSectionTitle('Employee Details', 50, $sectionY, 495);
+        $y = $this->pdfTable($content, 50, $sectionY - 28, [120, 160, 100, 115], [
             ['Employee Name', $user->name, 'Mobile', $user->mobile ?? '-'],
             ['Designation', $user->designation ?? '-', 'Employee ID', (string) $user->id],
             ['Period From', $payment->from_date->format('d M Y'), 'Period To', $payment->to_date->format('d M Y')],
         ], 24, 10, [0, 2]);
 
-        $content .= $this->pdfSectionTitle('Attendance Summary', 50, $y - 16, 495);
-        $y = $this->pdfTable($content, 50, $y - 40, [165, 82, 165, 83], [
+        $sectionY = $y - 32;
+        $content .= $this->pdfSectionTitle('Attendance Summary', 50, $sectionY, 495);
+        $y = $this->pdfTable($content, 50, $sectionY - 28, [165, 82, 165, 83], [
             ['Paid Days', (string) $payment->present_days, 'Present Days', (string) $payment->present_days_in_month],
             ['Week Offs', (string) $payment->weekoff_count, 'Leaves', (string) $payment->leave_total],
             ['Half Days', (string) $payment->half_day_count, 'C.Offs', (string) $payment->c_off_count],
         ], 24, 10, [0, 2]);
 
-        $content .= $this->pdfSectionTitle('Earnings', 50, $y - 16, 245);
-        $content .= $this->pdfSectionTitle('Deductions', 315, $y - 16, 230);
+        $sectionY = $y - 32;
+        $content .= $this->pdfSectionTitle('Earnings', 50, $sectionY, 245);
+        $content .= $this->pdfSectionTitle('Deductions', 315, $sectionY, 230);
 
-        $earningsY = $this->pdfTable($content, 50, $y - 40, [145, 100], [
+        $tableY = $sectionY - 28;
+        $earningsY = $this->pdfTable($content, 50, $tableY, [145, 100], [
             ['Gross Salary', 'Rs. ' . number_format((float) $payment->gross_salary, 2)],
             ['Per Day Rate', 'Rs. ' . number_format((float) $payment->per_day_rate, 2)],
             ['Basic 60%', 'Rs. ' . number_format((float) $payment->basic_60, 2)],
@@ -54,14 +58,14 @@ class PaymentSlipPdfService
             ['Other Allowance', 'Rs. ' . number_format((float) $payment->other_allowance, 2)],
             ['Gross Payable', 'Rs. ' . number_format((float) $payment->gross_payable, 2)],
         ], 24, 10, [0]);
-        $deductionsY = $this->pdfTable($content, 315, $y - 40, [130, 100], [
+        $deductionsY = $this->pdfTable($content, 315, $tableY, [130, 100], [
             ['PF', 'Rs. ' . number_format((float) $payment->pf_12, 2)],
             ['Insurance', 'Rs. ' . number_format((float) $payment->insurance, 2)],
             ['PT', 'Rs. ' . number_format((float) $payment->pt, 2)],
             ['Advance', 'Rs. ' . number_format((float) $payment->advance, 2)],
             ['Total Deduction', 'Rs. ' . number_format((float) $payment->total_deduction, 2)],
         ], 24, 10, [0]);
-        $y = min($earningsY, $deductionsY) - 28;
+        $y = min($earningsY, $deductionsY) - 38;
 
         $content .= $this->pdfFillColor(0.96, 0.91, 0.76);
         $content .= $this->pdfRect(50, $y - 30, 495, 34, true);
