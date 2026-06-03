@@ -68,12 +68,17 @@ class VehicleController extends Controller
                 ->first();
         }
 
-        $calendarRows = $this->buildCalendarRows($monthStart, $monthEnd, $logsByDate);
+        $calendarRows = $this->buildCalendarRows($vehicle, $monthStart, $monthEnd, $logsByDate);
         $totalKm = $calendarRows->sum('total_km');
         $dieselTotal = $calendarRows->sum('diesel_added');
+        $totalDutyMinutes = $calendarRows->sum('total_minutes');
+        $totalHireHours = $calendarRows->sum('hire_hours');
+        $hireTotalAmount = $calendarRows->sum('hire_amount');
         $totalOtMinutes = $calendarRows->sum('ot_minutes');
         $totalOtAmount = round(($totalOtMinutes / 60) * (float) $vehicle->ot_rate, 2);
-        $totalBillingAmount = (float) $vehicle->fixed_monthly_amount + $totalOtAmount;
+        $grossBillingAmount = (float) $vehicle->fixed_monthly_amount + $hireTotalAmount + (float) $vehicle->extra_sunday_paid_amount + $totalOtAmount;
+        $gstAmount = round($grossBillingAmount * ((float) $vehicle->gst_percentage / 100), 2);
+        $totalBillingAmount = $grossBillingAmount + $gstAmount;
         $tdsAmount = round($totalBillingAmount * ((float) $vehicle->tds_percentage / 100), 2);
         $openingReadingRow = $calendarRows->firstWhere('has_start_reading', true);
         $closingReadingRow = $calendarRows->where('has_end_reading', true)->last();
@@ -90,6 +95,10 @@ class VehicleController extends Controller
                 'inside' => $vehicleLogs->whereNull('out_at')->count(),
                 'days_with_entries' => $logsByDate->count(),
                 'total_km' => $totalKm,
+                'total_duty_minutes' => $totalDutyMinutes,
+                'total_duty_hours' => $this->formatMinutes($totalDutyMinutes),
+                'total_hire_hours' => $totalHireHours,
+                'hire_total_amount' => $hireTotalAmount,
                 'total_ot_minutes' => $totalOtMinutes,
             ],
             'billingSummary' => [
@@ -99,10 +108,19 @@ class VehicleController extends Controller
                 'diesel_total' => $dieselTotal,
                 'average' => $dieselTotal > 0 ? $totalKm / $dieselTotal : 0,
                 'fixed_monthly_amount' => (float) $vehicle->fixed_monthly_amount,
+                'hire_per_day_rate' => (float) $vehicle->hire_per_day_rate,
+                'hire_per_hour_rate' => (float) $vehicle->hire_per_hour_rate,
+                'total_duty_hours' => $this->formatMinutes($totalDutyMinutes),
+                'total_hire_hours' => $totalHireHours,
+                'hire_total_amount' => $hireTotalAmount,
+                'extra_sunday_paid_amount' => (float) $vehicle->extra_sunday_paid_amount,
                 'ot_minutes' => $totalOtMinutes,
                 'ot_hours' => $this->formatMinutes($totalOtMinutes),
                 'ot_rate' => (float) $vehicle->ot_rate,
                 'total_ot_amount' => $totalOtAmount,
+                'gross_billing_amount' => $grossBillingAmount,
+                'gst_percentage' => (float) $vehicle->gst_percentage,
+                'gst_amount' => $gstAmount,
                 'total_billing_amount' => $totalBillingAmount,
                 'tds_percentage' => (float) $vehicle->tds_percentage,
                 'tds_amount' => $tdsAmount,
@@ -127,11 +145,11 @@ class VehicleController extends Controller
             ->with('success', 'Vehicle details updated successfully.');
     }
 
-    private function buildCalendarRows(Carbon $monthStart, Carbon $monthEnd, $logsByDate)
+    private function buildCalendarRows(Vehicle $vehicle, Carbon $monthStart, Carbon $monthEnd, $logsByDate)
     {
         return collect(CarbonPeriod::create($monthStart, $monthEnd))
             ->values()
-            ->map(function (Carbon $date, int $index) use ($logsByDate) {
+            ->map(function (Carbon $date, int $index) use ($logsByDate, $vehicle) {
                 $dateString = $date->toDateString();
                 $logs = $logsByDate->get($dateString, collect())->values();
                 $firstLog = $logs->first();
@@ -151,6 +169,8 @@ class VehicleController extends Controller
 
                     return $this->minutesForLog($log);
                 });
+                $hireHours = round($totalMinutes / 60, 2);
+                $hireAmount = round($hireHours * (float) $vehicle->hire_per_hour_rate, 2);
                 $parsedOtMinutes = (int) $logs->sum(fn ($log) => $this->minutesFromRemarks($log->remarks, 'OT Hrs'));
                 $otMinutes = $parsedOtMinutes > 0 ? $parsedOtMinutes : max(0, $totalMinutes - 720);
                 $remarks = $logs
@@ -166,6 +186,7 @@ class VehicleController extends Controller
                     'date' => $date->copy(),
                     'day' => $date->format('D'),
                     'challan_no' => $logs->pluck('challan_no')->filter()->unique()->implode(', '),
+                    'site_name' => $logs->pluck('site_name')->filter()->unique()->implode(', '),
                     'diesel_added' => (float) $logs->sum(fn ($log) => (float) $log->diesel_added),
                     'start_reading' => $startReading,
                     'end_reading' => $endReading,
@@ -178,6 +199,8 @@ class VehicleController extends Controller
                     'out_time_value' => $lastOutLog?->out_at?->format('H:i'),
                     'total_minutes' => $totalMinutes,
                     'total_hours' => $this->formatMinutes($totalMinutes),
+                    'hire_hours' => $hireHours,
+                    'hire_amount' => $hireAmount,
                     'ot_minutes' => $otMinutes,
                     'ot_hours' => $this->formatMinutes($otMinutes),
                     'remarks' => $remarks,
@@ -249,16 +272,25 @@ class VehicleController extends Controller
             'owner_name' => ['nullable', 'string', 'max:255'],
             'driver_name' => ['nullable', 'string', 'max:255'],
             'driver_mobile' => ['nullable', 'string', 'max:20'],
+            'default_site' => ['nullable', 'string', 'max:255'],
             'fixed_monthly_amount' => ['nullable', 'numeric', 'min:0', 'max:9999999999.99'],
             'ot_rate' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
+            'hire_per_day_rate' => ['nullable', 'numeric', 'min:0', 'max:9999999999.99'],
+            'hire_per_hour_rate' => ['nullable', 'numeric', 'min:0', 'max:9999999999.99'],
             'tds_percentage' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'gst_percentage' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'extra_sunday_paid_amount' => ['nullable', 'numeric', 'min:0', 'max:9999999999.99'],
             'remarks' => ['nullable', 'string', 'max:500'],
         ]);
 
         $data['vehicle_number'] = strtoupper($data['vehicle_number']);
         $data['fixed_monthly_amount'] = $data['fixed_monthly_amount'] ?? 0;
         $data['ot_rate'] = $data['ot_rate'] ?? 0;
+        $data['hire_per_day_rate'] = $data['hire_per_day_rate'] ?? 0;
+        $data['hire_per_hour_rate'] = $data['hire_per_hour_rate'] ?? 0;
         $data['tds_percentage'] = $data['tds_percentage'] ?? 1;
+        $data['gst_percentage'] = $data['gst_percentage'] ?? 18;
+        $data['extra_sunday_paid_amount'] = $data['extra_sunday_paid_amount'] ?? 0;
 
         return $data;
     }

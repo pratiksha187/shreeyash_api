@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class DailyDieselPurchase extends Model
 {
@@ -33,5 +34,10 @@ class DailyDieselPurchase extends Model
             'khalapur_today_supply' => 'decimal:2',
             'khalapur_used' => 'decimal:2',
         ];
+    }
+
+    public function siteEntries(): HasMany
+    {
+        return $this->hasMany(DailyDieselPurchaseSiteEntry::class);
     }
 }

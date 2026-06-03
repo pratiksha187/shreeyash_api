@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Models\DailyDieselPurchase;
+use App\Models\DailyDieselPurchaseSiteEntry;
+use App\Models\LabourSite;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -17,13 +19,17 @@ class DailyDieselPurchasePageTest extends TestCase
             'admin_email' => 'admin@example.com',
             'admin_permissions' => ['diesel_purchases'],
         ];
+        $khanav = LabourSite::query()->create(['name' => 'Khanav']);
+        $khalapur = LabourSite::query()->create(['name' => 'Khalapur']);
+        $panvel = LabourSite::query()->create(['name' => 'Panvel']);
 
         $this->withSession($session)
             ->get('/admin/diesel-purchases?month=2026-05')
             ->assertOk()
             ->assertSee('May Daily Diesel Purchase')
             ->assertSee('Khanav')
-            ->assertSee('Khalapur');
+            ->assertSee('Khalapur')
+            ->assertSee('Panvel');
 
         $this->withSession($session)
             ->post('/admin/diesel-purchases/monthly-entries', [
@@ -35,12 +41,26 @@ class DailyDieselPurchasePageTest extends TestCase
                         'campar' => '15',
                         'diesel_ltr' => '130',
                         'rate' => '90.59',
-                        'khanav_opening_balance' => '50',
-                        'khanav_today_supply' => '80',
-                        'khanav_used' => '80',
-                        'khalapur_opening_balance' => '20',
-                        'khalapur_today_supply' => '50',
-                        'khalapur_used' => '50',
+                        'sites' => [
+                            $khanav->id => [
+                                'labour_site_id' => $khanav->id,
+                                'opening_balance' => '50',
+                                'today_supply' => '80',
+                                'used' => '80',
+                            ],
+                            $khalapur->id => [
+                                'labour_site_id' => $khalapur->id,
+                                'opening_balance' => '20',
+                                'today_supply' => '50',
+                                'used' => '50',
+                            ],
+                            $panvel->id => [
+                                'labour_site_id' => $panvel->id,
+                                'opening_balance' => '10',
+                                'today_supply' => '25',
+                                'used' => '5',
+                            ],
+                        ],
                     ],
                 ],
             ])
@@ -54,6 +74,14 @@ class DailyDieselPurchasePageTest extends TestCase
 
         $entry = DailyDieselPurchase::query()->whereDate('entry_date', '2026-05-02')->first();
         $this->assertSame('130.00', $entry->diesel_ltr);
+        $this->assertDatabaseHas('daily_diesel_purchase_site_entries', [
+            'daily_diesel_purchase_id' => $entry->id,
+            'labour_site_id' => $panvel->id,
+            'opening_balance' => '10.00',
+            'today_supply' => '25.00',
+            'used' => '5.00',
+        ]);
+        $this->assertSame(3, DailyDieselPurchaseSiteEntry::query()->where('daily_diesel_purchase_id', $entry->id)->count());
 
         $this->withSession($session)
             ->get('/admin/diesel-purchases?month=2026-05')

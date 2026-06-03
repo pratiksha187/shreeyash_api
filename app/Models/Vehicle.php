@@ -16,9 +16,14 @@ class Vehicle extends Model
         'owner_name',
         'driver_name',
         'driver_mobile',
+        'default_site',
         'fixed_monthly_amount',
         'ot_rate',
+        'hire_per_day_rate',
+        'hire_per_hour_rate',
         'tds_percentage',
+        'gst_percentage',
+        'extra_sunday_paid_amount',
         'remarks',
     ];
 
@@ -27,7 +32,11 @@ class Vehicle extends Model
         return [
             'fixed_monthly_amount' => 'decimal:2',
             'ot_rate' => 'decimal:2',
+            'hire_per_day_rate' => 'decimal:2',
+            'hire_per_hour_rate' => 'decimal:2',
             'tds_percentage' => 'decimal:2',
+            'gst_percentage' => 'decimal:2',
+            'extra_sunday_paid_amount' => 'decimal:2',
         ];
     }
 

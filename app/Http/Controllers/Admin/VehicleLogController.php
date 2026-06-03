@@ -20,6 +20,7 @@ class VehicleLogController extends Controller
             'entries.*.log_id' => ['nullable', 'integer'],
             'entries.*.entry_date' => ['required', 'date'],
             'entries.*.challan_no' => ['nullable', 'string', 'max:100'],
+            'entries.*.site_name' => ['nullable', 'string', 'max:255'],
             'entries.*.diesel_added' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
             'entries.*.start_reading' => ['nullable', 'numeric', 'min:0', 'max:9999999999.99'],
             'entries.*.end_reading' => ['nullable', 'numeric', 'min:0', 'max:9999999999.99'],
@@ -92,6 +93,7 @@ class VehicleLogController extends Controller
             'driver_name' => ['nullable', 'string', 'max:255'],
             'driver_mobile' => ['nullable', 'string', 'max:20'],
             'challan_no' => ['nullable', 'string', 'max:100'],
+            'site_name' => ['nullable', 'string', 'max:255'],
             'diesel_added' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
             'start_reading' => ['nullable', 'numeric', 'min:0', 'max:9999999999.99'],
             'end_reading' => ['nullable', 'numeric', 'min:0', 'max:9999999999.99'],
@@ -114,6 +116,7 @@ class VehicleLogController extends Controller
         $data['vehicle_type'] = $vehicle->vehicle_type;
         $data['driver_name'] = $data['driver_name'] ?: $vehicle->driver_name;
         $data['driver_mobile'] = $data['driver_mobile'] ?: $vehicle->driver_mobile;
+        $data['site_name'] = ($data['site_name'] ?? null) ?: $vehicle->default_site;
         $data['diesel_added'] = $data['diesel_added'] ?? 0;
         $data['start_reading'] = $data['start_reading'] ?? 0;
         $data['end_reading'] = $data['end_reading'] ?? 0;
@@ -167,6 +170,7 @@ class VehicleLogController extends Controller
             'driver_name' => $vehicle->driver_name,
             'driver_mobile' => $vehicle->driver_mobile,
             'challan_no' => $entry['challan_no'] ?? null,
+            'site_name' => filled($entry['site_name'] ?? null) ? $entry['site_name'] : $vehicle->default_site,
             'diesel_added' => $entry['diesel_added'] ?? 0,
             'start_reading' => $entry['start_reading'] ?? 0,
             'end_reading' => $entry['end_reading'] ?? 0,
@@ -189,7 +193,7 @@ class VehicleLogController extends Controller
      */
     private function monthlyEntryHasData(array $entry): bool
     {
-        foreach (['challan_no', 'in_time', 'out_time', 'remarks'] as $field) {
+        foreach (['challan_no', 'site_name', 'in_time', 'out_time', 'remarks'] as $field) {
             if (filled($entry[$field] ?? null)) {
                 return true;
             }

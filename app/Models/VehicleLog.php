@@ -18,6 +18,7 @@ class VehicleLog extends Model
         'driver_name',
         'driver_mobile',
         'challan_no',
+        'site_name',
         'diesel_added',
         'start_reading',
         'end_reading',

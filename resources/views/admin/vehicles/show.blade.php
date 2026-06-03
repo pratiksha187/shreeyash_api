@@ -42,12 +42,28 @@
             <strong>{{ $vehicle->driver_mobile ?? '-' }}</strong>
         </div>
         <div class="card detail-item">
+            <span>Default Site</span>
+            <strong>{{ $vehicle->default_site ?? '-' }}</strong>
+        </div>
+        <div class="card detail-item">
             <span>Fixed Amount</span>
             <strong>{{ number_format((float) $vehicle->fixed_monthly_amount, 2) }}</strong>
         </div>
         <div class="card detail-item">
             <span>OT Rate</span>
             <strong>{{ number_format((float) $vehicle->ot_rate, 2) }}</strong>
+        </div>
+        <div class="card detail-item">
+            <span>Per Day Rate</span>
+            <strong>{{ number_format((float) $vehicle->hire_per_day_rate, 2) }}</strong>
+        </div>
+        <div class="card detail-item">
+            <span>Per Hour Rate</span>
+            <strong>{{ number_format((float) $vehicle->hire_per_hour_rate, 2) }}</strong>
+        </div>
+        <div class="card detail-item">
+            <span>GST</span>
+            <strong>{{ number_format((float) $vehicle->gst_percentage, 2) }}%</strong>
         </div>
         <div class="card detail-item">
             <span>TDS</span>
@@ -84,8 +100,12 @@
             <strong>{{ number_format($summary['total_km'], 0) }}</strong>
         </div>
         <div class="card stat-card">
-            <span>OT Hrs</span>
-            <strong>{{ $billingSummary['ot_hours'] }}</strong>
+            <span>Duty Hrs</span>
+            <strong>{{ $billingSummary['total_duty_hours'] }}</strong>
+        </div>
+        <div class="card stat-card">
+            <span>Hire Amount</span>
+            <strong>{{ number_format($billingSummary['hire_total_amount'], 2) }}</strong>
         </div>
         <div class="card stat-card">
             <span>Net Payable</span>
@@ -96,11 +116,11 @@
     <div class="page-header">
         <div>
             <h1>{{ $monthLabel }} Vehicle Sheet</h1>
-            <p>Daily readings, time, OT, diesel, and billing totals are calculated automatically.</p>
+            <p>Daily duty hours, hourly amount, site, diesel, and bill totals are calculated automatically.</p>
         </div>
     </div>
 
-    <form id="monthly-entry-form" class="card table-wrap" method="POST" action="{{ route('admin.vehicles.logs.monthly', $vehicle) }}">
+    <form id="monthly-entry-form" class="card table-wrap" method="POST" action="{{ route('admin.vehicles.logs.monthly', $vehicle) }}" data-hour-rate="{{ (float) $vehicle->hire_per_hour_rate }}">
         @csrf
         <input name="month" type="hidden" value="{{ $selectedMonth }}">
 
@@ -111,6 +131,7 @@
                     <th>Date</th>
                     <th>Day</th>
                     <th>Challan No</th>
+                    <th>Vehicle Number</th>
                     <th>Diesel Added</th>
                     <th>Start Reading</th>
                     <th>End Reading</th>
@@ -118,6 +139,11 @@
                     <th>In Time</th>
                     <th>Out Time</th>
                     <th>Total Hrs</th>
+                    <th>Value By Total Hrs</th>
+                    <th>Per Day Rate</th>
+                    <th>Per Hour Rate</th>
+                    <th>Amount</th>
+                    <th>Site</th>
                     <th>OT Hrs</th>
                     <th>Remark</th>
                 </tr>
@@ -138,6 +164,7 @@
                         <td>
                             <input name="entries[{{ $entryKey }}][challan_no]" type="text" value="{{ $row['challan_no'] }}">
                         </td>
+                        <td>{{ $vehicle->vehicle_number }}</td>
                         <td>
                             <input class="sheet-number" name="entries[{{ $entryKey }}][diesel_added]" type="number" min="0" step="0.01" value="{{ number_format($row['diesel_added'], 2, '.', '') }}">
                         </td>
@@ -158,6 +185,21 @@
                         </td>
                         <td>
                             <input class="js-total-hrs" type="text" value="{{ $row['total_hours'] }}" readonly>
+                        </td>
+                        <td>
+                            <input class="sheet-number js-hire-hours" type="number" value="{{ number_format($row['hire_hours'], 2, '.', '') }}" readonly>
+                        </td>
+                        <td>
+                            <input class="sheet-number" type="number" value="{{ number_format($billingSummary['hire_per_day_rate'], 2, '.', '') }}" readonly>
+                        </td>
+                        <td>
+                            <input class="sheet-number js-hour-rate" type="number" value="{{ number_format($billingSummary['hire_per_hour_rate'], 2, '.', '') }}" readonly>
+                        </td>
+                        <td>
+                            <input class="sheet-number js-hire-amount" type="number" value="{{ number_format($row['hire_amount'], 2, '.', '') }}" readonly>
+                        </td>
+                        <td>
+                            <input name="entries[{{ $entryKey }}][site_name]" type="text" value="{{ $row['site_name'] ?: $vehicle->default_site }}">
                         </td>
                         <td>
                             <input class="js-ot-hrs" type="text" value="{{ $row['ot_hours'] }}" readonly>
@@ -212,6 +254,30 @@
                         <td>{{ number_format($billingSummary['fixed_monthly_amount'], 2) }}</td>
                     </tr>
                     <tr>
+                        <th>Duty Hrs</th>
+                        <td>{{ $billingSummary['total_duty_hours'] }}</td>
+                    </tr>
+                    <tr>
+                        <th>Value By Total Hrs</th>
+                        <td>{{ number_format($billingSummary['total_hire_hours'], 2) }}</td>
+                    </tr>
+                    <tr>
+                        <th>Per Day Rate</th>
+                        <td>{{ number_format($billingSummary['hire_per_day_rate'], 2) }}</td>
+                    </tr>
+                    <tr>
+                        <th>Per Hour Rate</th>
+                        <td>{{ number_format($billingSummary['hire_per_hour_rate'], 2) }}</td>
+                    </tr>
+                    <tr>
+                        <th>Total</th>
+                        <td>{{ number_format($billingSummary['hire_total_amount'], 2) }}</td>
+                    </tr>
+                    <tr>
+                        <th>Extra Sunday Paid</th>
+                        <td>{{ number_format($billingSummary['extra_sunday_paid_amount'], 2) }}</td>
+                    </tr>
+                    <tr>
                         <th>OT Hrs</th>
                         <td>{{ $billingSummary['ot_hours'] }}</td>
                     </tr>
@@ -224,7 +290,15 @@
                         <td>{{ number_format($billingSummary['total_ot_amount'], 2) }}</td>
                     </tr>
                     <tr>
-                        <th>Total Billing Amount</th>
+                        <th>Gross Billing Amount</th>
+                        <td>{{ number_format($billingSummary['gross_billing_amount'], 2) }}</td>
+                    </tr>
+                    <tr>
+                        <th>{{ number_format($billingSummary['gst_percentage'], 2) }}% GST</th>
+                        <td>{{ number_format($billingSummary['gst_amount'], 2) }}</td>
+                    </tr>
+                    <tr>
+                        <th>Billing Amount With GST</th>
                         <td>{{ number_format($billingSummary['total_billing_amount'], 2) }}</td>
                     </tr>
                     <tr>
@@ -241,6 +315,9 @@
     </div>
 
     <script>
+        const monthlyEntryForm = document.getElementById('monthly-entry-form');
+        const defaultHourRate = parseFloat(monthlyEntryForm?.dataset.hourRate || 0);
+
         document.querySelectorAll('[data-entry-row]').forEach((row) => {
             const startReading = row.querySelector('.js-start-reading');
             const endReading = row.querySelector('.js-end-reading');
@@ -248,6 +325,9 @@
             const inTime = row.querySelector('.js-in-time');
             const outTime = row.querySelector('.js-out-time');
             const totalHrs = row.querySelector('.js-total-hrs');
+            const hireHours = row.querySelector('.js-hire-hours');
+            const hourRate = row.querySelector('.js-hour-rate');
+            const hireAmount = row.querySelector('.js-hire-amount');
             const otHrs = row.querySelector('.js-ot-hrs');
 
             const formatMinutes = (minutes) => {
@@ -277,6 +357,8 @@
 
                 if (startMinutes === null || endMinutes === null) {
                     totalHrs.value = '00:00';
+                    hireHours.value = '0.00';
+                    hireAmount.value = '0.00';
                     otHrs.value = '00:00';
                     return;
                 }
@@ -286,7 +368,11 @@
                 }
 
                 const totalMinutes = Math.max(0, endMinutes - startMinutes);
+                const totalHireHours = totalMinutes / 60;
+                const effectiveHourRate = parseFloat(hourRate.value || defaultHourRate || 0);
                 totalHrs.value = formatMinutes(totalMinutes);
+                hireHours.value = totalHireHours.toFixed(2);
+                hireAmount.value = (totalHireHours * effectiveHourRate).toFixed(2);
                 otHrs.value = formatMinutes(Math.max(0, totalMinutes - 720));
             };
 

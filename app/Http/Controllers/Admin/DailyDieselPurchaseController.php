@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\DailyDieselPurchase;
+use App\Models\LabourSite;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Illuminate\Http\RedirectResponse;
@@ -21,23 +22,32 @@ class DailyDieselPurchaseController extends Controller
         $selectedMonth = $filters['month'] ?? now()->format('Y-m');
         $monthStart = Carbon::createFromFormat('Y-m', $selectedMonth)->startOfMonth();
         $monthEnd = $monthStart->copy()->endOfMonth();
+        $sites = LabourSite::query()
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get(['id', 'name']);
         $entries = DailyDieselPurchase::query()
+            ->with('siteEntries')
             ->whereBetween('entry_date', [$monthStart->toDateString(), $monthEnd->toDateString()])
             ->get()
             ->keyBy(fn (DailyDieselPurchase $entry) => $entry->entry_date->toDateString());
-        $rows = $this->buildRows($monthStart, $monthEnd, $entries);
+        $rows = $this->buildRows($monthStart, $monthEnd, $entries, $sites);
 
         return view('admin.diesel-purchases.index', [
             'selectedMonth' => $selectedMonth,
             'monthLabel' => $monthStart->format('M'),
+            'sites' => $sites,
             'rows' => $rows,
             'summary' => [
                 'diesel_ltr' => $rows->sum('diesel_ltr'),
                 'amount' => $rows->sum('amount'),
-                'khanav_supply' => $rows->sum('khanav_today_supply'),
-                'khalapur_supply' => $rows->sum('khalapur_today_supply'),
-                'khanav_used' => $rows->sum('khanav_used'),
-                'khalapur_used' => $rows->sum('khalapur_used'),
+                'sites' => $sites->mapWithKeys(fn (LabourSite $site) => [
+                    $site->id => [
+                        'name' => $site->name,
+                        'today_supply' => $rows->sum(fn (array $row) => $row['sites'][$site->id]['today_supply'] ?? 0),
+                        'used' => $rows->sum(fn (array $row) => $row['sites'][$site->id]['used'] ?? 0),
+                    ],
+                ]),
             ],
         ]);
     }
@@ -52,12 +62,11 @@ class DailyDieselPurchaseController extends Controller
             'entries.*.campar' => ['nullable', 'string', 'max:100'],
             'entries.*.diesel_ltr' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
             'entries.*.rate' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
-            'entries.*.khanav_opening_balance' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
-            'entries.*.khanav_today_supply' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
-            'entries.*.khanav_used' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
-            'entries.*.khalapur_opening_balance' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
-            'entries.*.khalapur_today_supply' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
-            'entries.*.khalapur_used' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
+            'entries.*.sites' => ['nullable', 'array'],
+            'entries.*.sites.*.labour_site_id' => ['required', 'exists:labour_sites,id'],
+            'entries.*.sites.*.opening_balance' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
+            'entries.*.sites.*.today_supply' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
+            'entries.*.sites.*.used' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
         ]);
 
         foreach ($data['entries'] as $entry) {
@@ -69,34 +78,41 @@ class DailyDieselPurchaseController extends Controller
             ->with('success', 'Daily diesel purchase sheet saved successfully.');
     }
 
-    private function buildRows(Carbon $monthStart, Carbon $monthEnd, $entries)
+    private function buildRows(Carbon $monthStart, Carbon $monthEnd, $entries, $sites)
     {
-        $khanavCarry = 0.0;
-        $khalapurCarry = 0.0;
+        $siteCarry = $sites->mapWithKeys(fn (LabourSite $site) => [$site->id => 0.0])->all();
 
         return collect(CarbonPeriod::create($monthStart, $monthEnd))
             ->values()
-            ->map(function (Carbon $date, int $index) use ($entries, &$khanavCarry, &$khalapurCarry) {
+            ->map(function (Carbon $date, int $index) use ($entries, $sites, &$siteCarry) {
                 $entry = $entries->get($date->toDateString());
                 $dieselLtr = (float) ($entry?->diesel_ltr ?? 0);
                 $rate = (float) ($entry?->rate ?? 0);
-                $khanavOpening = $entry && $entry->khanav_opening_balance !== null
-                    ? (float) $entry->khanav_opening_balance
-                    : $khanavCarry;
-                $khanavSupply = (float) ($entry?->khanav_today_supply ?? 0);
-                $khanavUsed = (float) ($entry?->khanav_used ?? 0);
-                $khanavTotal = $khanavOpening + $khanavSupply;
-                $khanavBalance = max(0, $khanavTotal - $khanavUsed);
-                $khalapurOpening = $entry && $entry->khalapur_opening_balance !== null
-                    ? (float) $entry->khalapur_opening_balance
-                    : $khalapurCarry;
-                $khalapurSupply = (float) ($entry?->khalapur_today_supply ?? 0);
-                $khalapurUsed = (float) ($entry?->khalapur_used ?? 0);
-                $khalapurTotal = $khalapurOpening + $khalapurSupply;
-                $khalapurBalance = max(0, $khalapurTotal - $khalapurUsed);
+                $siteEntries = $entry?->siteEntries?->keyBy('labour_site_id') ?? collect();
+                $siteRows = [];
 
-                $khanavCarry = $khanavBalance;
-                $khalapurCarry = $khalapurBalance;
+                foreach ($sites as $site) {
+                    $siteEntry = $siteEntries->get($site->id);
+                    $opening = $siteEntry && $siteEntry->opening_balance !== null
+                        ? (float) $siteEntry->opening_balance
+                        : ($siteCarry[$site->id] ?? 0.0);
+                    $supply = (float) ($siteEntry?->today_supply ?? 0);
+                    $used = (float) ($siteEntry?->used ?? 0);
+                    $total = $opening + $supply;
+                    $balance = max(0, $total - $used);
+
+                    $siteCarry[$site->id] = $balance;
+                    $siteRows[$site->id] = [
+                        'id' => $site->id,
+                        'name' => $site->name,
+                        'opening_balance' => $opening,
+                        'opening_is_manual' => $siteEntry && $siteEntry->opening_balance !== null,
+                        'today_supply' => $supply,
+                        'total' => $total,
+                        'used' => $used,
+                        'balance' => $balance,
+                    ];
+                }
 
                 return [
                     'sr_no' => $index + 1,
@@ -107,18 +123,7 @@ class DailyDieselPurchaseController extends Controller
                     'diesel_ltr' => $dieselLtr,
                     'rate' => $rate,
                     'amount' => round($dieselLtr * $rate),
-                    'khanav_opening_balance' => $khanavOpening,
-                    'khanav_opening_is_manual' => $entry && $entry->khanav_opening_balance !== null,
-                    'khanav_today_supply' => $khanavSupply,
-                    'khanav_total' => $khanavTotal,
-                    'khanav_used' => $khanavUsed,
-                    'khanav_balance' => $khanavBalance,
-                    'khalapur_opening_balance' => $khalapurOpening,
-                    'khalapur_opening_is_manual' => $entry && $entry->khalapur_opening_balance !== null,
-                    'khalapur_today_supply' => $khalapurSupply,
-                    'khalapur_total' => $khalapurTotal,
-                    'khalapur_used' => $khalapurUsed,
-                    'khalapur_balance' => $khalapurBalance,
+                    'sites' => $siteRows,
                 ];
             });
     }
@@ -134,21 +139,30 @@ class DailyDieselPurchaseController extends Controller
             return;
         }
 
-        DailyDieselPurchase::query()->updateOrCreate(
+        $purchase = DailyDieselPurchase::query()->updateOrCreate(
             ['entry_date' => $entryDate],
             [
                 'challan_no' => $entry['challan_no'] ?? null,
                 'campar' => $entry['campar'] ?? null,
                 'diesel_ltr' => $entry['diesel_ltr'] ?? 0,
                 'rate' => $entry['rate'] ?? 0,
-                'khanav_opening_balance' => $entry['khanav_opening_balance'] ?? null,
-                'khanav_today_supply' => $entry['khanav_today_supply'] ?? 0,
-                'khanav_used' => $entry['khanav_used'] ?? 0,
-                'khalapur_opening_balance' => $entry['khalapur_opening_balance'] ?? null,
-                'khalapur_today_supply' => $entry['khalapur_today_supply'] ?? 0,
-                'khalapur_used' => $entry['khalapur_used'] ?? 0,
             ]
         );
+
+        foreach ($entry['sites'] ?? [] as $siteEntry) {
+            if (! $this->siteEntryHasData($siteEntry)) {
+                continue;
+            }
+
+            $purchase->siteEntries()->updateOrCreate(
+                ['labour_site_id' => $siteEntry['labour_site_id']],
+                [
+                    'opening_balance' => $siteEntry['opening_balance'] ?? null,
+                    'today_supply' => $siteEntry['today_supply'] ?? 0,
+                    'used' => $siteEntry['used'] ?? 0,
+                ]
+            );
+        }
     }
 
     /**
@@ -165,14 +179,28 @@ class DailyDieselPurchaseController extends Controller
         foreach ([
             'diesel_ltr',
             'rate',
-            'khanav_opening_balance',
-            'khanav_today_supply',
-            'khanav_used',
-            'khalapur_opening_balance',
-            'khalapur_today_supply',
-            'khalapur_used',
         ] as $field) {
             if ((float) ($entry[$field] ?? 0) > 0) {
+                return true;
+            }
+        }
+
+        foreach ($entry['sites'] ?? [] as $siteEntry) {
+            if ($this->siteEntryHasData($siteEntry)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param array<string, mixed> $siteEntry
+     */
+    private function siteEntryHasData(array $siteEntry): bool
+    {
+        foreach (['opening_balance', 'today_supply', 'used'] as $field) {
+            if ((float) ($siteEntry[$field] ?? 0) > 0) {
                 return true;
             }
         }

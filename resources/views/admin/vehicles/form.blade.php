@@ -41,6 +41,14 @@
                 <div class="error">{{ $message }}</div>
             @enderror
         </div>
+
+        <div class="field">
+            <label for="default_site">Default Site</label>
+            <input id="default_site" name="default_site" type="text" value="{{ old('default_site', $vehicle?->default_site) }}" placeholder="Cluster 4">
+            @error('default_site')
+                <div class="error">{{ $message }}</div>
+            @enderror
+        </div>
     </div>
 </section>
 
@@ -65,9 +73,41 @@
         </div>
 
         <div class="field">
+            <label for="hire_per_day_rate">Per Day Rate</label>
+            <input id="hire_per_day_rate" name="hire_per_day_rate" type="number" min="0" step="0.01" value="{{ old('hire_per_day_rate', $vehicle?->hire_per_day_rate ?? 0) }}">
+            @error('hire_per_day_rate')
+                <div class="error">{{ $message }}</div>
+            @enderror
+        </div>
+
+        <div class="field">
+            <label for="hire_per_hour_rate">Per Hour Rate</label>
+            <input id="hire_per_hour_rate" name="hire_per_hour_rate" type="number" min="0" step="0.01" value="{{ old('hire_per_hour_rate', $vehicle?->hire_per_hour_rate ?? 0) }}">
+            @error('hire_per_hour_rate')
+                <div class="error">{{ $message }}</div>
+            @enderror
+        </div>
+
+        <div class="field">
             <label for="tds_percentage">TDS Percentage</label>
             <input id="tds_percentage" name="tds_percentage" type="number" min="0" max="100" step="0.01" value="{{ old('tds_percentage', $vehicle?->tds_percentage ?? 1) }}">
             @error('tds_percentage')
+                <div class="error">{{ $message }}</div>
+            @enderror
+        </div>
+
+        <div class="field">
+            <label for="gst_percentage">GST Percentage</label>
+            <input id="gst_percentage" name="gst_percentage" type="number" min="0" max="100" step="0.01" value="{{ old('gst_percentage', $vehicle?->gst_percentage ?? 18) }}">
+            @error('gst_percentage')
+                <div class="error">{{ $message }}</div>
+            @enderror
+        </div>
+
+        <div class="field">
+            <label for="extra_sunday_paid_amount">Extra Sunday Paid</label>
+            <input id="extra_sunday_paid_amount" name="extra_sunday_paid_amount" type="number" min="0" step="0.01" value="{{ old('extra_sunday_paid_amount', $vehicle?->extra_sunday_paid_amount ?? 0) }}">
+            @error('extra_sunday_paid_amount')
                 <div class="error">{{ $message }}</div>
             @enderror
         </div>

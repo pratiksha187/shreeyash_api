@@ -44,6 +44,14 @@
         </div>
 
         <div class="field">
+            <label for="site_name">Site</label>
+            <input id="site_name" name="site_name" type="text" value="{{ old('site_name', $vehicleLog?->site_name ?? $vehicle->default_site) }}">
+            @error('site_name')
+                <div class="error">{{ $message }}</div>
+            @enderror
+        </div>
+
+        <div class="field">
             <label for="diesel_added">Diesel Added</label>
             <input id="diesel_added" name="diesel_added" type="number" min="0" step="0.01" value="{{ old('diesel_added', $vehicleLog?->diesel_added ?? 0) }}">
             @error('diesel_added')
