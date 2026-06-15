@@ -5,10 +5,13 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Attendance;
 use App\Models\Location;
+use App\Support\Tenant;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 
@@ -180,9 +183,7 @@ class AttendanceController extends Controller
      */
     private function nearestLocation(float $latitude, float $longitude): ?array
     {
-        return Location::query()
-            ->forCurrentCompany()
-            ->get()
+        return $this->attendanceLocations()
             ->map(fn (Location $location) => [
                 'location' => $location,
                 'distance_meters' => $this->distanceInMeters(
@@ -194,6 +195,41 @@ class AttendanceController extends Controller
             ])
             ->sortBy('distance_meters')
             ->first();
+    }
+
+    /**
+     * @return Collection<int, Location>
+     */
+    private function attendanceLocations(): Collection
+    {
+        $tenant = app(Tenant::class);
+        $companyId = $tenant->id();
+        $locations = $this->locationsForAttendance(Location::query(), $companyId)->get();
+
+        if ($tenant->connectionName()) {
+            $centralLocations = $this->locationsForAttendance(
+                Location::on(config('database.default')),
+                $companyId
+            )->get();
+
+            $locations = $locations->concat($centralLocations);
+        }
+
+        return $locations
+            ->unique(fn (Location $location) => $location->getConnectionName().':'.$location->id)
+            ->values();
+    }
+
+    private function locationsForAttendance(Builder $query, ?int $companyId): Builder
+    {
+        if (! $companyId) {
+            return $query;
+        }
+
+        return $query->where(function ($query) use ($companyId) {
+            $query->where('company_id', $companyId)
+                ->orWhereNull('company_id');
+        });
     }
 
     private function distanceInMeters(float $fromLatitude, float $fromLongitude, float $toLatitude, float $toLongitude): float
