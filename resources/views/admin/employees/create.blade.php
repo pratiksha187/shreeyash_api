@@ -13,7 +13,7 @@
         <a class="btn secondary" href="{{ route('admin.employees.index') }}">Back to List</a>
     </div>
 
-    <form class="card form-card" method="POST" action="{{ route('admin.employees.store') }}" target="_blank">
+    <form class="card form-card" method="POST" action="{{ route('admin.employees.store') }}">
         @csrf
 
         <section class="form-section">

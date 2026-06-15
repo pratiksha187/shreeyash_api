@@ -131,8 +131,11 @@ class EmployeeController extends Controller
         $data['is_active'] = true;
 
         $employee = User::query()->create($data);
+        session()->put("employee_plain_passwords.{$employee->id}", $plainPassword);
 
-        return $this->redirectToWhatsapp($employee, $plainPassword);
+        return redirect()
+            ->route('admin.employees.index')
+            ->with('success', 'Employee added successfully. Click Open WhatsApp from the employee table to send credentials.');
     }
 
     public function sendCredentials(Request $request, int $employee): RedirectResponse
@@ -146,6 +149,12 @@ class EmployeeController extends Controller
 
         if (! $employee->mobile) {
             return back()->with('error', 'Employee mobile number is missing.');
+        }
+
+        $plainPassword = session()->pull("employee_plain_passwords.{$employee->id}");
+
+        if ($plainPassword) {
+            return $this->redirectToWhatsapp($employee, $plainPassword);
         }
 
         $plainPassword = Str::random(10);
