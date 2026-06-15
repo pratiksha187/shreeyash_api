@@ -84,6 +84,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/employees', [EmployeeController::class, 'index'])->name('employees.index');
         Route::get('/employees/create', [EmployeeController::class, 'create'])->name('employees.create');
         Route::post('/employees', [EmployeeController::class, 'store'])->name('employees.store');
+        Route::post('/employees/{employee}/send-credentials', [EmployeeController::class, 'sendCredentials'])->name('employees.send-credentials');
         Route::get('/employees/{employee}', [EmployeeController::class, 'show'])->name('employees.show');
     });
 });

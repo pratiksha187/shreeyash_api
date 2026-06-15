@@ -11,6 +11,7 @@ use App\Support\Tenant;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -131,21 +132,60 @@ class EmployeeController extends Controller
         $data['is_active'] = true;
 
         $employee = User::query()->create($data);
+
+        $this->sendEmployeeCredentials($employee, $plainPassword);
+
+        return redirect()
+            ->route('admin.employees.index')
+            ->with('success', 'Employee added successfully. Login details were sent on WhatsApp.');
+    }
+
+    public function sendCredentials(Request $request, int $employee): RedirectResponse
+    {
+        $this->ensureCompanyAdmin();
+
+        $employee = User::query()
+            ->forCurrentCompany()
+            ->employees()
+            ->findOrFail($employee);
+
+        if (! $employee->mobile) {
+            return back()->with('error', 'Employee mobile number is missing.');
+        }
+
+        $plainPassword = Str::random(10);
+        $oldPassword = $employee->password;
+
+        $employee->forceFill([
+            'password' => Hash::make($plainPassword),
+        ])->save();
+
+        $result = $this->sendEmployeeCredentials($employee, $plainPassword);
+
+        if (! ($result['sent'] ?? false)) {
+            $employee->forceFill([
+                'password' => $oldPassword,
+            ])->save();
+
+            return back()->with('error', 'WhatsApp message could not be sent. Password was not changed. Please check Twilio settings.');
+        }
+
+        return back()->with('success', "New login credentials sent to {$employee->name} on WhatsApp.");
+    }
+
+    private function sendEmployeeCredentials(User $employee, string $plainPassword): array
+    {
         $company = app(Tenant::class)->company();
 
-        app(WhatsappService::class)->sendTextNow(
+        return app(WhatsappService::class)->sendTextNow(
             $employee->mobile,
-            "Hello {$employee->name}, your ConstructKaro employee login has been created.\n"
+            "Hello {$employee->name}, your ConstructKaro employee login details are:\n"
             ."Company: {$company?->name}\n"
             ."Company Code: {$company?->slug}\n"
             ."Mobile: {$employee->mobile}\n"
             ."Password: {$plainPassword}\n"
             .'Please login from your own mobile device only.'
         );
-
-        return redirect()
-            ->route('admin.employees.index')
-            ->with('success', 'Employee added successfully. Login details were sent on WhatsApp.');
     }
 
     private function ensureCompanyAdmin(): void

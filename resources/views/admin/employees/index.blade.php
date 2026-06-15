@@ -28,6 +28,7 @@
                     <th>Designation</th>
                     <th>Join Date</th>
                     <th>Created</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -44,10 +45,16 @@
                         <td>{{ $employee->designation ?? '-' }}</td>
                         <td>{{ $employee->join_date?->format('d M Y') ?? '-' }}</td>
                         <td>{{ $employee->created_at?->format('d M Y') }}</td>
+                        <td>
+                            <form method="POST" action="{{ route('admin.employees.send-credentials', $employee) }}" onsubmit="return confirm('Generate a new password and send login credentials on WhatsApp?');">
+                                @csrf
+                                <button class="btn small" type="submit">Send Credentials</button>
+                            </form>
+                        </td>
                     </tr>
                 @empty
                     <tr>
-                        <td class="empty" colspan="7">No employees added yet.</td>
+                        <td class="empty" colspan="8">No employees added yet.</td>
                     </tr>
                 @endforelse
             </tbody>
