@@ -46,7 +46,7 @@
                         <td>{{ $employee->join_date?->format('d M Y') ?? '-' }}</td>
                         <td>{{ $employee->created_at?->format('d M Y') }}</td>
                         <td>
-                            <form method="POST" action="{{ route('admin.employees.send-credentials', $employee) }}" onsubmit="return confirm('Generate a new password and open WhatsApp Web with the credentials message?');">
+                            <form method="POST" action="{{ route('admin.employees.send-credentials', $employee) }}" target="_blank" onsubmit="return confirm('Generate a new password and open WhatsApp Web with the credentials message?');">
                                 @csrf
                                 <button class="btn small" type="submit">Open WhatsApp</button>
                             </form>
