@@ -150,9 +150,9 @@
 
             <button type="submit">Login</button>
 
-            <div class="hint">
+            <!-- <div class="hint">
                 Default login: admin@example.com / admin123456
-            </div>
+            </div> -->
         </form>
     </main>
 </body>

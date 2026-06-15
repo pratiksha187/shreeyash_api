@@ -1,8 +1,8 @@
 <?php
 
 return [
-    'email' => env('ADMIN_EMAIL', 'admin@example.com'),
-    'password' => env('ADMIN_PASSWORD', 'admin123456'),
+    'email' => env('ADMIN_EMAIL', 'constructkaroadmin@gmail.com'),
+    'password' => env('ADMIN_PASSWORD', 'constructkaroadmin123456'),
     'permissions' => env('ADMIN_PERMISSIONS', '*'),
     'super_admin_permissions' => [
         'dashboard',

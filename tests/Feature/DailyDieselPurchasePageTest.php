@@ -16,7 +16,7 @@ class DailyDieselPurchasePageTest extends TestCase
     {
         $session = [
             'admin_logged_in' => true,
-            'admin_email' => 'admin@example.com',
+            'admin_email' => 'constructkaroadmin@gmail.com',
             'admin_permissions' => ['diesel_purchases'],
         ];
         $khanav = LabourSite::query()->create(['name' => 'Khanav']);

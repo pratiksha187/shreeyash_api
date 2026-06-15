@@ -36,7 +36,7 @@ class AdminChallanDownloadTest extends TestCase
 
         $response = $this->withSession([
             'admin_logged_in' => true,
-            'admin_email' => 'admin@example.com',
+            'admin_email' => 'constructkaroadmin@gmail.com',
         ])->get('/admin/challans/' . $challan->id . '/download');
 
         $response->assertStatus(200)
