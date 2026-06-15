@@ -122,17 +122,17 @@ class EmployeeController extends Controller
             'designation' => ['nullable', 'string', 'max:255'],
         ]);
 
+        $plainPassword = $data['password'];
+
         unset($data['password_confirmation']);
         $data['password'] = Hash::make($data['password']);
         $data['company_id'] = app(Tenant::class)->id();
         $data['role'] = 'employee';
         $data['is_active'] = true;
 
-        User::query()->create($data);
+        $employee = User::query()->create($data);
 
-        return redirect()
-            ->route('admin.employees.index')
-            ->with('success', 'Employee added successfully. Use Send Credentials to open WhatsApp Web.');
+        return $this->redirectToWhatsapp($employee, $plainPassword);
     }
 
     public function sendCredentials(Request $request, int $employee): RedirectResponse
@@ -154,12 +154,7 @@ class EmployeeController extends Controller
             'password' => Hash::make($plainPassword),
         ])->save();
 
-        return redirect()->away(
-            'https://web.whatsapp.com/send?phone='
-            .$this->whatsappPhone($employee->mobile)
-            .'&text='
-            .rawurlencode($this->credentialMessage($employee, $plainPassword))
-        );
+        return $this->redirectToWhatsapp($employee, $plainPassword);
     }
 
     private function credentialMessage(User $employee, string $plainPassword): string
@@ -183,6 +178,16 @@ class EmployeeController extends Controller
         }
 
         return $digits;
+    }
+
+    private function redirectToWhatsapp(User $employee, string $plainPassword): RedirectResponse
+    {
+        return redirect()->away(
+            'https://web.whatsapp.com/send?phone='
+            .$this->whatsappPhone($employee->mobile)
+            .'&text='
+            .rawurlencode($this->credentialMessage($employee, $plainPassword))
+        );
     }
 
     private function ensureCompanyAdmin(): void
