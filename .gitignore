@@ -1,5 +1,6 @@
 /.phpunit.cache
 /node_modules
+/.whatsapp-web-session
 /public/build
 /public/hot
 /public/storage
