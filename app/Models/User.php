@@ -45,6 +45,9 @@ class User extends Authenticatable
         'designation',
         'password',
         'api_token',
+        'mobile_device_id',
+        'mobile_device_name',
+        'mobile_device_registered_at',
     ];
 
     /**
@@ -56,6 +59,7 @@ class User extends Authenticatable
         'password',
         'remember_token',
         'api_token',
+        'mobile_device_id',
     ];
 
     public function attendances()
@@ -148,6 +152,7 @@ class User extends Authenticatable
             'advance' => 'decimal:2',
             'pf' => 'decimal:2',
             'password' => 'hashed',
+            'mobile_device_registered_at' => 'datetime',
         ];
     }
 }

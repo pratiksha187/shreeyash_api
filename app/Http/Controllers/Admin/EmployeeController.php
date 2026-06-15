@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use App\Models\User;
+use App\Services\WhatsappService;
 use App\Support\Tenant;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -121,17 +122,30 @@ class EmployeeController extends Controller
             'designation' => ['nullable', 'string', 'max:255'],
         ]);
 
+        $plainPassword = $data['password'];
+
         unset($data['password_confirmation']);
         $data['password'] = Hash::make($data['password']);
         $data['company_id'] = app(Tenant::class)->id();
         $data['role'] = 'employee';
         $data['is_active'] = true;
 
-        User::query()->create($data);
+        $employee = User::query()->create($data);
+        $company = app(Tenant::class)->company();
+
+        app(WhatsappService::class)->sendTextNow(
+            $employee->mobile,
+            "Hello {$employee->name}, your ConstructKaro employee login has been created.\n"
+            ."Company: {$company?->name}\n"
+            ."Company Code: {$company?->slug}\n"
+            ."Mobile: {$employee->mobile}\n"
+            ."Password: {$plainPassword}\n"
+            .'Please login from your own mobile device only.'
+        );
 
         return redirect()
             ->route('admin.employees.index')
-            ->with('success', 'Employee added successfully.');
+            ->with('success', 'Employee added successfully. Login details were sent on WhatsApp.');
     }
 
     private function ensureCompanyAdmin(): void

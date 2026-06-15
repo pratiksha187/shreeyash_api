@@ -22,11 +22,16 @@ class AuthController extends Controller
             $request->merge(['company_slug' => $request->header('X-Company-Slug')]);
         }
 
-       
+        if (! $request->filled('device_id') && $request->header('X-Device-Id')) {
+            $request->merge(['device_id' => $request->header('X-Device-Id')]);
+        }
+
         $validator = Validator::make($request->all(), [
             'company_slug' => ['required', 'string', 'max:255'],
             'mobile' => ['required', 'string'],
             'password' => ['required', 'string'],
+            'device_id' => ['required', 'string', 'max:255'],
+            'device_name' => ['nullable', 'string', 'max:255'],
         ]);
 
         if ($validator->fails()) {
@@ -96,10 +101,29 @@ class AuthController extends Controller
             ], 403);
         }
 
+        $deviceId = hash('sha256', $credentials['device_id']);
+
+        if ($user->mobile_device_id && ! hash_equals($user->mobile_device_id, $deviceId)) {
+            return response()->json([
+                'message' => 'This employee is already registered on another mobile device. Please contact admin.',
+                'errors' => [
+                    'device_id' => ['Only one mobile device is allowed for this employee.'],
+                ],
+            ], 403);
+        }
+
         $token = Str::random(80);
-        $user->forceFill([
+        $loginData = [
             'api_token' => hash('sha256', $token),
-        ])->save();
+        ];
+
+        if (! $user->mobile_device_id) {
+            $loginData['mobile_device_id'] = $deviceId;
+            $loginData['mobile_device_name'] = $credentials['device_name'] ?? $request->userAgent();
+            $loginData['mobile_device_registered_at'] = now();
+        }
+
+        $user->forceFill($loginData)->save();
 
         return response()->json([
             'message' => 'Login successful.',

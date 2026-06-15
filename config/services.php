@@ -28,6 +28,24 @@ return [
         'key' => env('RESEND_KEY'),
     ],
 
+    'whatsapp' => [
+        'provider' => env('WHATSAPP_PROVIDER', 'log'),
+    ],
+
+    'gupshup' => [
+        'endpoint' => env('GUPSHUP_ENDPOINT', 'https://api.gupshup.io/wa/api/v1/msg'),
+        'api_key' => env('GUPSHUP_API_KEY'),
+        'source_number' => env('GUPSHUP_SOURCE_NUMBER'),
+        'app_name' => env('GUPSHUP_APP_NAME'),
+    ],
+
+    'twilio' => [
+        'account_sid' => env('TWILIO_ACCOUNT_SID'),
+        'auth_token' => env('TWILIO_AUTH_TOKEN'),
+        'verify_service_sid' => env('TWILIO_VERIFY_SERVICE_SID'),
+        'whatsapp_from' => env('TWILIO_WHATSAPP_FROM'),
+    ],
+
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),
