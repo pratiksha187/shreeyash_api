@@ -15,6 +15,10 @@ class WhatsappService
             return $this->sendViaTwilio($mobile, $message);
         }
 
+        if ($provider === 'web') {
+            return $this->sendViaWhatsappWeb($mobile, $message);
+        }
+
         if ($provider === 'gupshup') {
             return $this->sendViaGupshup($mobile, $message);
         }
@@ -29,6 +33,64 @@ class WhatsappService
             'sent' => false,
             'provider' => $provider,
             'status' => 'logged',
+        ];
+    }
+
+    private function sendViaWhatsappWeb(string $mobile, string $message): array
+    {
+        if (! filled(config('services.whatsapp_web.endpoint'))) {
+            Log::info('WhatsApp Web message skipped or logged.', [
+                'mobile' => $mobile,
+                'message' => $message,
+                'provider' => 'web',
+                'reason' => 'WhatsApp Web endpoint is not configured.',
+            ]);
+
+            return [
+                'sent' => false,
+                'provider' => 'web',
+                'status' => 'logged',
+            ];
+        }
+
+        try {
+            $request = Http::acceptJson();
+
+            if (filled(config('services.whatsapp_web.token'))) {
+                $request = $request->withToken(config('services.whatsapp_web.token'));
+            }
+
+            $response = $request->post(config('services.whatsapp_web.endpoint'), [
+                'mobile' => $this->normalizeMobile($mobile),
+                'message' => $message,
+            ]);
+        } catch (\Throwable $exception) {
+            Log::warning('WhatsApp Web message could not be sent.', [
+                'mobile' => $mobile,
+                'error' => $exception->getMessage(),
+            ]);
+
+            return [
+                'sent' => false,
+                'provider' => 'web',
+                'status' => 'failed',
+                'error' => $exception->getMessage(),
+            ];
+        }
+
+        if (! $response->successful()) {
+            Log::warning('WhatsApp Web message failed.', [
+                'mobile' => $mobile,
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
+        }
+
+        return [
+            'sent' => $response->successful(),
+            'provider' => 'web',
+            'status' => $response->status(),
+            'body' => $response->json() ?? $response->body(),
         ];
     }
 

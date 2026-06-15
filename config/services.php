@@ -32,6 +32,11 @@ return [
         'provider' => env('WHATSAPP_PROVIDER', 'log'),
     ],
 
+    'whatsapp_web' => [
+        'endpoint' => env('WHATSAPP_WEB_ENDPOINT', 'http://127.0.0.1:3010/send-message'),
+        'token' => env('WHATSAPP_WEB_TOKEN'),
+    ],
+
     'gupshup' => [
         'endpoint' => env('GUPSHUP_ENDPOINT', 'https://api.gupshup.io/wa/api/v1/msg'),
         'api_key' => env('GUPSHUP_API_KEY'),
