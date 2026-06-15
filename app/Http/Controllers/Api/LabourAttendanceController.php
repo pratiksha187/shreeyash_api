@@ -21,6 +21,7 @@ class LabourAttendanceController extends Controller
     public function sites(): JsonResponse
     {
         $sites = LabourSite::query()
+            ->forCurrentCompany()
             ->where('is_active', true)
             ->orderBy('name')
             ->get()
@@ -32,8 +33,13 @@ class LabourAttendanceController extends Controller
         ]);
     }
 
-    public function contractors(LabourSite $labourSite): JsonResponse
+    public function contractors(int $labourSite): JsonResponse
     {
+        $labourSite = LabourSite::query()
+            ->forCurrentCompany()
+            ->where('is_active', true)
+            ->findOrFail($labourSite);
+
         $contractors = $labourSite->contractors()
             ->where('is_active', true)
             ->orderBy('name')
@@ -47,8 +53,13 @@ class LabourAttendanceController extends Controller
         ]);
     }
 
-    public function labours(Contractor $contractor): JsonResponse
+    public function labours(int $contractor): JsonResponse
     {
+        $contractor = Contractor::query()
+            ->forCurrentCompany()
+            ->where('is_active', true)
+            ->findOrFail($contractor);
+
         $contractor->load('site');
 
         $labours = $contractor->labours()
@@ -70,12 +81,13 @@ class LabourAttendanceController extends Controller
         $filters = $request->validate([
             'from_date' => ['nullable', 'date'],
             'to_date' => ['nullable', 'date', 'after_or_equal:from_date'],
-            'labour_id' => ['nullable', 'exists:labours,id'],
+            'labour_id' => ['nullable', Rule::exists($this->tenantTable('labours'), 'id')],
             'approval_status' => ['nullable', Rule::in(LabourAttendance::APPROVAL_STATUSES)],
             'limit' => ['nullable', 'integer', 'min:1', 'max:100'],
         ]);
 
         $query = LabourAttendance::query()
+            ->forCurrentCompany()
             ->with(['site', 'contractor', 'labour', 'engineer:id,name,mobile,designation'])
             ->where('engineer_user_id', $request->user()->id)
             ->when(isset($filters['from_date']), fn ($query) => $query->whereDate('attendance_date', '>=', Carbon::parse($filters['from_date'])->toDateString()))
@@ -101,9 +113,9 @@ class LabourAttendanceController extends Controller
         $this->normalizeInput($request);
 
         $data = $request->validate([
-            'labour_site_id' => ['required', 'exists:labour_sites,id'],
-            'contractor_id' => ['required', 'exists:contractors,id'],
-            'labour_id' => ['required', 'exists:labours,id'],
+            'labour_site_id' => ['required', Rule::exists($this->tenantTable('labour_sites'), 'id')],
+            'contractor_id' => ['required', Rule::exists($this->tenantTable('contractors'), 'id')],
+            'labour_id' => ['required', Rule::exists($this->tenantTable('labours'), 'id')],
             'attendance_date' => ['required', 'date'],
             'status' => ['required', Rule::in(LabourAttendance::ATTENDANCE_STATUSES)],
             'work_hours' => ['nullable', 'numeric', 'min:0', 'max:24'],
@@ -113,6 +125,7 @@ class LabourAttendanceController extends Controller
         ]);
 
         $contractor = Contractor::query()
+            ->forCurrentCompany()
             ->where('id', $data['contractor_id'])
             ->where('labour_site_id', $data['labour_site_id'])
             ->first();
@@ -124,6 +137,7 @@ class LabourAttendanceController extends Controller
         }
 
         $labour = Labour::query()
+            ->forCurrentCompany()
             ->where('id', $data['labour_id'])
             ->where('contractor_id', $contractor->id)
             ->first();
@@ -136,6 +150,7 @@ class LabourAttendanceController extends Controller
 
         $attendanceDate = Carbon::parse($data['attendance_date'])->toDateString();
         $existingAttendance = LabourAttendance::query()
+            ->forCurrentCompany()
             ->where('labour_id', $labour->id)
             ->whereDate('attendance_date', $attendanceDate)
             ->first();
@@ -149,6 +164,7 @@ class LabourAttendanceController extends Controller
 
         $attendance = LabourAttendance::query()->updateOrCreate(
             [
+                'company_id' => $request->user()->company_id,
                 'labour_id' => $labour->id,
                 'attendance_date' => $attendanceDate,
             ],
@@ -185,11 +201,9 @@ class LabourAttendanceController extends Controller
         ], $attendance->wasRecentlyCreated ? 201 : 200);
     }
 
-    public function photo(Request $request, LabourAttendance $labourAttendance): StreamedResponse
+    public function photo(Request $request, int $labourAttendance): StreamedResponse
     {
-        if ($labourAttendance->engineer_user_id !== $request->user()->id) {
-            abort(404);
-        }
+        $labourAttendance = $this->findEmployeeLabourAttendance($request, $labourAttendance);
 
         if (! $labourAttendance->photo_path || ! Storage::disk('public')->exists($labourAttendance->photo_path)) {
             abort(404);
@@ -198,11 +212,9 @@ class LabourAttendanceController extends Controller
         return Storage::disk('public')->response($labourAttendance->photo_path);
     }
 
-    public function show(Request $request, LabourAttendance $labourAttendance): JsonResponse
+    public function show(Request $request, int $labourAttendance): JsonResponse
     {
-        if ($labourAttendance->engineer_user_id !== $request->user()->id) {
-            abort(404);
-        }
+        $labourAttendance = $this->findEmployeeLabourAttendance($request, $labourAttendance);
 
         $labourAttendance->load(['site', 'contractor', 'labour', 'engineer:id,name,mobile,designation']);
 
@@ -269,6 +281,21 @@ class LabourAttendanceController extends Controller
         if ($data) {
             $request->merge($data);
         }
+    }
+
+    private function findEmployeeLabourAttendance(Request $request, int $labourAttendanceId): LabourAttendance
+    {
+        return LabourAttendance::query()
+            ->forCurrentCompany()
+            ->where('engineer_user_id', $request->user()->id)
+            ->findOrFail($labourAttendanceId);
+    }
+
+    private function tenantTable(string $table): string
+    {
+        $connection = app(\App\Support\Tenant::class)->connectionName();
+
+        return $connection ? $connection.'.'.$table : $table;
     }
 
     private function storeAttendancePhoto(Request $request, LabourAttendance $attendance): ?string

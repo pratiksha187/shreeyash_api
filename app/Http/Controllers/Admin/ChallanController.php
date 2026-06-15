@@ -35,13 +35,15 @@ class ChallanController extends Controller
         return view('admin.challans.index', [
             'challans' => $challans,
             'filters' => $filters,
-            'employees' => User::query()->orderBy('name')->get(['id', 'name', 'mobile']),
+            'employees' => User::query()->forCurrentCompany()->employees()->orderBy('name')->get(['id', 'name', 'mobile']),
             'locations' => Challan::query()
+                ->forCurrentCompany()
                 ->whereNotNull('location')
                 ->distinct()
                 ->orderBy('location')
                 ->pluck('location'),
             'vehicles' => Challan::query()
+                ->forCurrentCompany()
                 ->whereNotNull('vehicle_no')
                 ->distinct()
                 ->orderBy('vehicle_no')
@@ -120,6 +122,7 @@ class ChallanController extends Controller
     private function filteredQuery(array $filters)
     {
         return Challan::query()
+            ->forCurrentCompany()
             ->when($filters['from_date'] ?? null, fn ($query, $date) => $query->whereDate('challan_date', '>=', Carbon::parse($date)->toDateString()))
             ->when($filters['to_date'] ?? null, fn ($query, $date) => $query->whereDate('challan_date', '<=', Carbon::parse($date)->toDateString()))
             ->when($filters['user_id'] ?? null, fn ($query, $userId) => $query->where('user_id', $userId))

@@ -6,16 +6,22 @@ use App\Http\Controllers\Controller;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use App\Models\User;
+use App\Support\Tenant;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class EmployeeController extends Controller
 {
     public function index(): View
     {
+        $this->ensureCompanyAdmin();
+
         $employees = User::query()
+            ->forCurrentCompany()
+            ->employees()
             ->latest()
             ->paginate(10);
 
@@ -26,11 +32,20 @@ class EmployeeController extends Controller
 
     public function create(): View
     {
+        $this->ensureCompanyAdmin();
+
         return view('admin.employees.create');
     }
 
-    public function show(Request $request, User $employee): View
+    public function show(Request $request, int $employee): View
     {
+        $this->ensureCompanyAdmin();
+
+        $employee = User::query()
+            ->forCurrentCompany()
+            ->employees()
+            ->findOrFail($employee);
+
         $filters = $request->validate([
             'month' => ['nullable', 'date_format:Y-m'],
         ]);
@@ -78,10 +93,16 @@ class EmployeeController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        $this->ensureCompanyAdmin();
+
+        $usersTable = app(Tenant::class)->connectionName()
+            ? app(Tenant::class)->connectionName().'.users'
+            : 'users';
+
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
-            'mobile' => ['required', 'string', 'max:20', 'unique:users,mobile'],
+            'email' => ['required', 'email', 'max:255', Rule::unique($usersTable, 'email')],
+            'mobile' => ['required', 'string', 'max:20', Rule::unique($usersTable, 'mobile')],
             'password' => ['required', 'string', 'min:6', 'confirmed'],
             'gender' => ['nullable', 'string', 'max:20'],
             'marital_status' => ['nullable', 'string', 'max:20'],
@@ -102,11 +123,23 @@ class EmployeeController extends Controller
 
         unset($data['password_confirmation']);
         $data['password'] = Hash::make($data['password']);
+        $data['company_id'] = app(Tenant::class)->id();
+        $data['role'] = 'employee';
+        $data['is_active'] = true;
 
         User::query()->create($data);
 
         return redirect()
             ->route('admin.employees.index')
             ->with('success', 'Employee added successfully.');
+    }
+
+    private function ensureCompanyAdmin(): void
+    {
+        if (session()->has('admin_company_id') && app(Tenant::class)->hasCompany()) {
+            return;
+        }
+
+        abort(403, 'Please login with an employer/company admin account to manage employees.');
     }
 }

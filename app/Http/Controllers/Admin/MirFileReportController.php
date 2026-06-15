@@ -116,6 +116,7 @@ class MirFileReportController extends Controller
     private function filteredReports(array $filters)
     {
         return MirFileReport::query()
+            ->forCurrentCompany()
             ->when($filters['from_date'] ?? null, fn ($query, $date) => $query->whereDate('report_date', '>=', Carbon::parse($date)->toDateString()))
             ->when($filters['to_date'] ?? null, fn ($query, $date) => $query->whereDate('report_date', '<=', Carbon::parse($date)->toDateString()))
             ->when($filters['material'] ?? null, fn ($query, $material) => $query->where('material', $material))
@@ -147,6 +148,7 @@ class MirFileReportController extends Controller
     private function distinctValues(string $column)
     {
         return MirFileReport::query()
+            ->forCurrentCompany()
             ->whereNotNull($column)
             ->distinct()
             ->orderBy($column)
@@ -155,7 +157,7 @@ class MirFileReportController extends Controller
 
     private function nextSortOrder(): int
     {
-        return (int) MirFileReport::query()->max('sort_order') + 1;
+        return (int) MirFileReport::query()->forCurrentCompany()->max('sort_order') + 1;
     }
 
     private function formatQuantity(string|float|int|null $quantity): string

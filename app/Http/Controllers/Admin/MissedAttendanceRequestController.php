@@ -35,6 +35,7 @@ class MissedAttendanceRequestController extends Controller
         $requestFor = $filters['request_for'] ?? null;
 
         $baseQuery = MissedAttendanceRequest::query()
+            ->forCurrentCompany()
             ->whereBetween('attendance_date', [$fromDate, $toDate])
             ->when($userId, fn ($query) => $query->where('user_id', $userId))
             ->when($status, fn ($query) => $query->where('status', $status))
@@ -47,7 +48,7 @@ class MissedAttendanceRequestController extends Controller
                 ->latest()
                 ->paginate(15)
                 ->withQueryString(),
-            'employees' => User::query()->orderBy('name')->get(['id', 'name', 'mobile']),
+            'employees' => User::query()->forCurrentCompany()->employees()->orderBy('name')->get(['id', 'name', 'mobile']),
             'statuses' => MissedAttendanceRequest::STATUSES,
             'requestTypes' => MissedAttendanceRequest::REQUEST_TYPES,
             'fromDate' => $fromDate,
@@ -94,6 +95,7 @@ class MissedAttendanceRequestController extends Controller
         ])));
 
         $attendance = Attendance::query()->firstOrNew([
+            'company_id' => $missedAttendanceRequest->company_id,
             'user_id' => $missedAttendanceRequest->user_id,
             'attendance_date' => $missedAttendanceRequest->attendance_date->toDateString(),
         ]);

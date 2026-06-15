@@ -20,6 +20,7 @@ class FddTestRecordController extends Controller
         $filters = $this->validatedFilters($request);
         $records = $this->filteredRecords($filters)->get();
         $sections = FddRoadSection::query()
+            ->forCurrentCompany()
             ->orderBy('group_number')
             ->orderBy('name')
             ->get();
@@ -29,6 +30,7 @@ class FddTestRecordController extends Controller
             'groupedRecords' => $this->groupRecords($records),
             'filters' => $filters,
             'materials' => FddTestRecord::query()
+                ->forCurrentCompany()
                 ->whereNotNull('material')
                 ->distinct()
                 ->orderBy('material')
@@ -67,7 +69,7 @@ class FddTestRecordController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $data = $this->validatedRecord($request);
-        $section = FddRoadSection::query()->findOrFail($data['fdd_road_section_id']);
+        $section = FddRoadSection::query()->forCurrentCompany()->findOrFail($data['fdd_road_section_id']);
 
         $data['group_number'] = $section->group_number;
         $data['section_name'] = $section->name;
@@ -85,6 +87,7 @@ class FddTestRecordController extends Controller
         return view('admin.fdd-test-records.edit', [
             'record' => $fddTestRecord,
             'sections' => FddRoadSection::query()
+                ->forCurrentCompany()
                 ->orderBy('group_number')
                 ->orderBy('name')
                 ->get(),
@@ -94,7 +97,7 @@ class FddTestRecordController extends Controller
     public function update(Request $request, FddTestRecord $fddTestRecord): RedirectResponse
     {
         $data = $this->validatedRecord($request);
-        $section = FddRoadSection::query()->findOrFail($data['fdd_road_section_id']);
+        $section = FddRoadSection::query()->forCurrentCompany()->findOrFail($data['fdd_road_section_id']);
 
         $data['group_number'] = $section->group_number;
         $data['section_name'] = $section->name;
@@ -155,6 +158,7 @@ class FddTestRecordController extends Controller
     private function filteredRecords(array $filters)
     {
         return FddTestRecord::query()
+            ->forCurrentCompany()
             ->with('roadSection')
             ->when($filters['from_date'] ?? null, fn ($query, $date) => $query->whereDate('test_date', '>=', Carbon::parse($date)->toDateString()))
             ->when($filters['to_date'] ?? null, fn ($query, $date) => $query->whereDate('test_date', '<=', Carbon::parse($date)->toDateString()))
@@ -190,6 +194,7 @@ class FddTestRecordController extends Controller
     private function nextSortOrder(int $sectionId): int
     {
         return (int) FddTestRecord::query()
+            ->forCurrentCompany()
             ->where('fdd_road_section_id', $sectionId)
             ->max('sort_order') + 1;
     }

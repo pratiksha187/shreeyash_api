@@ -26,6 +26,7 @@ class AttendanceReportController extends Controller
             : now()->endOfMonth()->toDateString();
 
         $attendances = Attendance::query()
+            ->forCurrentCompany()
             ->with('user:id,name,email,mobile,designation')
             ->whereBetween('attendance_date', [$fromDate, $toDate])
             ->orderByDesc('attendance_date')
@@ -36,6 +37,8 @@ class AttendanceReportController extends Controller
             ->values();
 
         $employeeReports = User::query()
+            ->forCurrentCompany()
+            ->employees()
             ->select([
                 'id',
                 'name',

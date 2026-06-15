@@ -41,6 +41,14 @@ class AdminNavigation
 
     public function can(string $permission): bool
     {
+        if (session('admin_role') === 'super_admin') {
+            return in_array($permission, config('admin.super_admin_permissions', []), true);
+        }
+
+        if (session('admin_role') === 'company_admin' && $permission === 'companies') {
+            return false;
+        }
+
         $permissions = $this->permissions();
 
         return in_array('*', $permissions, true) || in_array($permission, $permissions, true);

@@ -32,6 +32,7 @@ class DailyProgressReportController extends Controller
         $userId = $filters['user_id'] ?? null;
 
         $baseQuery = DailyProgressReport::query()
+            ->forCurrentCompany()
             ->whereBetween('dpr_date', [$fromDate, $toDate])
             ->when($userId, fn ($query) => $query->where('user_id', $userId));
 
@@ -51,7 +52,7 @@ class DailyProgressReportController extends Controller
             ->count();
 
         return view('admin.dpr-reports.index', [
-            'employees' => User::query()->orderBy('name')->get(['id', 'name', 'mobile']),
+            'employees' => User::query()->forCurrentCompany()->employees()->orderBy('name')->get(['id', 'name', 'mobile']),
             'reports' => $reports,
             'fromDate' => $fromDate,
             'toDate' => $toDate,
@@ -78,6 +79,7 @@ class DailyProgressReportController extends Controller
     {
         $query
             ->whereBetween('dpr_date', [$fromDate, $toDate])
+            ->forCurrentCompany()
             ->when($userId, fn ($query) => $query->where('user_id', $userId));
     }
 }

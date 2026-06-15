@@ -35,6 +35,7 @@ class AttendanceController extends Controller
 
         $data = $validator->validated();
         $attendance = Attendance::query()
+            ->forCurrentCompany()
             ->where('user_id', $request->user()->id)
             ->whereDate('attendance_date', today())
             ->first();
@@ -50,7 +51,7 @@ class AttendanceController extends Controller
             return $locationError;
         }
 
-        $attendance = Attendance::query()->updateOrCreate(
+        $attendance = Attendance::query()->forCurrentCompany()->updateOrCreate(
             [
                 'user_id' => $request->user()->id,
                 'attendance_date' => today()->toDateString(),
@@ -87,6 +88,7 @@ class AttendanceController extends Controller
 
         $data = $validator->validated();
         $attendance = Attendance::query()
+            ->forCurrentCompany()
             ->where('user_id', $request->user()->id)
             ->whereDate('attendance_date', today())
             ->first();
@@ -179,6 +181,7 @@ class AttendanceController extends Controller
     private function nearestLocation(float $latitude, float $longitude): ?array
     {
         return Location::query()
+            ->forCurrentCompany()
             ->get()
             ->map(fn (Location $location) => [
                 'location' => $location,
@@ -210,6 +213,7 @@ class AttendanceController extends Controller
     public function me(Request $request): JsonResponse
     {
         $attendance = Attendance::query()
+            ->forCurrentCompany()
             ->where('user_id', $request->user()->id)
             ->whereDate('attendance_date', today())
             ->first();
@@ -229,6 +233,7 @@ class AttendanceController extends Controller
         $windowEnd = $now->copy()->setTime(9, 15, 59);
 
         $attendance = Attendance::query()
+            ->forCurrentCompany()
             ->where('user_id', $request->user()->id)
             ->whereDate('attendance_date', $today)
             ->first();
@@ -283,6 +288,7 @@ class AttendanceController extends Controller
             : today()->toDateString();
 
         $attendances = Attendance::query()
+            ->forCurrentCompany()
             ->where('user_id', $request->user()->id)
             ->whereBetween('attendance_date', [$fromDate, $toDate])
             ->orderByDesc('attendance_date')
@@ -336,6 +342,7 @@ class AttendanceController extends Controller
             ->map(fn (Carbon $date) => $date->toDateString());
 
         $existingWorkedDays = Attendance::query()
+            ->forCurrentCompany()
             ->where('user_id', $request->user()->id)
             ->whereIn('attendance_date', $dates)
             ->where(function ($query) {
@@ -354,7 +361,7 @@ class AttendanceController extends Controller
         }
 
         $attendances = $dates->map(function (string $date) use ($request, $data) {
-            return Attendance::query()->updateOrCreate(
+            return Attendance::query()->forCurrentCompany()->updateOrCreate(
                 [
                     'user_id' => $request->user()->id,
                     'attendance_date' => $date,
@@ -397,7 +404,7 @@ class AttendanceController extends Controller
         }
 
         $data = $validator->validated();
-        $attendance = Attendance::query()->updateOrCreate(
+        $attendance = Attendance::query()->forCurrentCompany()->updateOrCreate(
             [
                 'user_id' => $request->user()->id,
                 'attendance_date' => today()->toDateString(),

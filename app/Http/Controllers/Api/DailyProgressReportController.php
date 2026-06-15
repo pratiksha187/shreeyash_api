@@ -25,6 +25,7 @@ class DailyProgressReportController extends Controller
         ]);
 
         $query = DailyProgressReport::query()
+            ->forCurrentCompany()
             ->with(['hours.photos'])
             ->where('user_id', $request->user()->id);
 
@@ -49,11 +50,12 @@ class DailyProgressReportController extends Controller
         ]);
     }
 
-    public function show(Request $request, DailyProgressReport $dailyProgressReport): JsonResponse
+    public function show(Request $request, int $dailyProgressReport): JsonResponse
     {
-        if ($dailyProgressReport->user_id !== $request->user()->id) {
-            abort(404);
-        }
+        $dailyProgressReport = DailyProgressReport::query()
+            ->forCurrentCompany()
+            ->where('user_id', $request->user()->id)
+            ->findOrFail($dailyProgressReport);
 
         $dailyProgressReport->load(['hours.photos']);
 
@@ -106,6 +108,7 @@ class DailyProgressReportController extends Controller
         try {
             DB::transaction(function () use ($request, $data, $hours, $user, &$storedPaths, &$oldPhotoPaths, &$created, &$report) {
                 $report = DailyProgressReport::query()
+                    ->forCurrentCompany()
                     ->with('photos')
                     ->where('user_id', $user->id)
                     ->whereDate('dpr_date', Carbon::parse($data['dpr_date'])->toDateString())
@@ -166,13 +169,15 @@ class DailyProgressReportController extends Controller
         ], $created ? 201 : 200);
     }
 
-    public function photo(Request $request, DailyProgressReportPhoto $photo): StreamedResponse
+    public function photo(Request $request, int $photo): StreamedResponse
     {
-        $photo->load('hour.report');
-
-        if ($photo->hour?->report?->user_id !== $request->user()->id) {
-            abort(404);
-        }
+        $photo = DailyProgressReportPhoto::query()
+            ->whereHas('hour.report', function ($query) use ($request) {
+                $query
+                    ->forCurrentCompany()
+                    ->where('user_id', $request->user()->id);
+            })
+            ->findOrFail($photo);
 
         if (! Storage::disk('public')->exists($photo->photo_path)) {
             abort(404);

@@ -19,6 +19,7 @@ class MissedAttendanceRequestController extends Controller
         ]);
 
         $requests = MissedAttendanceRequest::query()
+            ->forCurrentCompany()
             ->where('user_id', $request->user()->id)
             ->when(isset($filters['status']), fn ($query) => $query->where('status', $filters['status']))
             ->orderByDesc('attendance_date')
@@ -44,6 +45,7 @@ class MissedAttendanceRequestController extends Controller
         ]);
 
         $existingPending = MissedAttendanceRequest::query()
+            ->forCurrentCompany()
             ->where('user_id', $request->user()->id)
             ->whereDate('attendance_date', Carbon::parse($data['attendance_date'])->toDateString())
             ->where('request_for', $data['request_for'])
@@ -73,11 +75,12 @@ class MissedAttendanceRequestController extends Controller
         ], 201);
     }
 
-    public function show(Request $request, MissedAttendanceRequest $missedAttendanceRequest): JsonResponse
+    public function show(Request $request, int $missedAttendanceRequest): JsonResponse
     {
-        if ($missedAttendanceRequest->user_id !== $request->user()->id) {
-            abort(404);
-        }
+        $missedAttendanceRequest = MissedAttendanceRequest::query()
+            ->forCurrentCompany()
+            ->where('user_id', $request->user()->id)
+            ->findOrFail($missedAttendanceRequest);
 
         $missedAttendanceRequest->load('user:id,name,mobile,designation');
 

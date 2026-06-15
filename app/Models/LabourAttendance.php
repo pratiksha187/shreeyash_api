@@ -2,19 +2,21 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToCompany;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class LabourAttendance extends Model
 {
-    use HasFactory;
+    use BelongsToCompany, HasFactory;
 
     public const ATTENDANCE_STATUSES = ['present', 'absent', 'half_day'];
 
     public const APPROVAL_STATUSES = ['pending', 'approved', 'rejected'];
 
     protected $fillable = [
+        'company_id',
         'engineer_user_id',
         'labour_site_id',
         'contractor_id',

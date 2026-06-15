@@ -18,6 +18,7 @@ class PaymentController extends Controller
     public function index(Request $request): JsonResponse
     {
         $payments = Payment::query()
+            ->forCurrentCompany()
             ->where('user_id', $request->user()->id)
             ->latest()
             ->get()
@@ -29,11 +30,9 @@ class PaymentController extends Controller
         ]);
     }
 
-    public function show(Request $request, Payment $payment): JsonResponse
+    public function show(Request $request, int $payment): JsonResponse
     {
-        if ($payment->user_id !== $request->user()->id) {
-            abort(404);
-        }
+        $payment = $this->findEmployeePayment($request, $payment);
 
         return response()->json([
             'message' => 'Payment slip fetched successfully.',
@@ -54,6 +53,7 @@ class PaymentController extends Controller
         $user = $request->user();
 
         $existingPayment = Payment::query()
+            ->forCurrentCompany()
             ->where('user_id', $user->id)
             ->whereDate('from_date', $from->toDateString())
             ->whereDate('to_date', $to->toDateString())
@@ -155,6 +155,7 @@ class PaymentController extends Controller
         $netPayable = round($grossPayable - $totalDeduction, 2);
 
         return [
+            'company_id' => $user->company_id,
             'user_id' => $user->id,
             'from_date' => $from->toDateString(),
             'to_date' => $to->toDateString(),
@@ -184,11 +185,9 @@ class PaymentController extends Controller
         ];
     }
 
-    public function slip(Request $request, Payment $payment): Response
+    public function slip(Request $request, int $payment): Response
     {
-        if ($payment->user_id !== $request->user()->id) {
-            abort(404);
-        }
+        $payment = $this->findEmployeePayment($request, $payment);
 
         $payment->load('user');
         $pdf = app(PaymentSlipPdfService::class)->build($payment);
@@ -200,11 +199,9 @@ class PaymentController extends Controller
         ]);
     }
 
-    public function slipData(Request $request, Payment $payment): JsonResponse
+    public function slipData(Request $request, int $payment): JsonResponse
     {
-        if ($payment->user_id !== $request->user()->id) {
-            abort(404);
-        }
+        $payment = $this->findEmployeePayment($request, $payment);
 
         $payment->load('user');
         $pdf = app(PaymentSlipPdfService::class)->build($payment);
@@ -277,5 +274,13 @@ class PaymentController extends Controller
             ],
             'net_payable' => $payment->net_payable,
         ]);
+    }
+
+    private function findEmployeePayment(Request $request, int $paymentId): Payment
+    {
+        return Payment::query()
+            ->forCurrentCompany()
+            ->where('user_id', $request->user()->id)
+            ->findOrFail($paymentId);
     }
 }

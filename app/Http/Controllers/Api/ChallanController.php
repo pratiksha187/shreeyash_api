@@ -24,6 +24,7 @@ class ChallanController extends Controller
         ]);
 
         $query = Challan::query()
+            ->forCurrentCompany()
             ->where('user_id', $request->user()->id);
 
         if (isset($filters['from_date'])) {
@@ -47,11 +48,9 @@ class ChallanController extends Controller
         ]);
     }
 
-    public function show(Request $request, Challan $challan): JsonResponse
+    public function show(Request $request, int $challan): JsonResponse
     {
-        if ($challan->user_id !== $request->user()->id) {
-            abort(404);
-        }
+        $challan = $this->findEmployeeChallan($request, $challan);
 
         return response()->json([
             'message' => 'Challan fetched successfully.',
@@ -64,7 +63,7 @@ class ChallanController extends Controller
         $this->normalizeInput($request);
 
         $data = $request->validate([
-            'challan_no' => ['required', 'string', 'max:50', Rule::unique('challans', 'challan_no')],
+            'challan_no' => ['required', 'string', 'max:50', Rule::unique($this->tenantTable('challans'), 'challan_no')],
             'challan_date' => ['required', 'date'],
             'party_name' => ['required', 'string', 'max:255'],
             'material_machine' => ['required', 'string', 'max:255'],
@@ -91,11 +90,9 @@ class ChallanController extends Controller
         ], 201);
     }
 
-    public function pdf(Request $request, Challan $challan): Response
+    public function pdf(Request $request, int $challan): Response
     {
-        if ($challan->user_id !== $request->user()->id) {
-            abort(404);
-        }
+        $challan = $this->findEmployeeChallan($request, $challan);
 
         $this->generatePdfForChallan($challan);
         $pdfPath = $challan->pdf_file_path;
@@ -110,11 +107,9 @@ class ChallanController extends Controller
         ]);
     }
 
-    public function pdfData(Request $request, Challan $challan): JsonResponse
+    public function pdfData(Request $request, int $challan): JsonResponse
     {
-        if ($challan->user_id !== $request->user()->id) {
-            abort(404);
-        }
+        $challan = $this->findEmployeeChallan($request, $challan);
 
         $this->generatePdfForChallan($challan);
         $pdfPath = $challan->pdf_file_path;
@@ -199,6 +194,21 @@ class ChallanController extends Controller
 
         app(ChallanPdfService::class)->store($challan);
         $challan->refresh();
+    }
+
+    private function findEmployeeChallan(Request $request, int $challanId): Challan
+    {
+        return Challan::query()
+            ->forCurrentCompany()
+            ->where('user_id', $request->user()->id)
+            ->findOrFail($challanId);
+    }
+
+    private function tenantTable(string $table): string
+    {
+        $connection = app(\App\Support\Tenant::class)->connectionName();
+
+        return $connection ? $connection.'.'.$table : $table;
     }
 
     private function parseDate(string $date): string

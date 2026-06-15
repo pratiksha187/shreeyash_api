@@ -4,7 +4,10 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Attendance;
+use App\Models\Company;
 use App\Models\User;
+use App\Support\Tenant;
+use App\Support\TenantDatabaseManager;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -15,8 +18,13 @@ class AuthController extends Controller
 {
     public function login(Request $request): JsonResponse
     {
+        if (! $request->filled('company_slug') && $request->header('X-Company-Slug')) {
+            $request->merge(['company_slug' => $request->header('X-Company-Slug')]);
+        }
+
        
         $validator = Validator::make($request->all(), [
+            'company_slug' => ['required', 'string', 'max:255'],
             'mobile' => ['required', 'string'],
             'password' => ['required', 'string'],
         ]);
@@ -29,7 +37,45 @@ class AuthController extends Controller
         }
 
         $credentials = $validator->validated();
-        $user = User::query()->where('mobile', $credentials['mobile'])->first();
+
+        $company = Company::query()
+            ->where('slug', $credentials['company_slug'])
+            ->first();
+
+        if (! $company) {
+            return response()->json([
+                'message' => 'Company not found.',
+                'errors' => [
+                    'company_slug' => ['The selected company was not found.'],
+                ],
+            ], 422);
+        }
+
+        if (! $company->hasActiveSubscription()) {
+            return response()->json([
+                'message' => 'Company subscription is inactive or expired. Please renew your monthly plan.',
+            ], 402);
+        }
+
+        if (! $company->database_name) {
+            try {
+                app(TenantDatabaseManager::class)->provision($company);
+                $company->refresh();
+            } catch (\Throwable $exception) {
+                return response()->json([
+                    'message' => 'Company database could not be created. Please contact ConstructKaro admin.',
+                    'error' => $exception->getMessage(),
+                ], 500);
+            }
+        }
+
+        app(Tenant::class)->set($company);
+
+        $user = User::query()
+            ->forCurrentCompany()
+            ->employees()
+            ->where('mobile', $credentials['mobile'])
+            ->first();
  
         if (
             ! $user
@@ -44,6 +90,12 @@ class AuthController extends Controller
             ], 422);
         }
 
+        if (! $user->is_active) {
+            return response()->json([
+                'message' => 'Your account is inactive. Please contact admin.',
+            ], 403);
+        }
+
         $token = Str::random(80);
         $user->forceFill([
             'api_token' => hash('sha256', $token),
@@ -53,6 +105,12 @@ class AuthController extends Controller
             'message' => 'Login successful.',
             'token_type' => 'Bearer',
             'access_token' => $token,
+            'company_slug' => $company->slug,
+            'company' => [
+                'id' => $company->id,
+                'name' => $company->name,
+                'slug' => $company->slug,
+            ],
             'user' => $user,
         ]);
     }

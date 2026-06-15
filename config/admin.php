@@ -4,8 +4,38 @@ return [
     'email' => env('ADMIN_EMAIL', 'admin@example.com'),
     'password' => env('ADMIN_PASSWORD', 'admin123456'),
     'permissions' => env('ADMIN_PERMISSIONS', '*'),
+    'super_admin_permissions' => [
+        'dashboard',
+        'companies',
+    ],
+    'company_admin_permissions' => [
+        'dashboard',
+        'employees',
+        'attendance_reports',
+        'missed_requests',
+        'labour_attendance',
+        'payments',
+        'dpr_reports',
+        'challans',
+        'complaints',
+        'fdd_test_records',
+        'mir_file_reports',
+        'vehicles',
+        'diesel_purchases',
+    ],
 
     'navigation' => [
+        [
+            'label' => 'ConstructKaro',
+            'items' => [
+                [
+                    'key' => 'companies',
+                    'label' => 'Companies',
+                    'route' => 'admin.companies.index',
+                    'active' => 'admin.companies.*',
+                ],
+            ],
+        ],
         [
             'label' => 'Overview',
             'items' => [
@@ -113,6 +143,7 @@ return [
 
     'route_permissions' => [
         'admin.dashboard' => 'dashboard',
+        'admin.companies.*' => 'companies',
         'admin.attendance-reports.*' => 'attendance_reports',
         'admin.missed-requests.*' => 'missed_requests',
         'admin.labour-attendance.*' => 'labour_attendance',

@@ -7,6 +7,7 @@ use App\Models\Attendance;
 use App\Models\Payment;
 use App\Models\User;
 use App\Services\PaymentSlipPdfService;
+use App\Support\Tenant;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Illuminate\Http\RedirectResponse;
@@ -20,8 +21,9 @@ class PaymentController extends Controller
     public function index(): View
     {
         return view('admin.payments.index', [
-            'employees' => User::query()->orderBy('name')->get(),
+            'employees' => User::query()->forCurrentCompany()->employees()->orderBy('name')->get(),
             'payments' => Payment::query()
+                ->forCurrentCompany()
                 ->with('user:id,name,mobile,designation')
                 ->latest()
                 ->paginate(15),
@@ -42,6 +44,7 @@ class PaymentController extends Controller
         $to = Carbon::parse($data['to_date'])->endOfDay();
 
         $existingPayment = Payment::query()
+            ->forCurrentCompany()
             ->where('user_id', $data['user_id'])
             ->whereDate('from_date', $from->toDateString())
             ->whereDate('to_date', $to->toDateString())
@@ -51,7 +54,7 @@ class PaymentController extends Controller
             return back()->with('error', 'Payment is already generated for this period.');
         }
 
-        $user = User::query()->findOrFail($data['user_id']);
+        $user = User::query()->forCurrentCompany()->employees()->findOrFail($data['user_id']);
         $payment = Payment::query()->create($this->calculatePayment($user, $from, $to));
 
         $payment->load('user');
@@ -87,6 +90,7 @@ class PaymentController extends Controller
         $perDayRate = $grossSalary / $daysInMonth;
 
         $attendances = Attendance::query()
+            ->forCurrentCompany()
             ->where('user_id', $user->id)
             ->whereBetween('attendance_date', [$from->toDateString(), $to->toDateString()])
             ->orderBy('attendance_date')
@@ -142,6 +146,7 @@ class PaymentController extends Controller
         $netPayable = round($grossPayable - $totalDeduction, 2);
 
         return [
+            'company_id' => app(Tenant::class)->id(),
             'user_id' => $user->id,
             'from_date' => $from->toDateString(),
             'to_date' => $to->toDateString(),

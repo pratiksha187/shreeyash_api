@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\AttendanceReportController;
 use App\Http\Controllers\Admin\ChallanController;
+use App\Http\Controllers\Admin\CompanyController;
 use App\Http\Controllers\Admin\ComplaintController;
 use App\Http\Controllers\Admin\DailyProgressReportController;
 use App\Http\Controllers\Admin\DailyDieselPurchaseController;
@@ -29,6 +30,13 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::middleware(EnsureAdminLoggedIn::class)->group(function () {
         Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
         Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+        Route::get('/companies', [CompanyController::class, 'index'])->name('companies.index');
+        Route::get('/companies/create', [CompanyController::class, 'create'])->name('companies.create');
+        Route::post('/companies', [CompanyController::class, 'store'])->name('companies.store');
+        Route::get('/companies/{company}', [CompanyController::class, 'show'])->name('companies.show');
+        Route::post('/companies/{company}/database', [CompanyController::class, 'provisionDatabase'])->name('companies.database');
+        Route::post('/companies/{company}/renew', [CompanyController::class, 'renew'])->name('companies.renew');
+        Route::patch('/companies/{company}/status', [CompanyController::class, 'updateStatus'])->name('companies.status');
         Route::get('/attendance-reports', [AttendanceReportController::class, 'index'])->name('attendance-reports.index');
         Route::get('/dpr-reports', [DailyProgressReportController::class, 'index'])->name('dpr-reports.index');
         Route::get('/dpr-reports/photos/{photo}', [DailyProgressReportController::class, 'photo'])->name('dpr-reports.photo');

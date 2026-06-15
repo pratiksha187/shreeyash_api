@@ -38,6 +38,7 @@ class LabourAttendanceController extends Controller
             : today()->toDateString();
 
         $baseQuery = LabourAttendance::query()
+            ->forCurrentCompany()
             ->whereBetween('attendance_date', [$fromDate, $toDate])
             ->when(isset($filters['labour_site_id']), fn ($query) => $query->where('labour_site_id', $filters['labour_site_id']))
             ->when(isset($filters['contractor_id']), fn ($query) => $query->where('contractor_id', $filters['contractor_id']))
@@ -52,10 +53,10 @@ class LabourAttendanceController extends Controller
                 ->latest()
                 ->paginate(15)
                 ->withQueryString(),
-            'sites' => LabourSite::query()->with('contractors.labours')->orderBy('name')->get(),
-            'contractors' => Contractor::query()->with('site')->orderBy('name')->get(),
-            'labours' => Labour::query()->with('contractor.site')->orderBy('name')->get(),
-            'engineers' => User::query()->orderBy('name')->get(['id', 'name', 'mobile']),
+            'sites' => LabourSite::query()->forCurrentCompany()->with('contractors.labours')->orderBy('name')->get(),
+            'contractors' => Contractor::query()->forCurrentCompany()->with('site')->orderBy('name')->get(),
+            'labours' => Labour::query()->forCurrentCompany()->with('contractor.site')->orderBy('name')->get(),
+            'engineers' => User::query()->forCurrentCompany()->employees()->orderBy('name')->get(['id', 'name', 'mobile']),
             'attendanceStatuses' => LabourAttendance::ATTENDANCE_STATUSES,
             'approvalStatuses' => LabourAttendance::APPROVAL_STATUSES,
             'fromDate' => $fromDate,

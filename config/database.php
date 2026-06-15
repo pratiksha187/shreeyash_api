@@ -17,6 +17,7 @@ return [
     */
 
     'default' => env('DB_CONNECTION', 'sqlite'),
+    'tenant_prefix' => env('TENANT_DB_PREFIX', env('DB_DATABASE', 'attendance_api').'_'),
 
     /*
     |--------------------------------------------------------------------------

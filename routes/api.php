@@ -9,11 +9,12 @@ use App\Http\Controllers\Api\LabourAttendanceController;
 use App\Http\Controllers\Api\MissedAttendanceRequestController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Middleware\AuthenticateApiToken;
+use App\Http\Middleware\EnsureCompanySubscriptionActive;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/login', [AuthController::class, 'login']);
 
-Route::middleware(AuthenticateApiToken::class)->group(function () {
+Route::middleware([AuthenticateApiToken::class, EnsureCompanySubscriptionActive::class])->group(function () {
     Route::get('/user', [AuthController::class, 'profile'])->name('user');
     Route::get('/profile', [AuthController::class, 'profile']);
     Route::get('/attendance/me', [AttendanceController::class, 'me']);

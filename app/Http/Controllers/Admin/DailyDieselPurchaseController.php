@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\DailyDieselPurchase;
 use App\Models\LabourSite;
+use App\Support\Tenant;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Illuminate\Http\RedirectResponse;
@@ -23,10 +24,12 @@ class DailyDieselPurchaseController extends Controller
         $monthStart = Carbon::createFromFormat('Y-m', $selectedMonth)->startOfMonth();
         $monthEnd = $monthStart->copy()->endOfMonth();
         $sites = LabourSite::query()
+            ->forCurrentCompany()
             ->where('is_active', true)
             ->orderBy('name')
             ->get(['id', 'name']);
         $entries = DailyDieselPurchase::query()
+            ->forCurrentCompany()
             ->with('siteEntries')
             ->whereBetween('entry_date', [$monthStart->toDateString(), $monthEnd->toDateString()])
             ->get()
@@ -140,7 +143,10 @@ class DailyDieselPurchaseController extends Controller
         }
 
         $purchase = DailyDieselPurchase::query()->updateOrCreate(
-            ['entry_date' => $entryDate],
+            [
+                'company_id' => app(Tenant::class)->id(),
+                'entry_date' => $entryDate,
+            ],
             [
                 'challan_no' => $entry['challan_no'] ?? null,
                 'campar' => $entry['campar'] ?? null,
@@ -155,7 +161,10 @@ class DailyDieselPurchaseController extends Controller
             }
 
             $purchase->siteEntries()->updateOrCreate(
-                ['labour_site_id' => $siteEntry['labour_site_id']],
+                [
+                    'company_id' => app(Tenant::class)->id(),
+                    'labour_site_id' => $siteEntry['labour_site_id'],
+                ],
                 [
                     'opening_balance' => $siteEntry['opening_balance'] ?? null,
                     'today_supply' => $siteEntry['today_supply'] ?? 0,

@@ -18,6 +18,7 @@ class ComplaintController extends Controller
         ]);
 
         $complaints = Complaint::query()
+            ->forCurrentCompany()
             ->where('user_id', $request->user()->id)
             ->when(isset($filters['status']), fn ($query) => $query->where('status', $filters['status']))
             ->latest()
@@ -59,11 +60,12 @@ class ComplaintController extends Controller
         ], 201);
     }
 
-    public function show(Request $request, Complaint $complaint): JsonResponse
+    public function show(Request $request, int $complaint): JsonResponse
     {
-        if ($complaint->user_id !== $request->user()->id) {
-            abort(404);
-        }
+        $complaint = Complaint::query()
+            ->forCurrentCompany()
+            ->where('user_id', $request->user()->id)
+            ->findOrFail($complaint);
 
         $complaint->load('user:id,name,mobile,designation');
 

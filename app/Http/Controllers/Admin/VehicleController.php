@@ -16,6 +16,7 @@ class VehicleController extends Controller
     public function index(): View
     {
         $vehicles = Vehicle::query()
+            ->forCurrentCompany()
             ->withCount('vehicleLogs')
             ->latest()
             ->paginate(10);

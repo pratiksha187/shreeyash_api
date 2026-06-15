@@ -5,12 +5,16 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Database\Eloquent\Builder;
+use App\Models\Concerns\UsesTenantConnection;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Notifications\Notifiable;
+use App\Support\Tenant;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, UsesTenantConnection;
 
     /**
      * The attributes that are mass assignable.
@@ -19,6 +23,9 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'name',
+        'company_id',
+        'role',
+        'is_active',
         'email',
         'mobile',
         'gender',
@@ -54,6 +61,41 @@ class User extends Authenticatable
     public function attendances()
     {
         return $this->hasMany(Attendance::class);
+    }
+
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Company::class);
+    }
+
+    public function isSuperAdmin(): bool
+    {
+        return $this->role === 'super_admin';
+    }
+
+    public function isCompanyAdmin(): bool
+    {
+        return $this->role === 'company_admin';
+    }
+
+    public function scopeForCurrentCompany(Builder $query): Builder
+    {
+        $companyId = app(Tenant::class)->id();
+
+        if ($companyId) {
+            return $query->where('company_id', $companyId);
+        }
+
+        if (session('admin_role') === 'company_admin') {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query;
+    }
+
+    public function scopeEmployees(Builder $query): Builder
+    {
+        return $query->where('role', 'employee');
     }
 
     public function payments()
@@ -95,6 +137,7 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            'is_active' => 'boolean',
             'date_of_birth' => 'date',
             'join_date' => 'date',
             'confirmation_date' => 'date',

@@ -32,6 +32,7 @@ class ComplaintController extends Controller
         $status = $filters['status'] ?? null;
 
         $baseQuery = Complaint::query()
+            ->forCurrentCompany()
             ->whereBetween('created_at', [
                 Carbon::parse($fromDate)->startOfDay(),
                 Carbon::parse($toDate)->endOfDay(),
@@ -45,7 +46,7 @@ class ComplaintController extends Controller
                 ->latest()
                 ->paginate(15)
                 ->withQueryString(),
-            'employees' => User::query()->orderBy('name')->get(['id', 'name', 'mobile']),
+            'employees' => User::query()->forCurrentCompany()->employees()->orderBy('name')->get(['id', 'name', 'mobile']),
             'statuses' => Complaint::STATUSES,
             'fromDate' => $fromDate,
             'toDate' => $toDate,

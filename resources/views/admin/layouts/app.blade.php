@@ -921,6 +921,10 @@
             </header>
 
             <main class="main">
+                @if (session('error'))
+                    <div class="alert-error">{{ session('error') }}</div>
+                @endif
+
                 @yield('content')
             </main>
 
