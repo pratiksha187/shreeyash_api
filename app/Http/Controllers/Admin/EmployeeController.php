@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use App\Models\User;
-use App\Services\WhatsappService;
 use App\Support\Tenant;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -123,21 +122,17 @@ class EmployeeController extends Controller
             'designation' => ['nullable', 'string', 'max:255'],
         ]);
 
-        $plainPassword = $data['password'];
-
         unset($data['password_confirmation']);
         $data['password'] = Hash::make($data['password']);
         $data['company_id'] = app(Tenant::class)->id();
         $data['role'] = 'employee';
         $data['is_active'] = true;
 
-        $employee = User::query()->create($data);
-
-        $this->sendEmployeeCredentials($employee, $plainPassword);
+        User::query()->create($data);
 
         return redirect()
             ->route('admin.employees.index')
-            ->with('success', 'Employee added successfully. Login details were sent on WhatsApp.');
+            ->with('success', 'Employee added successfully. Use Send Credentials to open WhatsApp Web.');
     }
 
     public function sendCredentials(Request $request, int $employee): RedirectResponse
@@ -154,38 +149,40 @@ class EmployeeController extends Controller
         }
 
         $plainPassword = Str::random(10);
-        $oldPassword = $employee->password;
 
         $employee->forceFill([
             'password' => Hash::make($plainPassword),
         ])->save();
 
-        $result = $this->sendEmployeeCredentials($employee, $plainPassword);
-
-        if (! ($result['sent'] ?? false)) {
-            $employee->forceFill([
-                'password' => $oldPassword,
-            ])->save();
-
-            return back()->with('error', 'WhatsApp message could not be sent. Password was not changed. Please check Twilio settings.');
-        }
-
-        return back()->with('success', "New login credentials sent to {$employee->name} on WhatsApp.");
+        return redirect()->away(
+            'https://web.whatsapp.com/send?phone='
+            .$this->whatsappPhone($employee->mobile)
+            .'&text='
+            .rawurlencode($this->credentialMessage($employee, $plainPassword))
+        );
     }
 
-    private function sendEmployeeCredentials(User $employee, string $plainPassword): array
+    private function credentialMessage(User $employee, string $plainPassword): string
     {
         $company = app(Tenant::class)->company();
 
-        return app(WhatsappService::class)->sendTextNow(
-            $employee->mobile,
-            "Hello {$employee->name}, your ConstructKaro employee login details are:\n"
+        return "Hello {$employee->name}, your ConstructKaro employee login details are:\n"
             ."Company: {$company?->name}\n"
             ."Company Code: {$company?->slug}\n"
             ."Mobile: {$employee->mobile}\n"
             ."Password: {$plainPassword}\n"
-            .'Please login from your own mobile device only.'
-        );
+            .'Please login from your own mobile device only.';
+    }
+
+    private function whatsappPhone(string $mobile): string
+    {
+        $digits = preg_replace('/\D+/', '', $mobile) ?? '';
+
+        if (strlen($digits) === 10) {
+            return '91'.$digits;
+        }
+
+        return $digits;
     }
 
     private function ensureCompanyAdmin(): void

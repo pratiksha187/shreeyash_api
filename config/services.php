@@ -34,6 +34,7 @@ return [
 
     'whatsapp_web' => [
         'endpoint' => env('WHATSAPP_WEB_ENDPOINT', 'http://127.0.0.1:3010/send-message'),
+        'status_endpoint' => env('WHATSAPP_WEB_STATUS_ENDPOINT', 'http://127.0.0.1:3010/status'),
         'token' => env('WHATSAPP_WEB_TOKEN'),
     ],
 

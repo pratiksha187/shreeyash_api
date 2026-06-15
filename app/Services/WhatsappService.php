@@ -7,6 +7,63 @@ use Illuminate\Support\Facades\Log;
 
 class WhatsappService
 {
+    public function status(): array
+    {
+        $provider = config('services.whatsapp.provider', 'log');
+
+        if ($provider !== 'web') {
+            return [
+                'provider' => $provider,
+                'ready' => $provider !== 'log',
+                'message' => "WhatsApp provider is {$provider}.",
+            ];
+        }
+
+        if (! filled(config('services.whatsapp_web.status_endpoint'))) {
+            return [
+                'provider' => 'web',
+                'ready' => false,
+                'message' => 'WhatsApp Web status endpoint is not configured.',
+            ];
+        }
+
+        try {
+            $request = Http::acceptJson()->timeout(3);
+
+            if (filled(config('services.whatsapp_web.token'))) {
+                $request = $request->withToken(config('services.whatsapp_web.token'));
+            }
+
+            $response = $request->get(config('services.whatsapp_web.status_endpoint'));
+        } catch (\Throwable $exception) {
+            return [
+                'provider' => 'web',
+                'ready' => false,
+                'message' => 'WhatsApp Web service is not running.',
+                'error' => $exception->getMessage(),
+            ];
+        }
+
+        if (! $response->successful()) {
+            return [
+                'provider' => 'web',
+                'ready' => false,
+                'message' => 'WhatsApp Web service status check failed.',
+                'status' => $response->status(),
+            ];
+        }
+
+        $body = $response->json() ?? [];
+
+        return [
+            'provider' => 'web',
+            'ready' => (bool) ($body['ready'] ?? false),
+            'message' => ($body['ready'] ?? false)
+                ? 'WhatsApp Web is connected.'
+                : 'WhatsApp Web is not connected. Scan the QR first.',
+        ];
+    }
+
     public function sendTextNow(string $mobile, string $message): array
     {
         $provider = config('services.whatsapp.provider', 'log');
@@ -54,7 +111,7 @@ class WhatsappService
         }
 
         try {
-            $request = Http::acceptJson();
+            $request = Http::acceptJson()->timeout(15);
 
             if (filled(config('services.whatsapp_web.token'))) {
                 $request = $request->withToken(config('services.whatsapp_web.token'));

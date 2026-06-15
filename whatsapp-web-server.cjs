@@ -90,6 +90,16 @@ const server = http.createServer(async (request, response) => {
     }
 });
 
+server.on('error', (error) => {
+    if (error.code === 'EADDRINUSE') {
+        console.error(`WhatsApp Web server is already running at http://${host}:${port}`);
+        console.error(`Open http://${host}:${port}/status to check connection status.`);
+        process.exit(1);
+    }
+
+    throw error;
+});
+
 server.listen(port, host, () => {
     console.log(`WhatsApp Web server running at http://${host}:${port}`);
 });
