@@ -75,6 +75,6 @@
     </div>
 
     <div class="pagination">
-        {{ $companies->links() }}
+        {{ $companies->links('admin.pagination') }}
     </div>
 @endsection

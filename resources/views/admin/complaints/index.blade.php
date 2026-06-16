@@ -174,6 +174,6 @@
     </div>
 
     <div class="pagination">
-        {{ $complaints->links() }}
+        {{ $complaints->links('admin.pagination') }}
     </div>
 @endsection

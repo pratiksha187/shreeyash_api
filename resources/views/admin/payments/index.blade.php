@@ -112,6 +112,6 @@
     </div>
 
     <div class="pagination">
-        {{ $payments->links() }}
+        {{ $payments->links('admin.pagination') }}
     </div>
 @endsection

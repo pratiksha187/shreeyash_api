@@ -144,6 +144,6 @@
     </div>
 
     <div class="pagination">
-        {{ $reports->links() }}
+        {{ $reports->links('admin.pagination') }}
     </div>
 @endsection

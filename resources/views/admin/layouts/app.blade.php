@@ -558,7 +558,64 @@
         }
 
         .pagination {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
             margin-top: 18px;
+        }
+
+        .pagination-nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            width: 100%;
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .pagination-summary {
+            white-space: nowrap;
+        }
+
+        .pagination-links {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            gap: 6px;
+        }
+
+        .pagination-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 34px;
+            min-height: 34px;
+            padding: 7px 10px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: #fff;
+            color: #334155;
+            font-weight: 800;
+            line-height: 1;
+            text-decoration: none;
+        }
+
+        .pagination-link:hover {
+            border-color: #bfdbfe;
+            color: var(--primary);
+        }
+
+        .pagination-link.active {
+            border-color: var(--primary);
+            background: var(--primary);
+            color: #fff;
+        }
+
+        .pagination-link.disabled {
+            background: #f8fafc;
+            color: #94a3b8;
+            cursor: not-allowed;
         }
 
         .detail-grid {
@@ -869,6 +926,19 @@
 
             .actions {
                 flex-direction: column;
+            }
+
+            .pagination-nav {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .pagination-summary {
+                white-space: normal;
+            }
+
+            .pagination-links {
+                justify-content: flex-start;
             }
 
             .btn {

@@ -184,6 +184,6 @@
     </div>
 
     <div class="pagination">
-        {{ $requests->links() }}
+        {{ $requests->links('admin.pagination') }}
     </div>
 @endsection

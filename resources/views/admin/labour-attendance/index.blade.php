@@ -304,6 +304,6 @@
     </div>
 
     <div class="pagination">
-        {{ $attendances->links() }}
+        {{ $attendances->links('admin.pagination') }}
     </div>
 @endsection

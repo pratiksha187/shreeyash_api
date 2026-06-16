@@ -63,6 +63,6 @@
     </div>
 
     <div class="pagination">
-        {{ $vehicles->links() }}
+        {{ $vehicles->links('admin.pagination') }}
     </div>
 @endsection

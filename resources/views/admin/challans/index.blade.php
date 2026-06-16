@@ -179,6 +179,6 @@
     </div>
 
     <div class="pagination">
-        {{ $challans->links() }}
+        {{ $challans->links('admin.pagination') }}
     </div>
 @endsection
