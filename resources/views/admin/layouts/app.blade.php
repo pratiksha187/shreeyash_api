@@ -277,6 +277,15 @@
             background: #dc2626;
         }
 
+        .btn.whatsapp {
+            background: #16a34a;
+            box-shadow: 0 8px 18px rgba(22, 163, 74, 0.18);
+        }
+
+        .btn.whatsapp:hover {
+            background: #15803d;
+        }
+
         .btn.small {
             min-height: 34px;
             padding: 7px 10px;
@@ -334,6 +343,71 @@
 
         .table-wrap {
             overflow-x: auto;
+        }
+
+        .employees-table-wrap {
+            overflow-x: visible;
+        }
+
+        .employees-table {
+            table-layout: fixed;
+        }
+
+        .employees-table th,
+        .employees-table td {
+            padding: 16px 18px;
+            vertical-align: middle;
+            white-space: normal;
+        }
+
+        .employees-table tbody tr:hover td {
+            background: #f8fbff;
+        }
+
+        .employee-name {
+            display: grid;
+            gap: 4px;
+        }
+
+        .employee-id,
+        .employee-subtext {
+            color: var(--muted);
+            font-size: 12px;
+            font-weight: 700;
+            line-height: 1.35;
+        }
+
+        .employee-contact {
+            display: grid;
+            gap: 4px;
+            overflow-wrap: anywhere;
+        }
+
+        .designation-pill {
+            display: inline-flex;
+            align-items: center;
+            max-width: 100%;
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: #eff6ff;
+            color: #1e40af;
+            font-size: 13px;
+            font-weight: 800;
+            line-height: 1.25;
+        }
+
+        .date-stack {
+            display: grid;
+            gap: 4px;
+        }
+
+        .employee-action-form {
+            margin: 0;
+        }
+
+        .employee-action-form .btn {
+            width: 100%;
+            white-space: nowrap;
         }
 
         .table-link {
@@ -926,6 +1000,59 @@
 
             .actions {
                 flex-direction: column;
+            }
+
+            .employees-table-wrap {
+                overflow-x: visible;
+            }
+
+            .employees-table,
+            .employees-table tbody,
+            .employees-table tr,
+            .employees-table td {
+                display: block;
+                width: 100%;
+            }
+
+            .employees-table thead,
+            .employees-table colgroup {
+                display: none;
+            }
+
+            .employees-table tbody {
+                display: grid;
+                gap: 12px;
+                padding: 12px;
+            }
+
+            .employees-table tr {
+                border: 1px solid var(--line);
+                border-radius: 8px;
+                background: #fff;
+                overflow: hidden;
+            }
+
+            .employees-table td {
+                display: grid;
+                grid-template-columns: 96px minmax(0, 1fr);
+                gap: 12px;
+                padding: 12px;
+            }
+
+            .employees-table td::before {
+                content: attr(data-label);
+                color: var(--muted);
+                font-size: 12px;
+                font-weight: 900;
+                text-transform: uppercase;
+            }
+
+            .employees-table td:last-child {
+                grid-template-columns: 1fr;
+            }
+
+            .employees-table td:last-child::before {
+                display: none;
             }
 
             .pagination-nav {
