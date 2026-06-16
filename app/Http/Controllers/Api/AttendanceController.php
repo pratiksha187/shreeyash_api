@@ -17,7 +17,7 @@ use Illuminate\Validation\Rule;
 
 class AttendanceController extends Controller
 {
-    private const ATTENDANCE_LOCATION_RADIUS_METERS = 500;
+    private const ATTENDANCE_LOCATION_RADIUS_METERS = 150;
 
     public function clockIn(Request $request): JsonResponse
     {
