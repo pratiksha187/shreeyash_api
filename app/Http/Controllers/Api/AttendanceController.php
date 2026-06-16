@@ -166,7 +166,7 @@ class AttendanceController extends Controller
         }
 
         return response()->json([
-            'message' => 'You are outside the allowed attendance location. Clock in/out is allowed within 50 meters only.',
+            'message' => 'You are outside the allowed attendance location. Clock in/out is allowed within 150 meters only.',
             'allowed_radius_meters' => self::ATTENDANCE_LOCATION_RADIUS_METERS,
             'nearest_location' => [
                 'id' => $nearestLocation['location']->id,
