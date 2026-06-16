@@ -198,7 +198,12 @@
 
                 <div class="field">
                     <label for="designation">Designation</label>
-                    <input id="designation" name="designation" type="text" value="{{ old('designation') }}" placeholder="Employee designation">
+                    <select id="designation" name="designation">
+                        <option value="">Select designation</option>
+                        @foreach ($roles as $role)
+                            <option value="{{ $role }}" @selected(old('designation') === $role)>{{ $role }}</option>
+                        @endforeach
+                    </select>
                     @error('designation')
                         <div class="error">{{ $message }}</div>
                     @enderror

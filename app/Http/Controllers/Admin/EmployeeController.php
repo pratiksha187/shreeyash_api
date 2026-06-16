@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Support\Tenant;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -35,7 +36,9 @@ class EmployeeController extends Controller
     {
         $this->ensureCompanyAdmin();
 
-        return view('admin.employees.create');
+        return view('admin.employees.create', [
+            'roles' => $this->roles(),
+        ]);
     }
 
     public function show(Request $request, int $employee): View
@@ -119,7 +122,7 @@ class EmployeeController extends Controller
             'pt' => ['nullable', 'numeric', 'min:0'],
             'advance' => ['nullable', 'numeric', 'min:0'],
             'pf' => ['nullable', 'numeric', 'min:0'],
-            'designation' => ['nullable', 'string', 'max:255'],
+            'designation' => ['nullable', 'string', 'max:255', Rule::exists('roles', 'name')],
         ]);
 
         $plainPassword = $data['password'];
@@ -206,5 +209,12 @@ class EmployeeController extends Controller
         }
 
         abort(403, 'Please login with an employer/company admin account to manage employees.');
+    }
+
+    private function roles()
+    {
+        return DB::table('roles')
+            ->orderBy('name')
+            ->pluck('name');
     }
 }
