@@ -18,6 +18,11 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class LabourAttendanceController extends Controller
 {
+    public function master(): View
+    {
+        return view('admin.labour-attendance.master', $this->masterData());
+    }
+
     public function index(Request $request): View
     {
         $filters = $request->validate([
@@ -53,9 +58,7 @@ class LabourAttendanceController extends Controller
                 ->latest()
                 ->paginate(15)
                 ->withQueryString(),
-            'sites' => LabourSite::query()->forCurrentCompany()->with('contractors.labours')->orderBy('name')->get(),
-            'contractors' => Contractor::query()->forCurrentCompany()->with('site')->orderBy('name')->get(),
-            'labours' => Labour::query()->forCurrentCompany()->with('contractor.site')->orderBy('name')->get(),
+            ...$this->masterData(),
             'engineers' => User::query()->forCurrentCompany()->employees()->orderBy('name')->get(['id', 'name', 'mobile']),
             'attendanceStatuses' => LabourAttendance::ATTENDANCE_STATUSES,
             'approvalStatuses' => LabourAttendance::APPROVAL_STATUSES,
@@ -135,6 +138,15 @@ class LabourAttendanceController extends Controller
         $labourAttendance->save();
 
         return back()->with('success', 'Labour attendance updated successfully.');
+    }
+
+    private function masterData(): array
+    {
+        return [
+            'sites' => LabourSite::query()->forCurrentCompany()->with('contractors.labours')->orderBy('name')->get(),
+            'contractors' => Contractor::query()->forCurrentCompany()->with('site')->orderBy('name')->get(),
+            'labours' => Labour::query()->forCurrentCompany()->with('contractor.site')->orderBy('name')->get(),
+        ];
     }
 
     public function photo(LabourAttendance $labourAttendance): StreamedResponse

@@ -78,6 +78,12 @@ return [
                     'active' => 'admin.labour-attendance.*',
                 ],
                 [
+                    'key' => 'labour_attendance',
+                    'label' => 'Labour Master',
+                    'route' => 'admin.labour-master.index',
+                    'active' => 'admin.labour-master.*',
+                ],
+                [
                     'key' => 'payments',
                     'label' => 'Payments',
                     'route' => 'admin.payments.index',
@@ -149,6 +155,7 @@ return [
         'admin.companies.*' => 'companies',
         'admin.attendance-reports.*' => 'attendance_reports',
         'admin.missed-requests.*' => 'missed_requests',
+        'admin.labour-master.*' => 'labour_attendance',
         'admin.labour-attendance.*' => 'labour_attendance',
         'admin.labour-sites.*' => 'labour_attendance',
         'admin.contractors.*' => 'labour_attendance',
