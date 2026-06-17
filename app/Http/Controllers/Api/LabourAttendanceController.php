@@ -316,6 +316,16 @@ class LabourAttendanceController extends Controller
             }
         }
 
+        $inTime = $data['in_time'] ?? $request->input('in_time');
+        if ($inTime !== null) {
+            $data['in_time'] = $this->normalizeTimeValue($inTime);
+        }
+
+        $outTime = $data['out_time'] ?? $request->input('out_time');
+        if ($outTime !== null) {
+            $data['out_time'] = $this->normalizeTimeValue($outTime);
+        }
+
         if (! $request->hasFile('photo')) {
             foreach (['image', 'labour_photo', 'labor_photo', 'labour_image', 'labor_image', 'attendance_photo'] as $key) {
                 if ($request->hasFile($key)) {
@@ -350,6 +360,21 @@ class LabourAttendanceController extends Controller
             ->unique()
             ->values()
             ->all();
+    }
+
+    private function normalizeTimeValue(mixed $time): mixed
+    {
+        if (! is_string($time)) {
+            return $time;
+        }
+
+        $time = trim($time);
+
+        if (preg_match('/^(\d{1,2})[.:](\d{2})$/', $time, $matches)) {
+            return str_pad($matches[1], 2, '0', STR_PAD_LEFT).':'.$matches[2];
+        }
+
+        return $time;
     }
 
     private function workHoursFromTimes(string $attendanceDate, ?string $inTime, ?string $outTime): ?float

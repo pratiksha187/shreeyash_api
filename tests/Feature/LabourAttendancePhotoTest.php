@@ -169,4 +169,48 @@ class LabourAttendancePhotoTest extends TestCase
             'work_hours' => 8.50,
         ]);
     }
+
+    public function test_labour_attendance_accepts_dot_separated_time_from_mobile_form(): void
+    {
+        $engineer = User::factory()->create([
+            'api_token' => hash('sha256', 'mobile-token'),
+        ]);
+        $this->actingAs($engineer);
+        $this->withoutMiddleware(AuthenticateApiToken::class);
+
+        $site = LabourSite::query()->create(['name' => 'Khanav']);
+        $contractor = Contractor::query()->create([
+            'name' => 'Irfan Ali',
+            'mobile' => '8546916086',
+        ]);
+        $labour = Labour::query()->create([
+            'name' => 'Babulal Munda',
+            'labour_code' => 'BM01',
+            'trade' => 'Carpenter',
+        ]);
+
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer mobile-token',
+        ])->postJson('/api/labour/attendances', [
+            'labour_site_id' => $site->id,
+            'contractor_id' => $contractor->id,
+            'labour_id' => $labour->id,
+            'attendance_date' => '2026-06-17',
+            'status' => 'present',
+            'in_time' => '09.00',
+            'out_time' => '18.00',
+        ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('labour_attendance.in_time', '09:00')
+            ->assertJsonPath('labour_attendance.out_time', '18:00')
+            ->assertJsonPath('labour_attendance.work_hours', '9.00');
+
+        $this->assertDatabaseHas('labour_attendances', [
+            'labour_id' => $labour->id,
+            'in_time' => '09:00',
+            'out_time' => '18:00',
+            'work_hours' => 9.00,
+        ]);
+    }
 }
