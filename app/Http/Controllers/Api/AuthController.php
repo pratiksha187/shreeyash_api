@@ -102,8 +102,9 @@ class AuthController extends Controller
         }
 
         $deviceId = hash('sha256', $credentials['device_id']);
+        $allowsMultiDeviceLogin = $this->allowsMultiDeviceLogin($user->mobile);
 
-        if ($user->mobile_device_id && ! hash_equals($user->mobile_device_id, $deviceId)) {
+        if (! $allowsMultiDeviceLogin && $user->mobile_device_id && ! hash_equals($user->mobile_device_id, $deviceId)) {
             return response()->json([
                 'message' => 'This employee is already registered on another mobile device. Please contact admin.',
                 'errors' => [
@@ -117,7 +118,11 @@ class AuthController extends Controller
             'api_token' => hash('sha256', $token),
         ];
 
-        if (! $user->mobile_device_id) {
+        if ($allowsMultiDeviceLogin) {
+            $loginData['mobile_device_id'] = null;
+            $loginData['mobile_device_name'] = null;
+            $loginData['mobile_device_registered_at'] = null;
+        } elseif (! $user->mobile_device_id) {
             $loginData['mobile_device_id'] = $deviceId;
             $loginData['mobile_device_name'] = $credentials['device_name'] ?? $request->userAgent();
             $loginData['mobile_device_registered_at'] = now();
@@ -137,6 +142,33 @@ class AuthController extends Controller
             ],
             'user' => $user,
         ]);
+    }
+
+    private function allowsMultiDeviceLogin(?string $mobile): bool
+    {
+        $mobile = $this->normalizeMobile($mobile);
+
+        if (! $mobile) {
+            return false;
+        }
+
+        $allowedMobiles = array_map(
+            fn ($allowedMobile) => $this->normalizeMobile($allowedMobile),
+            config('admin.multi_device_login_mobiles', [])
+        );
+
+        return in_array($mobile, $allowedMobiles, true);
+    }
+
+    private function normalizeMobile(?string $mobile): string
+    {
+        $digits = preg_replace('/\D+/', '', (string) $mobile) ?? '';
+
+        if (strlen($digits) > 10 && str_starts_with($digits, '91')) {
+            return substr($digits, -10);
+        }
+
+        return $digits;
     }
 
     public function profile(Request $request): JsonResponse

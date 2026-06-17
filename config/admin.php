@@ -23,6 +23,9 @@ return [
         'vehicles',
         'diesel_purchases',
     ],
+    'multi_device_login_mobiles' => [
+        '9309886247',
+    ],
 
     'navigation' => [
         [
