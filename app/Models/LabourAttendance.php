@@ -23,6 +23,8 @@ class LabourAttendance extends Model
         'labour_id',
         'attendance_date',
         'status',
+        'in_time',
+        'out_time',
         'work_hours',
         'remarks',
         'photo_path',

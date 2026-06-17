@@ -115,9 +115,13 @@ class LabourAttendanceController extends Controller
         $data = $request->validate([
             'labour_site_id' => ['required', Rule::exists($this->tenantTable('labour_sites'), 'id')],
             'contractor_id' => ['required', Rule::exists($this->tenantTable('contractors'), 'id')],
-            'labour_id' => ['required', Rule::exists($this->tenantTable('labours'), 'id')],
+            'labour_id' => ['required_without:labour_ids', Rule::exists($this->tenantTable('labours'), 'id')],
+            'labour_ids' => ['required_without:labour_id', 'array', 'min:1', 'max:100'],
+            'labour_ids.*' => ['required', Rule::exists($this->tenantTable('labours'), 'id')],
             'attendance_date' => ['required', 'date'],
             'status' => ['required', Rule::in(LabourAttendance::ATTENDANCE_STATUSES)],
+            'in_time' => ['nullable', 'date_format:H:i'],
+            'out_time' => ['nullable', 'date_format:H:i'],
             'work_hours' => ['nullable', 'numeric', 'min:0', 'max:24'],
             'remarks' => ['nullable', 'string', 'max:2000'],
             'photo' => $request->hasFile('photo') ? ['nullable', 'image', 'max:5120'] : ['nullable', 'string'],
@@ -136,69 +140,98 @@ class LabourAttendanceController extends Controller
             ]);
         }
 
-        $labour = Labour::query()
+        $labourIds = $this->labourIdsFromData($data);
+        $labours = Labour::query()
             ->forCurrentCompany()
-            ->where('id', $data['labour_id'])
+            ->whereIn('id', $labourIds)
             ->where('contractor_id', $contractor->id)
-            ->first();
+            ->get()
+            ->keyBy('id');
 
-        if (! $labour) {
+        if ($labours->count() !== count($labourIds)) {
             throw ValidationException::withMessages([
-                'labour_id' => 'The selected labour does not belong to this contractor.',
+                'labour_ids' => 'One or more selected labours do not belong to this contractor.',
             ]);
         }
 
         $attendanceDate = Carbon::parse($data['attendance_date'])->toDateString();
-        $existingAttendance = LabourAttendance::query()
+        $approvedAttendances = LabourAttendance::query()
             ->forCurrentCompany()
-            ->where('labour_id', $labour->id)
+            ->whereIn('labour_id', $labourIds)
             ->whereDate('attendance_date', $attendanceDate)
-            ->first();
+            ->where('approval_status', 'approved')
+            ->with(['site', 'contractor', 'labour', 'engineer'])
+            ->get();
 
-        if ($existingAttendance && $existingAttendance->approval_status === 'approved') {
+        if ($approvedAttendances->isNotEmpty()) {
             return response()->json([
                 'message' => 'Labour attendance is already approved for this date.',
-                'labour_attendance' => $this->attendancePayload($existingAttendance->load(['site', 'contractor', 'labour', 'engineer'])),
+                'labour_attendances' => $approvedAttendances
+                    ->map(fn (LabourAttendance $attendance) => $this->attendancePayload($attendance))
+                    ->values(),
             ], 409);
         }
 
-        $attendance = LabourAttendance::query()->updateOrCreate(
-            [
-                'company_id' => $request->user()->company_id,
-                'labour_id' => $labour->id,
-                'attendance_date' => $attendanceDate,
-            ],
-            [
-                'engineer_user_id' => $request->user()->id,
-                'labour_site_id' => $data['labour_site_id'],
-                'contractor_id' => $contractor->id,
-                'status' => $data['status'],
-                'work_hours' => $data['work_hours'] ?? null,
-                'remarks' => $data['remarks'] ?? null,
-                'approval_status' => 'pending',
-                'admin_note' => null,
-                'reviewed_at' => null,
-            ]
-        );
+        $workHours = $this->workHoursFromTimes($attendanceDate, $data['in_time'] ?? null, $data['out_time'] ?? null);
+        $workHours ??= $data['work_hours'] ?? null;
+        $attendances = collect();
+        $created = false;
 
-        if ($photoPath = $this->storeAttendancePhoto($request, $attendance)) {
-            $oldPhotoPath = $attendance->photo_path;
+        foreach ($labourIds as $labourId) {
+            $attendance = LabourAttendance::query()->updateOrCreate(
+                [
+                    'company_id' => $request->user()->company_id,
+                    'labour_id' => $labourId,
+                    'attendance_date' => $attendanceDate,
+                ],
+                [
+                    'engineer_user_id' => $request->user()->id,
+                    'labour_site_id' => $data['labour_site_id'],
+                    'contractor_id' => $contractor->id,
+                    'status' => $data['status'],
+                    'in_time' => $data['in_time'] ?? null,
+                    'out_time' => $data['out_time'] ?? null,
+                    'work_hours' => $workHours,
+                    'remarks' => $data['remarks'] ?? null,
+                    'approval_status' => 'pending',
+                    'admin_note' => null,
+                    'reviewed_at' => null,
+                ]
+            );
 
-            $attendance->update(['photo_path' => $photoPath]);
+            $created = $created || $attendance->wasRecentlyCreated;
 
-            if ($oldPhotoPath && $oldPhotoPath !== $photoPath) {
-                Storage::disk('public')->delete($oldPhotoPath);
+            if ($photoPath = $this->storeAttendancePhoto($request, $attendance)) {
+                $oldPhotoPath = $attendance->photo_path;
+
+                $attendance->update(['photo_path' => $photoPath]);
+
+                if ($oldPhotoPath && $oldPhotoPath !== $photoPath) {
+                    Storage::disk('public')->delete($oldPhotoPath);
+                }
             }
+
+            $attendance->setRelation('labour', $labours->get($labourId));
+            $attendance->load(['site', 'contractor', 'engineer:id,name,mobile,designation']);
+            $attendances->push($attendance);
         }
 
-        $attendance->load(['site', 'contractor', 'labour', 'engineer:id,name,mobile,designation']);
+        $payloads = $attendances
+            ->map(fn (LabourAttendance $attendance) => $this->attendancePayload($attendance))
+            ->values();
 
-        return response()->json([
-            'message' => $attendance->wasRecentlyCreated
+        $response = [
+            'message' => $created
                 ? 'Labour attendance submitted successfully.'
                 : 'Labour attendance updated and sent for approval.',
-            'labour_attendance' => $this->attendancePayload($attendance),
-        ], $attendance->wasRecentlyCreated ? 201 : 200);
+            'labour_attendances' => $payloads,
+        ];
+
+        if ($payloads->count() === 1) {
+            $response['labour_attendance'] = $payloads->first();
+        }
+
+        return response()->json($response, $created ? 201 : 200);
     }
 
     public function photo(Request $request, int $labourAttendance): StreamedResponse
@@ -241,6 +274,15 @@ class LabourAttendanceController extends Controller
             $data['labour_id'] = $request->input('labor_id');
         }
 
+        if (! $request->has('labour_ids')) {
+            foreach (['labor_ids', 'labours', 'labors'] as $key) {
+                if ($request->has($key)) {
+                    $data['labour_ids'] = $request->input($key);
+                    break;
+                }
+            }
+        }
+
         if (! $request->has('attendance_date')) {
             foreach (['date', 'attendanceDate'] as $key) {
                 if ($request->has($key)) {
@@ -254,6 +296,24 @@ class LabourAttendanceController extends Controller
             foreach (['remark', 'note', 'notes'] as $key) {
                 if ($request->has($key)) {
                     $data['remarks'] = $request->input($key);
+                    break;
+                }
+            }
+        }
+
+        if (! $request->has('in_time')) {
+            foreach (['inTime', 'start_time', 'startTime'] as $key) {
+                if ($request->has($key)) {
+                    $data['in_time'] = $request->input($key);
+                    break;
+                }
+            }
+        }
+
+        if (! $request->has('out_time')) {
+            foreach (['outTime', 'end_time', 'endTime'] as $key) {
+                if ($request->has($key)) {
+                    $data['out_time'] = $request->input($key);
                     break;
                 }
             }
@@ -281,6 +341,34 @@ class LabourAttendanceController extends Controller
         if ($data) {
             $request->merge($data);
         }
+    }
+
+    private function labourIdsFromData(array $data): array
+    {
+        $labourIds = $data['labour_ids'] ?? [$data['labour_id']];
+
+        return collect($labourIds)
+            ->filter(fn ($labourId) => filled($labourId))
+            ->map(fn ($labourId) => (int) $labourId)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    private function workHoursFromTimes(string $attendanceDate, ?string $inTime, ?string $outTime): ?float
+    {
+        if (! $inTime || ! $outTime) {
+            return null;
+        }
+
+        $inAt = Carbon::createFromFormat('Y-m-d H:i', $attendanceDate.' '.$inTime);
+        $outAt = Carbon::createFromFormat('Y-m-d H:i', $attendanceDate.' '.$outTime);
+
+        if ($outAt->lessThan($inAt)) {
+            $outAt->addDay();
+        }
+
+        return round($inAt->diffInMinutes($outAt) / 60, 2);
     }
 
     private function findEmployeeLabourAttendance(Request $request, int $labourAttendanceId): LabourAttendance
@@ -413,6 +501,8 @@ class LabourAttendanceController extends Controller
             'attendance_date' => $attendance->attendance_date?->toDateString(),
             'date_display' => $attendance->attendance_date?->format('d M Y'),
             'status' => $attendance->status,
+            'in_time' => $this->formatAttendanceTime($attendance->in_time),
+            'out_time' => $this->formatAttendanceTime($attendance->out_time),
             'work_hours' => $attendance->work_hours,
             'remarks' => $attendance->remarks,
             'photo_path' => $attendance->photo_path,
@@ -431,5 +521,14 @@ class LabourAttendanceController extends Controller
                 'designation' => $attendance->engineer?->designation,
             ],
         ];
+    }
+
+    private function formatAttendanceTime(?string $time): ?string
+    {
+        if (! $time) {
+            return null;
+        }
+
+        return substr($time, 0, 5);
     }
 }

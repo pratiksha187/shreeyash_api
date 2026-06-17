@@ -258,6 +258,10 @@
                                 {{ str_replace('_', ' ', $attendance->status) }}
                             </span>
                             <div class="table-subtext">
+                                @if ($attendance->in_time || $attendance->out_time)
+                                    Time: {{ $attendance->in_time ? \Illuminate\Support\Str::of($attendance->in_time)->substr(0, 5) : '-' }}
+                                    to {{ $attendance->out_time ? \Illuminate\Support\Str::of($attendance->out_time)->substr(0, 5) : '-' }}<br>
+                                @endif
                                 Hours: {{ $attendance->work_hours ?? '-' }}
                                 @if ($attendance->remarks)
                                     <br>{{ $attendance->remarks }}

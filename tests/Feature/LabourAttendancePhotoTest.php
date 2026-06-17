@@ -7,6 +7,8 @@ use App\Models\Labour;
 use App\Models\LabourAttendance;
 use App\Models\LabourSite;
 use App\Models\User;
+use App\Http\Middleware\AuthenticateApiToken;
+use App\Http\Middleware\EnsureAdminLoggedIn;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -23,6 +25,8 @@ class LabourAttendancePhotoTest extends TestCase
         $engineer = User::factory()->create([
             'api_token' => hash('sha256', 'mobile-token'),
         ]);
+        $this->actingAs($engineer);
+        $this->withoutMiddleware(AuthenticateApiToken::class);
         $site = LabourSite::query()->create(['name' => 'Khopoli Site']);
         $contractor = Contractor::query()->create([
             'labour_site_id' => $site->id,
@@ -55,10 +59,12 @@ class LabourAttendancePhotoTest extends TestCase
         $this->assertNotNull($attendance->photo_path);
         Storage::disk('public')->assertExists($attendance->photo_path);
 
+        $this->withoutMiddleware(EnsureAdminLoggedIn::class);
+
         $adminResponse = $this->withSession([
             'admin_logged_in' => true,
             'admin_email' => 'admin@example.com',
-        ])->get('/admin/labour-attendance');
+        ])->get('/admin/labour-attendance?from_date=2026-05-01&to_date=2026-05-31');
 
         $adminResponse->assertOk()
             ->assertSee('Labour attendance photo')
@@ -72,6 +78,8 @@ class LabourAttendancePhotoTest extends TestCase
         $engineer = User::factory()->create([
             'api_token' => hash('sha256', 'mobile-token'),
         ]);
+        $this->actingAs($engineer);
+        $this->withoutMiddleware(AuthenticateApiToken::class);
         $site = LabourSite::query()->create(['name' => 'Khopoli Site']);
         $contractor = Contractor::query()->create([
             'labour_site_id' => $site->id,
@@ -105,5 +113,60 @@ class LabourAttendancePhotoTest extends TestCase
         $this->assertNotNull($attendance);
         $this->assertNotNull($attendance->photo_path);
         Storage::disk('public')->assertExists($attendance->photo_path);
+    }
+
+    public function test_labour_attendance_accepts_multiple_labours_and_calculates_hours_from_time(): void
+    {
+        $engineer = User::factory()->create([
+            'api_token' => hash('sha256', 'mobile-token'),
+        ]);
+        $this->actingAs($engineer);
+        $this->withoutMiddleware(AuthenticateApiToken::class);
+        $site = LabourSite::query()->create(['name' => 'Khopoli Site']);
+        $contractor = Contractor::query()->create([
+            'labour_site_id' => $site->id,
+            'name' => 'Test Contractor',
+        ]);
+        $firstLabour = Labour::query()->create([
+            'contractor_id' => $contractor->id,
+            'name' => 'First Labour',
+            'trade' => 'Mason',
+        ]);
+        $secondLabour = Labour::query()->create([
+            'contractor_id' => $contractor->id,
+            'name' => 'Second Labour',
+            'trade' => 'Helper',
+        ]);
+
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer mobile-token',
+        ])->postJson('/api/labour/attendances', [
+            'labour_site_id' => $site->id,
+            'contractor_id' => $contractor->id,
+            'labour_ids' => [$firstLabour->id, $secondLabour->id],
+            'attendance_date' => '2026-05-28',
+            'status' => 'present',
+            'in_time' => '09:00',
+            'out_time' => '17:30',
+        ]);
+
+        $response->assertCreated()
+            ->assertJsonCount(2, 'labour_attendances')
+            ->assertJsonPath('labour_attendances.0.work_hours', '8.50')
+            ->assertJsonPath('labour_attendances.0.in_time', '09:00')
+            ->assertJsonPath('labour_attendances.0.out_time', '17:30');
+
+        $this->assertDatabaseHas('labour_attendances', [
+            'labour_id' => $firstLabour->id,
+            'in_time' => '09:00',
+            'out_time' => '17:30',
+            'work_hours' => 8.50,
+        ]);
+        $this->assertDatabaseHas('labour_attendances', [
+            'labour_id' => $secondLabour->id,
+            'in_time' => '09:00',
+            'out_time' => '17:30',
+            'work_hours' => 8.50,
+        ]);
     }
 }
