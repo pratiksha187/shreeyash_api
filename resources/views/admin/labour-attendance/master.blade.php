@@ -50,17 +50,6 @@
                 <h2 class="section-title">Add Contractor</h2>
                 <div class="form-grid">
                     <div class="field">
-                        <label for="contractor_site">Site</label>
-                        <select id="contractor_site" name="labour_site_id" required>
-                            <option value="">Select Site</option>
-                            @foreach ($sites as $site)
-                                <option value="{{ $site->id }}" @selected(old('labour_site_id') == $site->id)>
-                                    {{ $site->name }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="field">
                         <label for="contractor_name">Contractor Name</label>
                         <input id="contractor_name" name="name" type="text" value="{{ old('name') }}" required>
                     </div>
@@ -81,17 +70,6 @@
         <section class="form-section">
             <h2 class="section-title">Add Labour</h2>
             <div class="form-grid three">
-                <div class="field">
-                    <label for="labour_contractor">Contractor</label>
-                    <select id="labour_contractor" name="contractor_id" required>
-                        <option value="">Select Contractor</option>
-                        @foreach ($contractors as $contractor)
-                            <option value="{{ $contractor->id }}" @selected(old('contractor_id') == $contractor->id)>
-                                {{ $contractor->name }} - {{ $contractor->site?->name ?? '-' }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
                 <div class="field">
                     <label for="labour_name">Labour Name</label>
                     <input id="labour_name" name="name" type="text" value="{{ old('name') }}" required>

@@ -93,13 +93,7 @@ class LabourAttendanceController extends Controller
     public function storeContractor(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'labour_site_id' => ['required', 'exists:labour_sites,id'],
-            'name' => [
-                'required',
-                'string',
-                'max:255',
-                Rule::unique('contractors', 'name')->where('labour_site_id', $request->input('labour_site_id')),
-            ],
+            'name' => ['required', 'string', 'max:255'],
             'mobile' => ['nullable', 'string', 'max:20'],
         ]);
 
@@ -111,7 +105,6 @@ class LabourAttendanceController extends Controller
     public function storeLabour(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'contractor_id' => ['required', 'exists:contractors,id'],
             'name' => ['required', 'string', 'max:255'],
             'mobile' => ['nullable', 'string', 'max:20'],
             'labour_code' => ['nullable', 'string', 'max:50'],
@@ -143,9 +136,9 @@ class LabourAttendanceController extends Controller
     private function masterData(): array
     {
         return [
-            'sites' => LabourSite::query()->forCurrentCompany()->with('contractors.labours')->orderBy('name')->get(),
-            'contractors' => Contractor::query()->forCurrentCompany()->with('site')->orderBy('name')->get(),
-            'labours' => Labour::query()->forCurrentCompany()->with('contractor.site')->orderBy('name')->get(),
+            'sites' => LabourSite::query()->forCurrentCompany()->orderBy('name')->get(),
+            'contractors' => Contractor::query()->forCurrentCompany()->orderBy('name')->get(),
+            'labours' => Labour::query()->forCurrentCompany()->orderBy('name')->get(),
         ];
     }
 

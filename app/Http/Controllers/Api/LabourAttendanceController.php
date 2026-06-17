@@ -40,7 +40,8 @@ class LabourAttendanceController extends Controller
             ->where('is_active', true)
             ->findOrFail($labourSite);
 
-        $contractors = $labourSite->contractors()
+        $contractors = Contractor::query()
+            ->forCurrentCompany()
             ->where('is_active', true)
             ->orderBy('name')
             ->get()
@@ -60,9 +61,8 @@ class LabourAttendanceController extends Controller
             ->where('is_active', true)
             ->findOrFail($contractor);
 
-        $contractor->load('site');
-
-        $labours = $contractor->labours()
+        $labours = Labour::query()
+            ->forCurrentCompany()
             ->where('is_active', true)
             ->orderBy('name')
             ->get()
@@ -70,7 +70,6 @@ class LabourAttendanceController extends Controller
 
         return response()->json([
             'message' => 'Labours fetched successfully.',
-            'site' => $this->sitePayload($contractor->site),
             'contractor' => $this->contractorPayload($contractor),
             'labours' => $labours,
         ]);
@@ -131,12 +130,11 @@ class LabourAttendanceController extends Controller
         $contractor = Contractor::query()
             ->forCurrentCompany()
             ->where('id', $data['contractor_id'])
-            ->where('labour_site_id', $data['labour_site_id'])
             ->first();
 
         if (! $contractor) {
             throw ValidationException::withMessages([
-                'contractor_id' => 'The selected contractor does not belong to this site.',
+                'contractor_id' => 'The selected contractor is invalid.',
             ]);
         }
 
@@ -144,13 +142,12 @@ class LabourAttendanceController extends Controller
         $labours = Labour::query()
             ->forCurrentCompany()
             ->whereIn('id', $labourIds)
-            ->where('contractor_id', $contractor->id)
             ->get()
             ->keyBy('id');
 
         if ($labours->count() !== count($labourIds)) {
             throw ValidationException::withMessages([
-                'labour_ids' => 'One or more selected labours do not belong to this contractor.',
+                'labour_ids' => 'One or more selected labours are invalid.',
             ]);
         }
 
