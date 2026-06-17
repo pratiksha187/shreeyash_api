@@ -31,6 +31,13 @@ class DashboardController extends Controller
                 ->whereDate('attendance_date', today())
                 ->where('status', 'absent')
                 ->count(),
+            'todayPresentEmployees' => Attendance::query()
+                ->forCurrentCompany()
+                ->with('user:id,name,email,mobile,designation')
+                ->whereDate('attendance_date', today())
+                ->where('status', 'present')
+                ->orderBy('check_in_at')
+                ->get(),
             'totalVehicles' => Vehicle::query()->forCurrentCompany()->count(),
             'totalChallans' => Challan::query()->forCurrentCompany()->count(),
             'todayVehicles' => VehicleLog::query()

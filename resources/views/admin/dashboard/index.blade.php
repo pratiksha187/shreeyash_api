@@ -50,6 +50,56 @@
 
     <div class="page-header">
         <div>
+            <h1>Today Present Employees</h1>
+            <p>Employees marked present today with in and out time.</p>
+        </div>
+        <a class="btn secondary" href="{{ route('admin.attendance-reports.index') }}">Attendance Reports</a>
+    </div>
+
+    <div class="card table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Employee</th>
+                    <th>Mobile</th>
+                    <th>Designation</th>
+                    <th>In Time</th>
+                    <th>Out Time</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse ($todayPresentEmployees as $attendance)
+                    <tr>
+                        <td>
+                            @if ($attendance->user)
+                                <a class="table-link" href="{{ route('admin.employees.show', $attendance->user) }}">
+                                    {{ $attendance->user->name }}
+                                </a>
+                                <div class="table-subtext">{{ $attendance->user->email }}</div>
+                            @else
+                                -
+                            @endif
+                        </td>
+                        <td>{{ $attendance->user?->mobile ?? '-' }}</td>
+                        <td>{{ $attendance->user?->designation ?? '-' }}</td>
+                        <td>{{ $attendance->check_in_at?->format('h:i A') ?? '-' }}</td>
+                        <td>{{ $attendance->check_out_at?->format('h:i A') ?? 'Not checked out' }}</td>
+                        <td>
+                            <span class="status-pill status-present">Present</span>
+                        </td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td class="empty" colspan="6">No employees are marked present today.</td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+
+    <div class="page-header">
+        <div>
             <h1>Recent Employees</h1>
             <p>Latest employees added to the system.</p>
         </div>
