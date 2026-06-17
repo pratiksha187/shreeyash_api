@@ -8,9 +8,12 @@ use App\Models\Labour;
 use App\Models\LabourAttendance;
 use App\Models\LabourSite;
 use App\Models\User;
+use App\Support\Tenant;
 use Carbon\Carbon;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
@@ -92,6 +95,8 @@ class LabourAttendanceController extends Controller
 
     public function storeContractor(Request $request): RedirectResponse
     {
+        $this->ensureDecoupledLabourMasterSchema();
+
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'mobile' => ['nullable', 'string', 'max:20'],
@@ -104,6 +109,8 @@ class LabourAttendanceController extends Controller
 
     public function storeLabour(Request $request): RedirectResponse
     {
+        $this->ensureDecoupledLabourMasterSchema();
+
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'mobile' => ['nullable', 'string', 'max:20'],
@@ -114,6 +121,30 @@ class LabourAttendanceController extends Controller
         Labour::query()->create($data);
 
         return back()->with('success', 'Labour added successfully.');
+    }
+
+    private function ensureDecoupledLabourMasterSchema(): void
+    {
+        $connection = DB::connection(app(Tenant::class)->connectionName());
+
+        if (! in_array($connection->getDriverName(), ['mysql', 'mariadb'], true)) {
+            return;
+        }
+
+        $this->tryDatabaseChange(fn () => $connection->statement('ALTER TABLE contractors DROP FOREIGN KEY contractors_site_fk'));
+        $this->tryDatabaseChange(fn () => $connection->statement('ALTER TABLE contractors DROP INDEX contractors_site_name_unique'));
+        $this->tryDatabaseChange(fn () => $connection->statement('ALTER TABLE contractors MODIFY labour_site_id BIGINT UNSIGNED NULL'));
+        $this->tryDatabaseChange(fn () => $connection->statement('ALTER TABLE labours DROP FOREIGN KEY labours_contractor_fk'));
+        $this->tryDatabaseChange(fn () => $connection->statement('ALTER TABLE labours DROP INDEX labours_contractor_name_index'));
+        $this->tryDatabaseChange(fn () => $connection->statement('ALTER TABLE labours MODIFY contractor_id BIGINT UNSIGNED NULL'));
+    }
+
+    private function tryDatabaseChange(callable $callback): void
+    {
+        try {
+            $callback();
+        } catch (QueryException) {
+        }
     }
 
     public function update(Request $request, LabourAttendance $labourAttendance): RedirectResponse

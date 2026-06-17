@@ -63,7 +63,7 @@
                         <option value="">All Labours</option>
                         @foreach ($labours as $labour)
                             <option value="{{ $labour->id }}" @selected((string) $selectedLabourId === (string) $labour->id)>
-                                {{ $labour->name }} - {{ $labour->contractor?->name ?? '-' }}
+                                {{ $labour->name }}{{ $labour->trade ? ' - ' . $labour->trade : '' }}
                             </option>
                         @endforeach
                     </select>
