@@ -8,36 +8,40 @@ use App\Models\Challan;
 use App\Models\User;
 use App\Models\Vehicle;
 use App\Models\VehicleLog;
+use Carbon\Carbon;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
     public function index(): View
     {
+        $today = Carbon::now(Attendance::LOCAL_TIMEZONE)->toDateString();
+
         return view('admin.dashboard.index', [
             'totalEmployees' => User::query()->forCurrentCompany()->employees()->count(),
             'todayPresent' => Attendance::query()
                 ->forCurrentCompany()
-                ->whereDate('attendance_date', today())
+                ->whereDate('attendance_date', $today)
                 ->where('status', 'present')
                 ->count(),
             'todayLeave' => Attendance::query()
                 ->forCurrentCompany()
-                ->whereDate('attendance_date', today())
+                ->whereDate('attendance_date', $today)
                 ->where('status', 'leave')
                 ->count(),
             'todayAbsent' => Attendance::query()
                 ->forCurrentCompany()
-                ->whereDate('attendance_date', today())
+                ->whereDate('attendance_date', $today)
                 ->where('status', 'absent')
                 ->count(),
             'todayPresentEmployees' => Attendance::query()
                 ->forCurrentCompany()
                 ->with('user:id,name,email,mobile,designation')
-                ->whereDate('attendance_date', today())
+                ->whereDate('attendance_date', $today)
                 ->where('status', 'present')
                 ->orderBy('check_in_at')
-                ->get(),
+                ->paginate(10, ['*'], 'present_page')
+                ->withQueryString(),
             'totalVehicles' => Vehicle::query()->forCurrentCompany()->count(),
             'totalChallans' => Challan::query()->forCurrentCompany()->count(),
             'todayVehicles' => VehicleLog::query()

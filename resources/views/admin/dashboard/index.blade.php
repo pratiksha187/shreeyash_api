@@ -83,8 +83,8 @@
                         </td>
                         <td>{{ $attendance->user?->mobile ?? '-' }}</td>
                         <td>{{ $attendance->user?->designation ?? '-' }}</td>
-                        <td>{{ $attendance->check_in_at?->format('h:i A') ?? '-' }}</td>
-                        <td>{{ $attendance->check_out_at?->format('h:i A') ?? 'Not checked out' }}</td>
+                        <td>{{ $attendance->localCheckInAt()?->format('h:i A') ?? '-' }}</td>
+                        <td>{{ $attendance->localCheckOutAt()?->format('h:i A') ?? 'Not checked out' }}</td>
                         <td>
                             <span class="status-pill status-present">Present</span>
                         </td>
@@ -96,6 +96,10 @@
                 @endforelse
             </tbody>
         </table>
+    </div>
+
+    <div class="pagination">
+        {{ $todayPresentEmployees->links('admin.pagination') }}
     </div>
 
     <div class="page-header">

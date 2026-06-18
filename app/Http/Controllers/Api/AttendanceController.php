@@ -22,6 +22,7 @@ class AttendanceController extends Controller
     public function clockIn(Request $request): JsonResponse
     {
         $this->normalizeLocationInput($request);
+        $today = $this->localToday();
 
         $validator = Validator::make($request->all(), [
             'latitude' => ['required', 'numeric', 'between:-90,90'],
@@ -40,7 +41,7 @@ class AttendanceController extends Controller
         $attendance = Attendance::query()
             ->forCurrentCompany()
             ->where('user_id', $request->user()->id)
-            ->whereDate('attendance_date', today())
+            ->whereDate('attendance_date', $today)
             ->first();
 
         if ($attendance && $attendance->check_in_at) {
@@ -57,11 +58,11 @@ class AttendanceController extends Controller
         $attendance = Attendance::query()->forCurrentCompany()->updateOrCreate(
             [
                 'user_id' => $request->user()->id,
-                'attendance_date' => today()->toDateString(),
+                'attendance_date' => $today,
             ],
             array_merge($data, [
                 'status' => 'present',
-                'check_in_at' => now(),
+                'check_in_at' => $this->utcNow(),
                 'check_out_at' => null,
             ])
         );
@@ -75,6 +76,7 @@ class AttendanceController extends Controller
     public function clockOut(Request $request): JsonResponse
     {
         $this->normalizeLocationInput($request);
+        $today = $this->localToday();
 
         $validator = Validator::make($request->all(), [
             'latitude' => ['required', 'numeric', 'between:-90,90'],
@@ -93,7 +95,7 @@ class AttendanceController extends Controller
         $attendance = Attendance::query()
             ->forCurrentCompany()
             ->where('user_id', $request->user()->id)
-            ->whereDate('attendance_date', today())
+            ->whereDate('attendance_date', $today)
             ->first();
 
         if (! $attendance || ! $attendance->check_in_at) {
@@ -114,7 +116,7 @@ class AttendanceController extends Controller
         }
 
         $attendance->fill(array_merge($data, [
-            'check_out_at' => now(),
+            'check_out_at' => $this->utcNow(),
         ]));
         $attendance->save();
 
@@ -251,7 +253,7 @@ class AttendanceController extends Controller
         $attendance = Attendance::query()
             ->forCurrentCompany()
             ->where('user_id', $request->user()->id)
-            ->whereDate('attendance_date', today())
+            ->whereDate('attendance_date', $this->localToday())
             ->first();
 
         return response()->json([
@@ -262,7 +264,7 @@ class AttendanceController extends Controller
 
     public function loginReminder(Request $request): JsonResponse
     {
-        $timezone = config('app.timezone', 'Asia/Kolkata');
+        $timezone = Attendance::LOCAL_TIMEZONE;
         $now = Carbon::now($timezone);
         $today = $now->toDateString();
         $windowStart = $now->copy()->setTime(9, 0);
@@ -321,7 +323,7 @@ class AttendanceController extends Controller
             : now()->startOfMonth()->toDateString();
         $toDate = isset($filters['to_date'])
             ? Carbon::parse($filters['to_date'])->toDateString()
-            : today()->toDateString();
+            : $this->localToday();
 
         $attendances = Attendance::query()
             ->forCurrentCompany()
@@ -443,7 +445,7 @@ class AttendanceController extends Controller
         $attendance = Attendance::query()->forCurrentCompany()->updateOrCreate(
             [
                 'user_id' => $request->user()->id,
-                'attendance_date' => today()->toDateString(),
+                'attendance_date' => $this->localToday(),
             ],
             $data
         );
@@ -452,5 +454,15 @@ class AttendanceController extends Controller
             'message' => 'Attendance updated successfully.',
             'attendance' => $attendance,
         ]);
+    }
+
+    private function localToday(): string
+    {
+        return Carbon::now(Attendance::LOCAL_TIMEZONE)->toDateString();
+    }
+
+    private function utcNow(): Carbon
+    {
+        return Carbon::now('UTC');
     }
 }

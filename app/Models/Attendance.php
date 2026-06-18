@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\BelongsToCompany;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -10,6 +11,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Attendance extends Model
 {
     use BelongsToCompany, HasFactory;
+
+    public const LOCAL_TIMEZONE = 'Asia/Kolkata';
 
     protected $fillable = [
         'company_id',
@@ -37,5 +40,26 @@ class Attendance extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function localCheckInAt(): ?Carbon
+    {
+        return $this->localTimestamp('check_in_at');
+    }
+
+    public function localCheckOutAt(): ?Carbon
+    {
+        return $this->localTimestamp('check_out_at');
+    }
+
+    private function localTimestamp(string $attribute): ?Carbon
+    {
+        $value = $this->getRawOriginal($attribute);
+
+        if (! $value) {
+            return null;
+        }
+
+        return Carbon::parse($value, 'UTC')->timezone(self::LOCAL_TIMEZONE);
     }
 }

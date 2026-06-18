@@ -191,10 +191,10 @@
                     @if ($attendance)
                         <div class="calendar-meta">
                             @if ($attendance->check_in_at)
-                                In: {{ $attendance->check_in_at->format('h:i A') }}<br>
+                                In: {{ $attendance->localCheckInAt()?->format('h:i A') }}<br>
                             @endif
                             @if ($attendance->check_out_at)
-                                Out: {{ $attendance->check_out_at->format('h:i A') }}<br>
+                                Out: {{ $attendance->localCheckOutAt()?->format('h:i A') }}<br>
                             @endif
                             @if ($attendance->remarks)
                                 {{ $attendance->remarks }}
