@@ -111,8 +111,12 @@ class ChallanController extends Controller
         ]);
     }
 
-    public function download(Challan $challan)
+    public function download(int $challan)
     {
+        $challan = Challan::query()
+            ->forCurrentCompany()
+            ->findOrFail($challan);
+
         $pdfPath = app(ChallanPdfService::class)->store($challan);
         $challan->refresh();
 
