@@ -65,12 +65,17 @@ class MissedAttendanceRequestController extends Controller
         ]);
     }
 
-    public function update(Request $request, MissedAttendanceRequest $missedAttendanceRequest): RedirectResponse
+    public function update(Request $request, int $missedAttendanceRequestId): RedirectResponse
     {
         $data = $request->validate([
             'status' => ['required', Rule::in(MissedAttendanceRequest::STATUSES)],
             'admin_note' => ['nullable', 'string', 'max:2000'],
         ]);
+
+        // Tenant selection happens in EnsureAdminLoggedIn, after Laravel's implicit bindings.
+        $missedAttendanceRequest = MissedAttendanceRequest::query()
+            ->forCurrentCompany()
+            ->findOrFail($missedAttendanceRequestId);
 
         $missedAttendanceRequest->fill([
             'status' => $data['status'],
