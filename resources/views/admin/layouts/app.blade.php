@@ -528,37 +528,40 @@
             max-width: none;
         }
 
+        .missed-requests-table-wrap {
+            overflow-x: visible;
+        }
+
         .missed-requests-table {
-            min-width: 1400px;
             table-layout: fixed;
         }
 
+        .missed-requests-table .missed-toggle-column {
+            width: 7%;
+        }
+
         .missed-requests-table .missed-date-column {
-            width: 130px;
+            width: 10%;
         }
 
         .missed-requests-table .missed-employee-column {
-            width: 210px;
+            width: 16%;
         }
 
         .missed-requests-table .missed-type-column {
-            width: 115px;
+            width: 9%;
         }
 
         .missed-requests-table .missed-reason-column {
-            width: 300px;
+            width: 28%;
         }
 
         .missed-requests-table .missed-status-column {
-            width: 130px;
+            width: 11%;
         }
 
         .missed-requests-table .missed-submitted-column {
-            width: 185px;
-        }
-
-        .missed-requests-table .missed-update-column {
-            width: 330px;
+            width: 19%;
         }
 
         .missed-requests-table th,
@@ -566,10 +569,10 @@
             vertical-align: middle;
         }
 
-        .missed-requests-table td:nth-child(2),
         .missed-requests-table td:nth-child(3),
         .missed-requests-table td:nth-child(4),
-        .missed-requests-table td:nth-child(5) {
+        .missed-requests-table td:nth-child(5),
+        .missed-requests-table td:nth-child(6) {
             white-space: normal;
         }
 
@@ -578,16 +581,88 @@
             max-width: none;
         }
 
-        .missed-requests-table .inline-status-form {
-            width: 100%;
-            min-width: 0;
+        .missed-toggle-cell {
+            padding-right: 4px;
+            text-align: center;
         }
 
-        .missed-requests-table .inline-status-form select,
-        .missed-requests-table .inline-status-form input,
-        .missed-requests-table .inline-status-form textarea {
+        .missed-toggle-button {
+            width: 30px;
+            height: 30px;
+            padding: 0;
+            border: 0;
+            border-radius: 50%;
+            background: var(--primary);
+            color: #fff;
+            cursor: pointer;
+            font-size: 20px;
+            font-weight: 800;
+            line-height: 1;
+        }
+
+        .missed-toggle-button:hover {
+            background: var(--primary-dark);
+        }
+
+        .missed-action-row td {
+            padding: 16px;
+            background: #f8fafc;
+            white-space: normal;
+        }
+
+        .missed-action-form {
+            display: grid;
+            grid-template-columns: 170px 150px 150px minmax(240px, 1fr) 120px;
+            gap: 12px;
+            align-items: end;
+        }
+
+        .missed-action-form label {
+            display: grid;
+            gap: 5px;
+            min-width: 0;
+            color: var(--muted);
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .missed-action-form select,
+        .missed-action-form input,
+        .missed-action-form textarea {
             width: 100%;
             min-width: 0;
+            min-height: 40px;
+            padding: 8px 10px;
+            font-size: 13px;
+        }
+
+        .missed-action-form textarea {
+            height: 40px;
+            min-height: 40px;
+        }
+
+        .missed-update-button {
+            min-height: 40px;
+        }
+
+        @media (max-width: 1200px) {
+            .missed-action-form {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+
+            .missed-note-field {
+                grid-column: span 2;
+            }
+        }
+
+        @media (max-width: 700px) {
+            .missed-action-form {
+                grid-template-columns: 1fr;
+            }
+
+            .missed-note-field {
+                grid-column: auto;
+            }
         }
 
         table {

@@ -112,23 +112,23 @@
     <div class="card table-wrap missed-requests-table-wrap">
         <table class="missed-requests-table">
             <colgroup>
+                <col class="missed-toggle-column">
                 <col class="missed-date-column">
                 <col class="missed-employee-column">
                 <col class="missed-type-column">
                 <col class="missed-reason-column">
                 <col class="missed-status-column">
                 <col class="missed-submitted-column">
-                <col class="missed-update-column">
             </colgroup>
             <thead>
                 <tr>
+                    <th>Action</th>
                     <th>Attendance Date</th>
                     <th>Employee</th>
                     <th>Request For</th>
                     <th>Reason</th>
                     <th>Status</th>
                     <th>Submitted</th>
-                    <th>Admin Update</th>
                 </tr>
             </thead>
             <tbody>
@@ -139,7 +139,17 @@
                         );
                         $showRowErrors = (string) old('request_id') === (string) $missedRequest->id;
                     @endphp
-                    <tr>
+                    <tr class="missed-summary-row">
+                        <td class="missed-toggle-cell">
+                            <button
+                                class="missed-toggle-button"
+                                type="button"
+                                aria-expanded="{{ $showRowErrors ? 'true' : 'false' }}"
+                                aria-controls="missed-action-{{ $missedRequest->id }}"
+                                data-missed-toggle="missed-action-{{ $missedRequest->id }}"
+                                title="Update request"
+                            >{{ $showRowErrors ? '-' : '+' }}</button>
+                        </td>
                         <td>{{ $missedRequest->attendance_date?->format('d M Y') }}</td>
                         <td>
                             @if ($missedRequest->user)
@@ -174,38 +184,50 @@
                             @endif
                         </td>
                         <td>{{ $missedRequest->created_at?->format('d M Y h:i A') }}</td>
-                        <td>
-                            <form class="inline-status-form" method="POST" action="{{ route('admin.missed-requests.update', $missedRequest) }}">
+                    </tr>
+                    <tr
+                        id="missed-action-{{ $missedRequest->id }}"
+                        class="missed-action-row"
+                        @if (! $showRowErrors) hidden @endif
+                    >
+                        <td colspan="7">
+                            <form class="missed-action-form" method="POST" action="{{ route('admin.missed-requests.update', $missedRequest) }}">
                                 @csrf
                                 @method('PATCH')
                                 <input name="request_id" type="hidden" value="{{ $missedRequest->id }}">
-                                <select name="status" required>
-                                    @foreach ($statuses as $status)
-                                        <option value="{{ $status }}" @selected(($showRowErrors ? old('status') : $missedRequest->status) === $status)>
-                                            {{ ucfirst($status) }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                                <div class="inline-time-fields">
-                                    <label>
-                                        In Time
-                                        <input name="check_in_time" type="time" value="{{ $showRowErrors ? old('check_in_time') : $attendance?->localCheckInAt()?->format('H:i') }}">
-                                    </label>
-                                    <label>
-                                        Out Time
-                                        <input name="check_out_time" type="time" value="{{ $showRowErrors ? old('check_out_time') : $attendance?->localCheckOutAt()?->format('H:i') }}">
-                                    </label>
-                                </div>
-                                @if ($showRowErrors)
-                                    @error('check_in_time')
-                                        <div class="error">{{ $message }}</div>
-                                    @enderror
-                                    @error('check_out_time')
-                                        <div class="error">{{ $message }}</div>
-                                    @enderror
-                                @endif
-                                <textarea name="admin_note" placeholder="Admin note">{{ $showRowErrors ? old('admin_note') : $missedRequest->admin_note }}</textarea>
-                                <button class="btn" type="submit">Update</button>
+                                <label>
+                                    Status
+                                    <select name="status" required>
+                                        @foreach ($statuses as $status)
+                                            <option value="{{ $status }}" @selected(($showRowErrors ? old('status') : $missedRequest->status) === $status)>
+                                                {{ ucfirst($status) }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </label>
+                                <label>
+                                    In Time
+                                    <input name="check_in_time" type="time" value="{{ $showRowErrors ? old('check_in_time') : $attendance?->localCheckInAt()?->format('H:i') }}">
+                                    @if ($showRowErrors)
+                                        @error('check_in_time')
+                                            <span class="error">{{ $message }}</span>
+                                        @enderror
+                                    @endif
+                                </label>
+                                <label>
+                                    Out Time
+                                    <input name="check_out_time" type="time" value="{{ $showRowErrors ? old('check_out_time') : $attendance?->localCheckOutAt()?->format('H:i') }}">
+                                    @if ($showRowErrors)
+                                        @error('check_out_time')
+                                            <span class="error">{{ $message }}</span>
+                                        @enderror
+                                    @endif
+                                </label>
+                                <label class="missed-note-field">
+                                    Admin Note
+                                    <textarea name="admin_note" placeholder="Admin note">{{ $showRowErrors ? old('admin_note') : $missedRequest->admin_note }}</textarea>
+                                </label>
+                                <button class="btn missed-update-button" type="submit">Update</button>
                             </form>
                         </td>
                     </tr>
@@ -221,4 +243,17 @@
     <div class="pagination">
         {{ $requests->links('admin.pagination') }}
     </div>
+
+    <script>
+        document.querySelectorAll('[data-missed-toggle]').forEach(function (button) {
+            button.addEventListener('click', function () {
+                var actionRow = document.getElementById(button.dataset.missedToggle);
+                var isOpen = button.getAttribute('aria-expanded') === 'true';
+
+                actionRow.hidden = isOpen;
+                button.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
+                button.textContent = isOpen ? '+' : '-';
+            });
+        });
+    </script>
 @endsection
