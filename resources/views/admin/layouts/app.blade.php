@@ -524,6 +524,72 @@
             font-size: 13px;
         }
 
+        .missed-requests-page .main {
+            max-width: none;
+        }
+
+        .missed-requests-table {
+            min-width: 1400px;
+            table-layout: fixed;
+        }
+
+        .missed-requests-table .missed-date-column {
+            width: 130px;
+        }
+
+        .missed-requests-table .missed-employee-column {
+            width: 210px;
+        }
+
+        .missed-requests-table .missed-type-column {
+            width: 115px;
+        }
+
+        .missed-requests-table .missed-reason-column {
+            width: 300px;
+        }
+
+        .missed-requests-table .missed-status-column {
+            width: 130px;
+        }
+
+        .missed-requests-table .missed-submitted-column {
+            width: 185px;
+        }
+
+        .missed-requests-table .missed-update-column {
+            width: 330px;
+        }
+
+        .missed-requests-table th,
+        .missed-requests-table td {
+            vertical-align: middle;
+        }
+
+        .missed-requests-table td:nth-child(2),
+        .missed-requests-table td:nth-child(3),
+        .missed-requests-table td:nth-child(4),
+        .missed-requests-table td:nth-child(5) {
+            white-space: normal;
+        }
+
+        .missed-requests-table .text-wrap {
+            min-width: 0;
+            max-width: none;
+        }
+
+        .missed-requests-table .inline-status-form {
+            width: 100%;
+            min-width: 0;
+        }
+
+        .missed-requests-table .inline-status-form select,
+        .missed-requests-table .inline-status-form input,
+        .missed-requests-table .inline-status-form textarea {
+            width: 100%;
+            min-width: 0;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
@@ -1089,7 +1155,7 @@
         }
     </style>
 </head>
-<body>
+<body class="@yield('bodyClass')">
     <div class="admin-shell">
         <aside class="sidebar">
             <div class="brand">

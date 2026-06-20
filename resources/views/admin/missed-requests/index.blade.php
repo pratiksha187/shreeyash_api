@@ -1,6 +1,7 @@
 @extends('admin.layouts.app')
 
 @section('title', 'Missed Requests | Admin Panel')
+@section('bodyClass', 'missed-requests-page')
 @section('headerTitle', 'Missed Requests')
 @section('headerSubtitle', 'Employee missed attendance correction requests')
 
@@ -108,8 +109,17 @@
         </div>
     </section>
 
-    <div class="card table-wrap">
-        <table>
+    <div class="card table-wrap missed-requests-table-wrap">
+        <table class="missed-requests-table">
+            <colgroup>
+                <col class="missed-date-column">
+                <col class="missed-employee-column">
+                <col class="missed-type-column">
+                <col class="missed-reason-column">
+                <col class="missed-status-column">
+                <col class="missed-submitted-column">
+                <col class="missed-update-column">
+            </colgroup>
             <thead>
                 <tr>
                     <th>Attendance Date</th>
