@@ -493,10 +493,25 @@
         }
 
         .inline-status-form select,
+        .inline-status-form input,
         .inline-status-form textarea {
             min-height: 36px;
             padding: 7px 9px;
             font-size: 13px;
+        }
+
+        .inline-time-fields {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+        }
+
+        .inline-time-fields label {
+            display: grid;
+            gap: 4px;
+            color: var(--muted);
+            font-size: 12px;
+            font-weight: 700;
         }
 
         .inline-status-form textarea {

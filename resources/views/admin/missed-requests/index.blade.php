@@ -123,6 +123,12 @@
             </thead>
             <tbody>
                 @forelse ($requests as $missedRequest)
+                    @php
+                        $attendance = $attendanceTimes->get(
+                            $missedRequest->user_id.'|'.$missedRequest->attendance_date->toDateString()
+                        );
+                        $showRowErrors = (string) old('request_id') === (string) $missedRequest->id;
+                    @endphp
                     <tr>
                         <td>{{ $missedRequest->attendance_date?->format('d M Y') }}</td>
                         <td>
@@ -162,14 +168,33 @@
                             <form class="inline-status-form" method="POST" action="{{ route('admin.missed-requests.update', $missedRequest) }}">
                                 @csrf
                                 @method('PATCH')
+                                <input name="request_id" type="hidden" value="{{ $missedRequest->id }}">
                                 <select name="status" required>
                                     @foreach ($statuses as $status)
-                                        <option value="{{ $status }}" @selected($missedRequest->status === $status)>
+                                        <option value="{{ $status }}" @selected(($showRowErrors ? old('status') : $missedRequest->status) === $status)>
                                             {{ ucfirst($status) }}
                                         </option>
                                     @endforeach
                                 </select>
-                                <textarea name="admin_note" placeholder="Admin note">{{ $missedRequest->admin_note }}</textarea>
+                                <div class="inline-time-fields">
+                                    <label>
+                                        In Time
+                                        <input name="check_in_time" type="time" value="{{ $showRowErrors ? old('check_in_time') : $attendance?->localCheckInAt()?->format('H:i') }}">
+                                    </label>
+                                    <label>
+                                        Out Time
+                                        <input name="check_out_time" type="time" value="{{ $showRowErrors ? old('check_out_time') : $attendance?->localCheckOutAt()?->format('H:i') }}">
+                                    </label>
+                                </div>
+                                @if ($showRowErrors)
+                                    @error('check_in_time')
+                                        <div class="error">{{ $message }}</div>
+                                    @enderror
+                                    @error('check_out_time')
+                                        <div class="error">{{ $message }}</div>
+                                    @enderror
+                                @endif
+                                <textarea name="admin_note" placeholder="Admin note">{{ $showRowErrors ? old('admin_note') : $missedRequest->admin_note }}</textarea>
                                 <button class="btn" type="submit">Update</button>
                             </form>
                         </td>
