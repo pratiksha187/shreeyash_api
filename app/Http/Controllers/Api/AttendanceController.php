@@ -62,7 +62,7 @@ class AttendanceController extends Controller
             ],
             array_merge($data, [
                 'status' => 'present',
-                'check_in_at' => $this->utcNow(),
+                'check_in_at' => $this->localNow(),
                 'check_out_at' => null,
             ])
         );
@@ -116,7 +116,7 @@ class AttendanceController extends Controller
         }
 
         $attendance->fill(array_merge($data, [
-            'check_out_at' => $this->utcNow(),
+            'check_out_at' => $this->localNow(),
         ]));
         $attendance->save();
 
@@ -461,8 +461,8 @@ class AttendanceController extends Controller
         return Carbon::now(Attendance::LOCAL_TIMEZONE)->toDateString();
     }
 
-    private function utcNow(): Carbon
+    private function localNow(): Carbon
     {
-        return Carbon::now('UTC');
+        return Carbon::now(Attendance::LOCAL_TIMEZONE);
     }
 }

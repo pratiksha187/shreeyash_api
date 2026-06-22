@@ -60,6 +60,6 @@ class Attendance extends Model
             return null;
         }
 
-        return Carbon::parse($value, 'UTC')->timezone(self::LOCAL_TIMEZONE);
+        return Carbon::parse($value, self::LOCAL_TIMEZONE);
     }
 }

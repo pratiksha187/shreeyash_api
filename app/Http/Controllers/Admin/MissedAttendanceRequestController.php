@@ -150,11 +150,11 @@ class MissedAttendanceRequestController extends Controller
         ]);
 
         if (! empty($data['check_in_time'])) {
-            $attendance->check_in_at = $this->utcAttendanceTime($missedAttendanceRequest, $data['check_in_time']);
+            $attendance->check_in_at = $this->localAttendanceTime($missedAttendanceRequest, $data['check_in_time']);
         }
 
         if (! empty($data['check_out_time'])) {
-            $attendance->check_out_at = $this->utcAttendanceTime($missedAttendanceRequest, $data['check_out_time']);
+            $attendance->check_out_at = $this->localAttendanceTime($missedAttendanceRequest, $data['check_out_time']);
         }
 
         $attendance->save();
@@ -186,10 +186,5 @@ class MissedAttendanceRequestController extends Controller
             $missedAttendanceRequest->attendance_date->toDateString().' '.$time,
             Attendance::LOCAL_TIMEZONE
         );
-    }
-
-    private function utcAttendanceTime(MissedAttendanceRequest $missedAttendanceRequest, string $time): Carbon
-    {
-        return $this->localAttendanceTime($missedAttendanceRequest, $time)->utc();
     }
 }
