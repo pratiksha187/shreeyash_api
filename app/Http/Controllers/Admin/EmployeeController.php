@@ -78,6 +78,47 @@ class EmployeeController extends Controller
                 ];
             });
 
+        // Aggregate DPRs by date and build consolidated messages
+        $dprs = DailyProgressReport::query()
+            ->forCurrentCompany()
+            ->where('user_id', $employee->id)
+            ->whereBetween('dpr_date', [
+                $monthStart->toDateString(),
+                $monthEnd->toDateString(),
+            ])
+            ->with(['hours.photos'])
+            ->withCount(['hours', 'photos'])
+            ->orderByDesc('dpr_date')
+            ->orderByDesc('id')
+            ->get()
+            ->groupBy(fn ($r) => $r->dpr_date?->toDateString() ?? '')
+            ->map(function ($reportsForDate, $date) {
+                $allHours = $reportsForDate->flatMap(fn ($r) => $r->hours)->values();
+                $photos = $allHours->flatMap(fn ($h) => $h->photos)->values();
+
+                // Build consolidated message
+                $lines = [];
+                $sortedHours = $allHours->sortBy('work_time')->values();
+                foreach ($sortedHours as $i => $hour) {
+                    $remark = trim((string) $hour->remark);
+                    if ($remark === '') {
+                        continue;
+                    }
+                    $lines[] = trim(($i + 1) . '. ' . preg_replace('/\r?\n+/', ' ', $remark));
+                }
+
+                $message = trim($date . "\nDPR\n" . implode("\n", $lines));
+
+                return (object) [
+                    'date' => $date,
+                    'reports' => $reportsForDate,
+                    'hours_count' => $allHours->count(),
+                    'photos_count' => $photos->count(),
+                    'photos' => $photos,
+                    'message' => $message,
+                ];
+            })->values();
+
         return view('admin.employees.show', [
             'employee' => $employee,
             'selectedMonth' => $selectedMonth,
@@ -93,48 +134,7 @@ class EmployeeController extends Controller
                 'leave' => $attendances->where('status', 'leave')->count(),
                 'half_day' => $attendances->where('status', 'half_day')->count(),
             ],
-            'dprs' => function () use ($employee, $monthStart, $monthEnd) {
-                $reports = DailyProgressReport::query()
-                    ->forCurrentCompany()
-                    ->where('user_id', $employee->id)
-                    ->whereBetween('dpr_date', [
-                        $monthStart->toDateString(),
-                        $monthEnd->toDateString(),
-                    ])
-                    ->with(['hours.photos'])
-                    ->withCount(['hours', 'photos'])
-                    ->orderByDesc('dpr_date')
-                    ->orderByDesc('id')
-                    ->get()
-                    ->groupBy(fn ($r) => $r->dpr_date?->toDateString() ?? '');
-
-                return $reports->map(function ($reportsForDate, $date) {
-                    $allHours = $reportsForDate->flatMap(fn ($r) => $r->hours)->values();
-                    $photos = $allHours->flatMap(fn ($h) => $h->photos)->values();
-
-                    // Build consolidated message
-                    $lines = [];
-                    $sortedHours = $allHours->sortBy('work_time')->values();
-                    foreach ($sortedHours as $i => $hour) {
-                        $remark = trim((string) $hour->remark);
-                        if ($remark === '') {
-                            continue;
-                        }
-                        $lines[] = trim(($i + 1) . '. ' . preg_replace('/\r?\n+/', ' ', $remark));
-                    }
-
-                    $message = trim($date . "\nDPR\n" . implode("\n", $lines));
-
-                    return (object) [
-                        'date' => $date,
-                        'reports' => $reportsForDate,
-                        'hours_count' => $allHours->count(),
-                        'photos_count' => $photos->count(),
-                        'photos' => $photos,
-                        'message' => $message,
-                    ];
-                })->values();
-            }(),
+            'dprs' => $dprs,
         ]);
     }
 
