@@ -179,11 +179,13 @@ class DailyProgressReportController extends Controller
             })
             ->findOrFail($photo);
 
-        if (! Storage::disk('public')->exists($photo->photo_path)) {
+        $photoPath = $this->publicPhotoPath($photo->photo_path);
+
+        if (! $photoPath) {
             abort(404);
         }
 
-        return Storage::disk('public')->response($photo->photo_path);
+        return Storage::disk('public')->response($photoPath);
     }
 
     private function normalizeInput(Request $request): void
@@ -346,5 +348,24 @@ class DailyProgressReportController extends Controller
             'submitted_at' => $report->created_at,
             'updated_at' => $report->updated_at,
         ];
+    }
+
+    private function publicPhotoPath(?string $photoPath): ?string
+    {
+        if (! $photoPath) {
+            return null;
+        }
+
+        $paths = collect([
+            $photoPath,
+            ltrim($photoPath, '/\\'),
+            preg_replace('#^public[/\\\\]#', '', ltrim($photoPath, '/\\')),
+            preg_replace('#^storage[/\\\\]#', '', ltrim($photoPath, '/\\')),
+        ])
+            ->filter()
+            ->map(fn (string $path) => str_replace('\\', '/', $path))
+            ->unique();
+
+        return $paths->first(fn (string $path) => Storage::disk('public')->exists($path));
     }
 }

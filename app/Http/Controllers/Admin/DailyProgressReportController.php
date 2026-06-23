@@ -68,11 +68,13 @@ class DailyProgressReportController extends Controller
 
     public function photo(DailyProgressReportPhoto $photo): StreamedResponse
     {
-        if (! Storage::disk('public')->exists($photo->photo_path)) {
+        $photoPath = $this->publicPhotoPath($photo->photo_path);
+
+        if (! $photoPath) {
             abort(404);
         }
 
-        return Storage::disk('public')->response($photo->photo_path);
+        return Storage::disk('public')->response($photoPath);
     }
 
     private function applyReportFilters($query, string $fromDate, string $toDate, ?string $userId): void
@@ -81,5 +83,24 @@ class DailyProgressReportController extends Controller
             ->whereBetween('dpr_date', [$fromDate, $toDate])
             ->forCurrentCompany()
             ->when($userId, fn ($query) => $query->where('user_id', $userId));
+    }
+
+    private function publicPhotoPath(?string $photoPath): ?string
+    {
+        if (! $photoPath) {
+            return null;
+        }
+
+        $paths = collect([
+            $photoPath,
+            ltrim($photoPath, '/\\'),
+            preg_replace('#^public[/\\\\]#', '', ltrim($photoPath, '/\\')),
+            preg_replace('#^storage[/\\\\]#', '', ltrim($photoPath, '/\\')),
+        ])
+            ->filter()
+            ->map(fn (string $path) => str_replace('\\', '/', $path))
+            ->unique();
+
+        return $paths->first(fn (string $path) => Storage::disk('public')->exists($path));
     }
 }
