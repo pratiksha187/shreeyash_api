@@ -218,47 +218,39 @@
             <thead>
                 <tr>
                     <th>Date</th>
-                    <th>Time</th>
-                    <th>Work Summary</th>
                     <th>Entries</th>
                     <th>Photos</th>
                     <th>Action</th>
                 </tr>
             </thead>
             <tbody>
-                @forelse ($dprs as $report)
+                @forelse ($dprs as $group)
                     <tr>
                         <td>
-                            <a class="table-link" href="{{ route('admin.dpr-reports.show', $report) }}">
-                                {{ $report->dpr_date?->format('d M Y') }}
-                            </a>
-                            <div class="table-subtext">DPR #{{ $report->id }}</div>
+                            <strong>{{ \Carbon\Carbon::parse($group->date)->format('d M Y') }}</strong>
+                            <div class="table-subtext">DPR for {{ \Carbon\Carbon::parse($group->date)->format('d M Y') }}</div>
                         </td>
-                        <td>{{ $report->created_at?->format('d M Y h:i A') }}</td>
-                        <td class="text-wrap">{{ $report->work_summary }}</td>
-                        <td>{{ $report->hours_count }}</td>
+                        <td>{{ $group->hours_count }} entries</td>
                         <td>
-                            @php
-                                $photos = $report->hours->flatMap(fn($h) => $h->photos)->values();
-                            @endphp
-
                             <div class="thumb-row">
-                                @foreach ($photos->take(4) as $photo)
+                                @foreach ($group->photos->take(4) as $photo)
                                     <a href="{{ route('admin.dpr-reports.photo', $photo) }}" target="_blank">
                                         <img class="thumb" src="{{ route('admin.dpr-reports.photo', $photo) }}" alt="DPR photo">
                                     </a>
                                 @endforeach
                             </div>
-
-                            <div class="table-subtext">{{ $report->photos_count }} photos</div>
+                            <div class="table-subtext">{{ $group->photos_count }} photos</div>
                         </td>
                         <td>
-                            <a class="btn small" href="{{ route('admin.dpr-reports.show', $report) }}">View DPR</a>
+                            <button class="btn small" onclick="alert({{ Js::from($group->message) }})">Show Message</button>
+                            @if ($group->reports->first())
+                                <a class="btn small" href="{{ route('admin.dpr-reports.show', $group->reports->first()) }}">View DPR</a>
+                            @endif
                         </td>
                     </tr>
                 @empty
                     <tr>
-                        <td class="empty" colspan="6">No DPR reports found for this employee this month.</td>
+                        <td class="empty" colspan="4">No DPR reports found for this employee this month.</td>
                     </tr>
                 @endforelse
             </tbody>
