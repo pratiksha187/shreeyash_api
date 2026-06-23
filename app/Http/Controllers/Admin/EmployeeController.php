@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use App\Models\User;
+use App\Models\DailyProgressReport;
 use App\Support\Tenant;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -92,6 +93,18 @@ class EmployeeController extends Controller
                 'leave' => $attendances->where('status', 'leave')->count(),
                 'half_day' => $attendances->where('status', 'half_day')->count(),
             ],
+            'dprs' => DailyProgressReport::query()
+                ->forCurrentCompany()
+                ->where('user_id', $employee->id)
+                ->whereBetween('dpr_date', [
+                    $monthStart->toDateString(),
+                    $monthEnd->toDateString(),
+                ])
+                ->with(['hours.photos'])
+                ->withCount(['hours', 'photos'])
+                ->orderByDesc('dpr_date')
+                ->orderByDesc('id')
+                ->get(),
         ]);
     }
 

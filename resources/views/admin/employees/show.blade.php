@@ -205,4 +205,63 @@
             @endforeach
         </div>
     </div>
+
+    <div class="page-header">
+        <div>
+            <h1>{{ $employee->name }} DPRs</h1>
+            <p>Daily progress reports submitted by this engineer for {{ $monthLabel }}.</p>
+        </div>
+    </div>
+
+    <div class="card table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Time</th>
+                    <th>Work Summary</th>
+                    <th>Entries</th>
+                    <th>Photos</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse ($dprs as $report)
+                    <tr>
+                        <td>
+                            <a class="table-link" href="{{ route('admin.dpr-reports.show', $report) }}">
+                                {{ $report->dpr_date?->format('d M Y') }}
+                            </a>
+                            <div class="table-subtext">DPR #{{ $report->id }}</div>
+                        </td>
+                        <td>{{ $report->created_at?->format('d M Y h:i A') }}</td>
+                        <td class="text-wrap">{{ $report->work_summary }}</td>
+                        <td>{{ $report->hours_count }}</td>
+                        <td>
+                            @php
+                                $photos = $report->hours->flatMap(fn($h) => $h->photos)->values();
+                            @endphp
+
+                            <div class="thumb-row">
+                                @foreach ($photos->take(4) as $photo)
+                                    <a href="{{ route('admin.dpr-reports.photo', $photo) }}" target="_blank">
+                                        <img class="thumb" src="{{ route('admin.dpr-reports.photo', $photo) }}" alt="DPR photo">
+                                    </a>
+                                @endforeach
+                            </div>
+
+                            <div class="table-subtext">{{ $report->photos_count }} photos</div>
+                        </td>
+                        <td>
+                            <a class="btn small" href="{{ route('admin.dpr-reports.show', $report) }}">View DPR</a>
+                        </td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td class="empty" colspan="6">No DPR reports found for this employee this month.</td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
 @endsection
