@@ -17,6 +17,7 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::middleware([AuthenticateApiToken::class, EnsureCompanySubscriptionActive::class])->group(function () {
     Route::get('/user', [AuthController::class, 'profile'])->name('user');
     Route::get('/profile', [AuthController::class, 'profile']);
+    Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     Route::get('/attendance/me', [AttendanceController::class, 'me']);
     Route::get('/attendance/login-reminder', [AttendanceController::class, 'loginReminder'])->name('api.attendance.login-reminder');
     Route::get('/attendance/daily-report', [AttendanceController::class, 'dailyReport']);

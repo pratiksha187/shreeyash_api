@@ -207,4 +207,22 @@ class AuthController extends Controller
             'today_attendance' => $todayAttendance,
         ]);
     }
+
+    public function logout(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        if ($user) {
+            $user->forceFill([
+                'api_token' => null,
+                'mobile_device_id' => null,
+                'mobile_device_name' => null,
+                'mobile_device_registered_at' => null,
+            ])->save();
+        }
+
+        return response()->json([
+            'message' => 'Logged out successfully.',
+        ]);
+    }
 }

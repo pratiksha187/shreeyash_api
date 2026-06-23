@@ -12,6 +12,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DailyProgressReportController extends Controller
@@ -151,7 +152,7 @@ class DailyProgressReportController extends Controller
         ], 201);
     }
 
-    public function photo(Request $request, int $photo): StreamedResponse
+    public function photo(Request $request, int $photo): StreamedResponse|BinaryFileResponse
     {
         $photo = DailyProgressReportPhoto::query()
             ->whereHas('hour.report', function ($query) use ($request) {
@@ -163,11 +164,17 @@ class DailyProgressReportController extends Controller
 
         $photoPath = $this->publicPhotoPath($photo->photo_path);
 
-        if (! $photoPath) {
-            abort(404);
+        if ($photoPath) {
+            return Storage::disk('public')->response($photoPath);
         }
 
-        return Storage::disk('public')->response($photoPath);
+        $publicStoragePath = $this->publicStoragePhotoPath($photo->photo_path);
+
+        if ($publicStoragePath) {
+            return response()->file($publicStoragePath);
+        }
+
+        abort(404);
     }
 
     private function normalizeInput(Request $request): void
@@ -359,4 +366,35 @@ class DailyProgressReportController extends Controller
         return $paths->first(fn (string $path) => Storage::disk('public')->exists($path));
     }
 
+    private function publicStoragePhotoPath(?string $photoPath): ?string
+    {
+        return $this->photoPathCandidates($photoPath)
+            ->map(fn (string $path) => public_path('storage/' . $path))
+            ->first(fn (string $path) => is_file($path));
+    }
+
+    private function photoPathCandidates(?string $photoPath): \Illuminate\Support\Collection
+    {
+        if (! $photoPath) {
+            return collect();
+        }
+
+        $normalizedPath = str_replace('\\', '/', ltrim($photoPath, '/\\'));
+
+        return collect([
+            $photoPath,
+            $normalizedPath,
+            preg_replace('#^public/#', '', $normalizedPath),
+            preg_replace('#^storage/#', '', $normalizedPath),
+            preg_replace('#^dpr/#', 'engg_dpr/', $normalizedPath),
+            preg_replace('#^public/dpr/#', 'engg_dpr/', $normalizedPath),
+            preg_replace('#^storage/dpr/#', 'engg_dpr/', $normalizedPath),
+            preg_replace('#^engg_dpr/#', 'dpr/', $normalizedPath),
+        ])
+            ->filter()
+            ->map(fn (string $path) => str_replace('\\', '/', $path))
+            ->reject(fn (string $path) => str_contains($path, '..'))
+            ->unique()
+            ->values();
+    }
 }

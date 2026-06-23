@@ -12,6 +12,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DailyProgressReportController extends Controller
@@ -87,15 +88,21 @@ class DailyProgressReportController extends Controller
         ]);
     }
 
-    public function photo(DailyProgressReportPhoto $photo): StreamedResponse
+    public function photo(DailyProgressReportPhoto $photo): StreamedResponse|BinaryFileResponse
     {
         $photoPath = $this->publicPhotoPath($photo->photo_path);
 
-        if (! $photoPath) {
-            abort(404);
+        if ($photoPath) {
+            return Storage::disk('public')->response($photoPath);
         }
 
-        return Storage::disk('public')->response($photoPath);
+        $publicStoragePath = $this->publicStoragePhotoPath($photo->photo_path);
+
+        if ($publicStoragePath) {
+            return response()->file($publicStoragePath);
+        }
+
+        abort(404);
     }
 
     private function applyReportFilters($query, string $fromDate, string $toDate, ?string $userId): void
@@ -129,5 +136,37 @@ class DailyProgressReportController extends Controller
             ->unique();
 
         return $paths->first(fn (string $path) => Storage::disk('public')->exists($path));
+    }
+
+    private function publicStoragePhotoPath(?string $photoPath): ?string
+    {
+        return $this->photoPathCandidates($photoPath)
+            ->map(fn (string $path) => public_path('storage/' . $path))
+            ->first(fn (string $path) => is_file($path));
+    }
+
+    private function photoPathCandidates(?string $photoPath): \Illuminate\Support\Collection
+    {
+        if (! $photoPath) {
+            return collect();
+        }
+
+        $normalizedPath = str_replace('\\', '/', ltrim($photoPath, '/\\'));
+
+        return collect([
+            $photoPath,
+            $normalizedPath,
+            preg_replace('#^public/#', '', $normalizedPath),
+            preg_replace('#^storage/#', '', $normalizedPath),
+            preg_replace('#^dpr/#', 'engg_dpr/', $normalizedPath),
+            preg_replace('#^public/dpr/#', 'engg_dpr/', $normalizedPath),
+            preg_replace('#^storage/dpr/#', 'engg_dpr/', $normalizedPath),
+            preg_replace('#^engg_dpr/#', 'dpr/', $normalizedPath),
+        ])
+            ->filter()
+            ->map(fn (string $path) => str_replace('\\', '/', $path))
+            ->reject(fn (string $path) => str_contains($path, '..'))
+            ->unique()
+            ->values();
     }
 }
