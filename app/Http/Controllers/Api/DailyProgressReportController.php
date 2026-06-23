@@ -135,9 +135,11 @@ class DailyProgressReportController extends Controller
                 foreach ($hours as $index => $hour) {
                     $hourModel = $report->hours()->create($hour);
 
+                    Storage::disk('public')->makeDirectory('engg_dpr');
+
                     foreach ($this->filesForHour($request, $index) as $photo) {
                         $path = $photo->store(
-                            'dpr/' . $user->id . '/' . $report->id . '/hour-' . $hour['hour_number'],
+                            'engg_dpr/' . $user->id . '/' . $report->id . '/hour-' . $hour['hour_number'],
                             'public'
                         );
                         $storedPaths[] = $path;
@@ -158,7 +160,7 @@ class DailyProgressReportController extends Controller
         }
 
         if ($oldPhotoPaths) {
-            Storage::disk('public')->delete($oldPhotoPaths);
+            $this->deletePublicPhotos($oldPhotoPaths);
         }
 
         $report->load(['hours.photos']);
@@ -326,6 +328,7 @@ class DailyProgressReportController extends Controller
                 'mobile' => $report->user?->mobile,
                 'designation' => $report->user?->designation,
             ],
+            'hour_count' => $report->hours->count(),
             'photo_count' => $report->hours->sum(fn ($hour) => $hour->photos->count()),
             'hours' => $report->hours
                 ->sortBy('hour_number')
@@ -339,6 +342,7 @@ class DailyProgressReportController extends Controller
                     'photos' => $hour->photos->map(fn (DailyProgressReportPhoto $photo) => [
                         'id' => $photo->id,
                         'url' => route('api.dpr-photos.show', $photo),
+                        'photo_url' => route('api.dpr-photos.show', $photo),
                         'path' => $photo->photo_path,
                         'original_name' => $photo->original_name,
                         'mime_type' => $photo->mime_type,
@@ -356,16 +360,39 @@ class DailyProgressReportController extends Controller
             return null;
         }
 
+        $normalizedPath = str_replace('\\', '/', ltrim($photoPath, '/\\'));
+
         $paths = collect([
             $photoPath,
-            ltrim($photoPath, '/\\'),
-            preg_replace('#^public[/\\\\]#', '', ltrim($photoPath, '/\\')),
-            preg_replace('#^storage[/\\\\]#', '', ltrim($photoPath, '/\\')),
+            $normalizedPath,
+            preg_replace('#^public/#', '', $normalizedPath),
+            preg_replace('#^storage/#', '', $normalizedPath),
+            preg_replace('#^dpr/#', 'engg_dpr/', $normalizedPath),
+            preg_replace('#^public/dpr/#', 'engg_dpr/', $normalizedPath),
+            preg_replace('#^storage/dpr/#', 'engg_dpr/', $normalizedPath),
+            preg_replace('#^engg_dpr/#', 'dpr/', $normalizedPath),
         ])
             ->filter()
             ->map(fn (string $path) => str_replace('\\', '/', $path))
             ->unique();
 
         return $paths->first(fn (string $path) => Storage::disk('public')->exists($path));
+    }
+
+    /**
+     * @param array<int, string> $photoPaths
+     */
+    private function deletePublicPhotos(array $photoPaths): void
+    {
+        $paths = collect($photoPaths)
+            ->map(fn (?string $path) => $this->publicPhotoPath($path))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($paths) {
+            Storage::disk('public')->delete($paths);
+        }
     }
 }

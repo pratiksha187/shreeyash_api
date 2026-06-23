@@ -40,6 +40,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/attendance-reports', [AttendanceReportController::class, 'index'])->name('attendance-reports.index');
         Route::get('/dpr-reports', [DailyProgressReportController::class, 'index'])->name('dpr-reports.index');
         Route::get('/dpr-reports/photos/{photo}', [DailyProgressReportController::class, 'photo'])->name('dpr-reports.photo');
+        Route::get('/dpr-reports/{dailyProgressReport}', [DailyProgressReportController::class, 'show'])->name('dpr-reports.show');
         Route::get('/fdd-test-records', [FddTestRecordController::class, 'index'])->name('fdd-test-records.index');
         Route::post('/fdd-test-records', [FddTestRecordController::class, 'store'])->name('fdd-test-records.store');
         Route::post('/fdd-road-sections', [FddTestRecordController::class, 'storeRoadSection'])->name('fdd-road-sections.store');

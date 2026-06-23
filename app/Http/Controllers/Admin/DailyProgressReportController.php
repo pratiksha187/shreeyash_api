@@ -38,6 +38,7 @@ class DailyProgressReportController extends Controller
 
         $reports = (clone $baseQuery)
             ->with(['user:id,name,mobile,designation', 'hours.photos'])
+            ->withCount(['hours', 'photos'])
             ->orderByDesc('dpr_date')
             ->orderByDesc('id')
             ->paginate(15)
@@ -66,6 +67,19 @@ class DailyProgressReportController extends Controller
         ]);
     }   
 
+    public function show(DailyProgressReport $dailyProgressReport): View
+    {
+        $dailyProgressReport = DailyProgressReport::query()
+            ->forCurrentCompany()
+            ->with(['user:id,name,mobile,designation', 'hours.photos'])
+            ->withCount(['hours', 'photos'])
+            ->findOrFail($dailyProgressReport->id);
+
+        return view('admin.dpr-reports.show', [
+            'report' => $dailyProgressReport,
+        ]);
+    }
+
     public function photo(DailyProgressReportPhoto $photo): StreamedResponse
     {
         $photoPath = $this->publicPhotoPath($photo->photo_path);
@@ -91,11 +105,17 @@ class DailyProgressReportController extends Controller
             return null;
         }
 
+        $normalizedPath = str_replace('\\', '/', ltrim($photoPath, '/\\'));
+
         $paths = collect([
             $photoPath,
-            ltrim($photoPath, '/\\'),
-            preg_replace('#^public[/\\\\]#', '', ltrim($photoPath, '/\\')),
-            preg_replace('#^storage[/\\\\]#', '', ltrim($photoPath, '/\\')),
+            $normalizedPath,
+            preg_replace('#^public/#', '', $normalizedPath),
+            preg_replace('#^storage/#', '', $normalizedPath),
+            preg_replace('#^dpr/#', 'engg_dpr/', $normalizedPath),
+            preg_replace('#^public/dpr/#', 'engg_dpr/', $normalizedPath),
+            preg_replace('#^storage/dpr/#', 'engg_dpr/', $normalizedPath),
+            preg_replace('#^engg_dpr/#', 'dpr/', $normalizedPath),
         ])
             ->filter()
             ->map(fn (string $path) => str_replace('\\', '/', $path))

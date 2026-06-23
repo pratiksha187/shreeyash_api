@@ -8,7 +8,7 @@
     <div class="page-header">
         <div>
             <h1>DPR Reports</h1>
-            <p>Review submitted DPR data with engineer name, project, hourly remarks, and photos.</p>
+            <p>Review every engineer DPR as one complete report with hourly entries and photos.</p>
         </div>
     </div>
 
@@ -82,14 +82,21 @@
                     <th>Engineer</th>
                     <th>Site / Project</th>
                     <th>Work Summary</th>
-                    <th>Hourly Details</th>
+                    <th>Entries</th>
+                    <th>Photos</th>
                     <th>Submitted</th>
+                    <th>Action</th>
                 </tr>
             </thead>
             <tbody>
                 @forelse ($reports as $report)
                     <tr>
-                        <td>{{ $report->dpr_date?->format('d M Y') }}</td>
+                        <td>
+                            <a class="table-link" href="{{ route('admin.dpr-reports.show', $report) }}">
+                                {{ $report->dpr_date?->format('d M Y') }}
+                            </a>
+                            <div class="table-subtext">DPR #{{ $report->id }}</div>
+                        </td>
                         <td>
                             @if ($report->user)
                                 <a class="table-link" href="{{ route('admin.employees.show', $report->user) }}">
@@ -107,36 +114,16 @@
                         </td>
                         <td class="text-wrap">{{ $report->site_project }}</td>
                         <td class="text-wrap">{{ $report->work_summary }}</td>
-                        <td>
-                            <div class="hour-list">
-                                @forelse ($report->hours->sortBy('hour_number') as $hour)
-                                    <div class="hour-item">
-                                        <strong>
-                                            Hour {{ $hour->hour_number }}
-                                            - {{ \Carbon\Carbon::parse($hour->work_time)->format('h:i A') }}
-                                        </strong>
-                                        <p>{{ $hour->remark ?: '-' }}</p>
-
-                                        @if ($hour->photos->isNotEmpty())
-                                            <div class="thumb-grid">
-                                                @foreach ($hour->photos as $photo)
-                                                    <a href="{{ route('admin.dpr-reports.photo', $photo) }}" target="_blank">
-                                                        <img class="thumb" src="{{ route('admin.dpr-reports.photo', $photo) }}" alt="DPR photo">
-                                                    </a>
-                                                @endforeach
-                                            </div>
-                                        @endif
-                                    </div>
-                                @empty
-                                    <span class="table-subtext">No hourly entries.</span>
-                                @endforelse
-                            </div>
-                        </td>
+                        <td>{{ $report->hours_count }}</td>
+                        <td>{{ $report->photos_count }}</td>
                         <td>{{ $report->created_at?->format('d M Y h:i A') }}</td>
+                        <td>
+                            <a class="btn small" href="{{ route('admin.dpr-reports.show', $report) }}">View DPR</a>
+                        </td>
                     </tr>
                 @empty
                     <tr>
-                        <td class="empty" colspan="6">No DPR reports found for this filter.</td>
+                        <td class="empty" colspan="8">No DPR reports found for this filter.</td>
                     </tr>
                 @endforelse
             </tbody>
