@@ -2,13 +2,13 @@
 
 @section('title', $employee->name . ' | Admin Panel')
 @section('headerTitle', 'Employee Details')
-@section('headerSubtitle', 'Calendar attendance view')
+@section('headerSubtitle', 'DPRs and attendance view')
 
 @section('content')
     <div class="page-header">
         <div>
             <h1>{{ $employee->name }}</h1>
-            <p>{{ $employee->designation ?? 'Employee' }} attendance for {{ $monthLabel }}.</p>
+            <p>{{ $employee->designation ?? 'Employee' }} · {{ $employee->mobile ?? '-' }}</p>
         </div>
         <a class="btn secondary" href="{{ route('admin.employees.index') }}">Back to Employees</a>
     </div>
@@ -21,121 +21,93 @@
         <div class="alert-error">{{ session('error') }}</div>
     @endif
 
-    <section class="detail-grid">
-        <div class="card detail-item">
-            <span>Email</span>
-            <strong>{{ $employee->email }}</strong>
+    <!-- Compact Employee Info -->
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:8px; margin-bottom:16px;">
+        <div class="card detail-item" style="padding:12px 16px;">
+            <span style="font-size:12px;">Email</span>
+            <strong style="font-size:13px;">{{ $employee->email }}</strong>
         </div>
-        <div class="card detail-item">
-            <span>Mobile</span>
-            <strong>{{ $employee->mobile ?? '-' }}</strong>
+        <div class="card detail-item" style="padding:12px 16px;">
+            <span style="font-size:12px;">Join Date</span>
+            <strong style="font-size:13px;">{{ $employee->join_date?->format('d M Y') ?? '-' }}</strong>
         </div>
-        <div class="card detail-item">
-            <span>Join Date</span>
-            <strong>{{ $employee->join_date?->format('d M Y') ?? '-' }}</strong>
+        <div class="card detail-item" style="padding:12px 16px;">
+            <span style="font-size:12px;">Salary</span>
+            <strong style="font-size:13px;">{{ $employee->salary ?? '-' }}</strong>
         </div>
-        <div class="card detail-item">
-            <span>Designation</span>
-            <strong>{{ $employee->designation ?? '-' }}</strong>
+        <div class="card detail-item" style="padding:12px 16px;">
+            <span style="font-size:12px;">Hours/Day</span>
+            <strong style="font-size:13px;">{{ $employee->hours_per_day ?? '-' }}</strong>
         </div>
-        <div class="card detail-item">
-            <span>Gender</span>
-            <strong>{{ $employee->gender ? ucfirst($employee->gender) : '-' }}</strong>
-        </div>
-        <div class="card detail-item">
-            <span>Marital Status</span>
-            <strong>{{ $employee->marital_status ? ucfirst($employee->marital_status) : '-' }}</strong>
-        </div>
-        <div class="card detail-item">
-            <span>Date of Birth</span>
-            <strong>{{ $employee->date_of_birth?->format('d M Y') ?? '-' }}</strong>
-        </div>
-        <div class="card detail-item">
-            <span>Salary</span>
-            <strong>{{ $employee->salary ?? '-' }}</strong>
-        </div>
-        <div class="card detail-item">
-            <span>Confirmation Date</span>
-            <strong>{{ $employee->confirmation_date?->format('d M Y') ?? '-' }}</strong>
-        </div>
-        <div class="card detail-item">
-            <span>Probation Months</span>
-            <strong>{{ $employee->probation_months ?? '-' }}</strong>
-        </div>
-        <div class="card detail-item">
-            <span>Aadhaar Number</span>
-            <strong>{{ $employee->aadhaar_number ?? '-' }}</strong>
-        </div>
-        <div class="card detail-item">
-            <span>Hours Per Day</span>
-            <strong>{{ $employee->hours_per_day ?? '-' }}</strong>
-        </div>
-        <div class="card detail-item">
-            <span>Days Per Week</span>
-            <strong>{{ $employee->days_per_week ?? '-' }}</strong>
-        </div>
-        <div class="card detail-item">
-            <span>Insurance</span>
-            <strong>{{ $employee->insurance ?? '-' }}</strong>
-        </div>
-        <div class="card detail-item">
-            <span>PT</span>
-            <strong>{{ $employee->pt ?? '-' }}</strong>
-        </div>
-        <div class="card detail-item">
-            <span>Advance</span>
-            <strong>{{ $employee->advance ?? '-' }}</strong>
-        </div>
-        <div class="card detail-item">
-            <span>PF</span>
-            <strong>{{ $employee->pf ?? '-' }}</strong>
-        </div>
-    </section>
+    </div>
 
-    <form class="card form-card report-filter" method="GET" action="{{ route('admin.employees.show', $employee) }}">
-        <section class="form-section">
-            <h2 class="section-title">Calendar Filter</h2>
-            <div class="form-grid three">
+    <!-- DPR Section with Month Filter -->
+    <form class="card form-card report-filter" method="GET" action="{{ route('admin.employees.show', $employee) }}" style="margin-bottom:16px;">
+        <section class="form-section" style="margin-bottom:0;">
+            <h2 class="section-title" style="margin-top:0; margin-bottom:8px;">Daily Progress Reports</h2>
+            <div class="form-grid three" style="gap:12px;">
                 <div class="field">
                     <label for="month">Month</label>
                     <input id="month" name="month" type="month" value="{{ old('month', $selectedMonth) }}">
-                    @error('month')
-                        <div class="error">{{ $message }}</div>
-                    @enderror
                 </div>
                 <div class="field">
                     <label>&nbsp;</label>
-                    <button class="btn" type="submit">Show Calendar</button>
+                    <button class="btn" type="submit" style="width:100%;">Apply Filter</button>
                 </div>
             </div>
         </section>
     </form>
 
-    <form class="card form-card report-filter" method="POST" action="{{ route('admin.payments.generate') }}">
-        @csrf
-        <input name="user_id" type="hidden" value="{{ $employee->id }}">
-        <section class="form-section">
-            <h2 class="section-title">Generate Payment</h2>
-            <div class="form-grid three">
-                <div class="field">
-                    <label for="payment_from_date">From Date</label>
-                    <input id="payment_from_date" name="from_date" type="date" value="{{ \Carbon\Carbon::parse($selectedMonth . '-01')->startOfMonth()->toDateString() }}" required>
-                </div>
-                <div class="field">
-                    <label for="payment_to_date">To Date</label>
-                    <input id="payment_to_date" name="to_date" type="date" value="{{ \Carbon\Carbon::parse($selectedMonth . '-01')->endOfMonth()->toDateString() }}" required>
-                </div>
-                <div class="field">
-                    <label>&nbsp;</label>
-                    <button class="btn" type="submit">Calculate Payment</button>
-                </div>
-            </div>
-        </section>
-    </form>
+    <!-- DPR Table with Horizontal Scroll -->
+    <div class="card table-wrap" style="overflow-x:auto; margin-bottom:16px;">
+        <table style="width:100%; white-space:nowrap;">
+            <thead>
+                <tr>
+                    <th style="width:120px;">Date</th>
+                    <th style="width:80px;">Entries</th>
+                    <th style="width:120px;">Photos</th>
+                    <th style="width:280px;">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse ($dprs as $group)
+                    <tr>
+                        <td style="font-weight:500;">
+                            {{ \Carbon\Carbon::parse($group->date)->format('d M Y') }}
+                        </td>
+                        <td>{{ $group->hours_count }}</td>
+                        <td>
+                            <div class="thumb-row" style="display:flex; gap:4px; flex-wrap:wrap;">
+                                @foreach ($group->photos->take(3) as $photo)
+                                    <a href="{{ route('admin.dpr-reports.photo', $photo) }}" target="_blank">
+                                        <img class="thumb" src="{{ route('admin.dpr-reports.photo', $photo) }}" alt="Photo" style="width:40px; height:40px; object-fit:cover; border-radius:4px;">
+                                    </a>
+                                @endforeach
+                                @if ($group->photos_count > 3)
+                                    <span style="display:flex; align-items:center; padding:4px 8px; background:#f0f0f0; border-radius:4px; font-size:11px;">+{{ $group->photos_count - 3 }}</span>
+                                @endif
+                            </div>
+                        </td>
+                        <td>
+                            <button class="btn small show-dpr" data-message='@json($group->message)' style="margin-right:4px;">Show Message</button>
+                            @if ($group->reports->first())
+                                <a class="btn small" href="{{ route('admin.dpr-reports.show', $group->reports->first()) }}">View DPR</a>
+                            @endif
+                        </td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td class="empty" colspan="4" style="text-align:center; padding:20px;">No DPR reports found for this month.</td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
 
-    <section class="stats-grid">
+    <!-- Attendance Stats -->
+    <section class="stats-grid" style="margin-bottom:16px;">
         <div class="card stat-card">
-            <span>Total Records</span>
+            <span>Total Days</span>
             <strong>{{ $summary['total_days'] }}</strong>
         </div>
         <div class="card stat-card">
@@ -156,110 +128,31 @@
         </div>
     </section>
 
-    <div class="page-header">
-        <div>
-            <h1>{{ $monthLabel }} Calendar</h1>
-            <p>Each date shows the attendance status and leave remarks where available.</p>
-        </div>
-    </div>
+    <!-- Compact Calendar -->
+    <div style="display:flex; gap:12px; margin-bottom:16px;">
+        <div class="card" style="flex:1;">
+            <h3 style="margin-top:0; margin-bottom:12px; font-size:14px;">{{ $monthLabel }} Calendar</h3>
+            <div class="calendar-grid" style="grid-template-columns:repeat(7, 1fr); gap:4px;">
+                @foreach (['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as $dayName)
+                    <div style="text-align:center; font-weight:600; font-size:11px; padding:4px;">{{ substr($dayName, 0, 1) }}</div>
+                @endforeach
 
-    <div class="card calendar-card">
-        <div class="calendar-grid">
-            @foreach (['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as $dayName)
-                <div class="calendar-head">{{ $dayName }}</div>
-            @endforeach
+                @foreach ($blankDays as $blankDay)
+                    <div></div>
+                @endforeach
 
-            @foreach ($blankDays as $blankDay)
-                <div class="calendar-empty"></div>
-            @endforeach
-
-            @foreach ($calendarDays as $day)
-                @php
-                    $attendance = $day['attendance'];
-                    $status = $attendance?->status;
-                    $statusLabel = $status ? str_replace('_', ' ', $status) : 'No record';
-                    $statusClass = $status ? 'status-' . $status : 'status-empty';
-                @endphp
-                <div class="calendar-day">
-                    <div class="calendar-date">
-                        <span>{{ $day['date']->format('j') }}</span>
-                        <small>{{ $day['date']->format('D') }}</small>
+                @foreach ($calendarDays as $day)
+                    @php
+                        $attendance = $day['attendance'];
+                        $status = $attendance?->status ?? '';
+                        $statusClass = $status ? 'status-' . $status : 'status-empty';
+                    @endphp
+                    <div style="padding:6px; text-align:center; border-radius:4px; background:#f9f9f9; font-size:11px; @if($status) border-left:3px solid currentColor; @endif" class="{{ $statusClass }}">
+                        {{ $day['date']->format('d') }}
                     </div>
-
-                    <span class="status-pill {{ $statusClass }}">{{ $statusLabel }}</span>
-
-                    @if ($attendance)
-                        <div class="calendar-meta">
-                            @if ($attendance->check_in_at)
-                                In: {{ $attendance->localCheckInAt()?->format('h:i A') }}<br>
-                            @endif
-                            @if ($attendance->check_out_at)
-                                Out: {{ $attendance->localCheckOutAt()?->format('h:i A') }}<br>
-                            @endif
-                            @if ($attendance->remarks)
-                                {{ $attendance->remarks }}
-                            @endif
-                        </div>
-                    @endif
-                </div>
-            @endforeach
+                @endforeach
+            </div>
         </div>
-    </div>
-
-    <div class="page-header">
-        <div>
-            <h1>{{ $employee->name }} DPRs</h1>
-            <p>Daily progress reports submitted by this engineer for {{ $monthLabel }}.</p>
-        </div>
-    </div>
-
-    <div class="card table-wrap">
-        <table>
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Entries</th>
-                    <th>Photos</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-            <tbody>
-                @forelse ($dprs as $group)
-                    <tr>
-                        <td>
-                            <strong>{{ \Carbon\Carbon::parse($group->date)->format('d M Y') }}</strong>
-                            <div class="table-subtext">DPR for {{ \Carbon\Carbon::parse($group->date)->format('d M Y') }}</div>
-                        </td>
-                        <td>{{ $group->hours_count }} entries</td>
-                        <td>
-                            <div class="thumb-row">
-                                @foreach ($group->photos->take(4) as $photo)
-                                    @if ($photo->publicUrl())
-                                        <a href="{{ $photo->publicUrl() }}" target="_blank">
-                                            <img class="thumb" src="{{ $photo->publicUrl() }}" alt="DPR photo">
-                                        </a>
-                                    @endif
-                                @endforeach
-                            </div>
-                            <div class="table-subtext">{{ $group->photos_count }} photos</div>
-                        </td>
-                        <td>
-                            <button class="btn small show-dpr" data-message='@json($group->message)'>Show Message</button>
-                            @if ($group->whatsapp_url)
-                                <a class="btn small whatsapp" href="{{ $group->whatsapp_url }}" target="_blank">Open WhatsApp</a>
-                            @endif
-                            @if ($group->reports->first())
-                                <a class="btn small" href="{{ route('admin.dpr-reports.show', $group->reports->first()) }}">View DPR</a>
-                            @endif
-                        </td>
-                    </tr>
-                @empty
-                    <tr>
-                        <td class="empty" colspan="4">No DPR reports found for this employee this month.</td>
-                    </tr>
-                @endforelse
-            </tbody>
-        </table>
     </div>
 
     <!-- DPR Message Modal -->
