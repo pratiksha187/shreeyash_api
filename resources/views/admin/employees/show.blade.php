@@ -58,46 +58,44 @@
         </section>
     </form>
 
-    <!-- DPR Table with Horizontal Scroll -->
-    <div class="card table-wrap" style="overflow-x:auto; margin-bottom:16px;">
-        <table style="width:100%; white-space:nowrap;">
+    <!-- DPR Table - Clean Layout -->
+    <div class="card table-wrap" style="margin-bottom:24px;">
+        <table style="width:100%;">
             <thead>
                 <tr>
-                    <th style="width:120px;">Date</th>
-                    <th style="width:80px;">Entries</th>
-                    <th style="width:120px;">Photos</th>
-                    <th style="width:280px;">Action</th>
+                    <th>DATE</th>
+                    <th>ENTRIES</th>
+                    <th>PHOTOS</th>
+                    <th>ACTION</th>
                 </tr>
             </thead>
             <tbody>
                 @forelse ($dprs as $group)
                     <tr>
-                        <td style="font-weight:500;">
-                            {{ \Carbon\Carbon::parse($group->date)->format('d M Y') }}
-                        </td>
+                        <td>{{ \Carbon\Carbon::parse($group->date)->format('d/m/Y') }}</td>
                         <td>{{ $group->hours_count }}</td>
                         <td>
-                            <div class="thumb-row" style="display:flex; gap:4px; flex-wrap:wrap;">
-                                @foreach ($group->photos->take(3) as $photo)
-                                    <a href="{{ route('admin.dpr-reports.photo', $photo) }}" target="_blank">
-                                        <img class="thumb" src="{{ route('admin.dpr-reports.photo', $photo) }}" alt="Photo" style="width:40px; height:40px; object-fit:cover; border-radius:4px;">
+                            <div style="display:flex; gap:6px; align-items:center;">
+                                @foreach ($group->photos->take(2) as $photo)
+                                    <a href="{{ route('admin.dpr-reports.photo', $photo) }}" target="_blank" style="display:inline-block;">
+                                        <img src="{{ route('admin.dpr-reports.photo', $photo) }}" alt="Photo" style="width:32px; height:32px; object-fit:cover; border-radius:3px;">
                                     </a>
                                 @endforeach
-                                @if ($group->photos_count > 3)
-                                    <span style="display:flex; align-items:center; padding:4px 8px; background:#f0f0f0; border-radius:4px; font-size:11px;">+{{ $group->photos_count - 3 }}</span>
+                                @if ($group->photos_count > 2)
+                                    <span style="font-size:12px; color:#666;">+{{ $group->photos_count - 2 }}</span>
                                 @endif
                             </div>
                         </td>
                         <td>
-                            <button class="btn small show-dpr" data-message='@json($group->message)' style="margin-right:4px;">Show Message</button>
+                            <button class="btn small show-dpr" data-message='@json($group->message)' style="margin-right:6px; background:#007bff; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-size:12px;">Show Message</button>
                             @if ($group->reports->first())
-                                <a class="btn small" href="{{ route('admin.dpr-reports.show', $group->reports->first()) }}">View DPR</a>
+                                <a class="btn small" href="{{ route('admin.dpr-reports.show', $group->reports->first()) }}" style="background:#f0f0f0; padding:6px 12px; border-radius:4px; text-decoration:none; color:#333; font-size:12px;">View DPR</a>
                             @endif
                         </td>
                     </tr>
                 @empty
                     <tr>
-                        <td class="empty" colspan="4" style="text-align:center; padding:20px;">No DPR reports found for this month.</td>
+                        <td colspan="4" style="text-align:center; padding:24px; color:#999;">No DPR reports found for this month.</td>
                     </tr>
                 @endforelse
             </tbody>
