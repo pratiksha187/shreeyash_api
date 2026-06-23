@@ -234,9 +234,11 @@
                         <td>
                             <div class="thumb-row">
                                 @foreach ($group->photos->take(4) as $photo)
-                                    <a href="{{ route('admin.dpr-reports.photo', $photo) }}" target="_blank">
-                                        <img class="thumb" src="{{ route('admin.dpr-reports.photo', $photo) }}" alt="DPR photo">
-                                    </a>
+                                    @if ($photo->publicUrl())
+                                        <a href="{{ $photo->publicUrl() }}" target="_blank">
+                                            <img class="thumb" src="{{ $photo->publicUrl() }}" alt="DPR photo">
+                                        </a>
+                                    @endif
                                 @endforeach
                             </div>
                             <div class="table-subtext">{{ $group->photos_count }} photos</div>

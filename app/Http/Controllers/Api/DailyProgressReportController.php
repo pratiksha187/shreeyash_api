@@ -330,8 +330,9 @@ class DailyProgressReportController extends Controller
                     'remark' => $hour->remark,
                     'photos' => $hour->photos->map(fn (DailyProgressReportPhoto $photo) => [
                         'id' => $photo->id,
-                        'url' => route('api.dpr-photos.show', $photo),
-                        'photo_url' => route('api.dpr-photos.show', $photo),
+                        'url' => $photo->publicUrl(),
+                        'photo_url' => $photo->publicUrl(),
+                        'api_url' => route('api.dpr-photos.show', $photo),
                         'path' => $photo->photo_path,
                         'original_name' => $photo->original_name,
                         'mime_type' => $photo->mime_type,

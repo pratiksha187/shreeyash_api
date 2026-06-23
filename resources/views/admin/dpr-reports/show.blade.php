@@ -111,9 +111,11 @@
                                         @if ($hour->photos->isNotEmpty())
                                             <div class="thumb-grid">
                                                 @foreach ($hour->photos as $photo)
-                                                    <a href="{{ route('admin.dpr-reports.photo', $photo) }}" target="_blank">
-                                                        <img class="thumb" src="{{ route('admin.dpr-reports.photo', $photo) }}" alt="DPR photo">
-                                                    </a>
+                                                    @if ($photo->publicUrl())
+                                                        <a href="{{ $photo->publicUrl() }}" target="_blank">
+                                                            <img class="thumb" src="{{ $photo->publicUrl() }}" alt="DPR photo">
+                                                        </a>
+                                                    @endif
                                                 @endforeach
                                             </div>
                                         @endif
