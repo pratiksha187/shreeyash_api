@@ -26,6 +26,72 @@ class LabourAttendanceController extends Controller
         return view('admin.labour-attendance.master', $this->masterData());
     }
 
+    public function sites(): View
+    {
+        return view('admin.labour-attendance.sites', [
+            'sites' => LabourSite::query()
+                ->forCurrentCompany()
+                ->withCount(['contractors', 'labourAttendances'])
+                ->orderBy('name')
+                ->paginate(15),
+        ]);
+    }
+
+    public function contractors(): View
+    {
+        $this->ensureDecoupledLabourMasterSchema();
+
+        return view('admin.labour-attendance.contractors', [
+            'contractors' => Contractor::query()
+                ->forCurrentCompany()
+                ->withCount(['labours', 'labourAttendances'])
+                ->orderBy('name')
+                ->paginate(15),
+        ]);
+    }
+
+    public function labours(): View
+    {
+        $this->ensureDecoupledLabourMasterSchema();
+
+        return view('admin.labour-attendance.labours', [
+            'labours' => Labour::query()
+                ->forCurrentCompany()
+                ->withCount('labourAttendances')
+                ->orderBy('name')
+                ->paginate(15),
+        ]);
+    }
+
+    public function editSite(LabourSite $labourSite): View
+    {
+        $this->ensureCurrentCompanyRecord($labourSite);
+
+        return view('admin.labour-attendance.edit-site', [
+            'site' => $labourSite,
+        ]);
+    }
+
+    public function editContractor(Contractor $contractor): View
+    {
+        $this->ensureDecoupledLabourMasterSchema();
+        $this->ensureCurrentCompanyRecord($contractor);
+
+        return view('admin.labour-attendance.edit-contractor', [
+            'contractor' => $contractor,
+        ]);
+    }
+
+    public function editLabour(Labour $labour): View
+    {
+        $this->ensureDecoupledLabourMasterSchema();
+        $this->ensureCurrentCompanyRecord($labour);
+
+        return view('admin.labour-attendance.edit-labour', [
+            'labour' => $labour,
+        ]);
+    }
+
     public function index(Request $request): View
     {
         $filters = $request->validate([
@@ -90,7 +156,35 @@ class LabourAttendanceController extends Controller
 
         LabourSite::query()->create($data);
 
-        return back()->with('success', 'Site added successfully.');
+        return redirect()->route('admin.labour-sites.index')->with('success', 'Site added successfully.');
+    }
+
+    public function updateSite(Request $request, LabourSite $labourSite): RedirectResponse
+    {
+        $this->ensureCurrentCompanyRecord($labourSite);
+
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255', Rule::unique('labour_sites', 'name')->ignore($labourSite->id)],
+            'address' => ['nullable', 'string', 'max:255'],
+            'is_active' => ['required', 'boolean'],
+        ]);
+
+        $labourSite->update($data);
+
+        return redirect()->route('admin.labour-sites.index')->with('success', 'Site updated successfully.');
+    }
+
+    public function destroySite(LabourSite $labourSite): RedirectResponse
+    {
+        $this->ensureCurrentCompanyRecord($labourSite);
+
+        if ($labourSite->contractors()->exists() || $labourSite->labourAttendances()->exists()) {
+            return back()->with('error', 'This site is already used. Mark it inactive instead of deleting it.');
+        }
+
+        $labourSite->delete();
+
+        return redirect()->route('admin.labour-sites.index')->with('success', 'Site deleted successfully.');
     }
 
     public function storeContractor(Request $request): RedirectResponse
@@ -104,7 +198,37 @@ class LabourAttendanceController extends Controller
 
         Contractor::query()->create($data);
 
-        return back()->with('success', 'Contractor added successfully.');
+        return redirect()->route('admin.contractors.index')->with('success', 'Contractor added successfully.');
+    }
+
+    public function updateContractor(Request $request, Contractor $contractor): RedirectResponse
+    {
+        $this->ensureDecoupledLabourMasterSchema();
+        $this->ensureCurrentCompanyRecord($contractor);
+
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'mobile' => ['nullable', 'string', 'max:20'],
+            'is_active' => ['required', 'boolean'],
+        ]);
+
+        $contractor->update($data);
+
+        return redirect()->route('admin.contractors.index')->with('success', 'Contractor updated successfully.');
+    }
+
+    public function destroyContractor(Contractor $contractor): RedirectResponse
+    {
+        $this->ensureDecoupledLabourMasterSchema();
+        $this->ensureCurrentCompanyRecord($contractor);
+
+        if ($contractor->labours()->exists() || $contractor->labourAttendances()->exists()) {
+            return back()->with('error', 'This contractor is already used. Mark it inactive instead of deleting it.');
+        }
+
+        $contractor->delete();
+
+        return redirect()->route('admin.contractors.index')->with('success', 'Contractor deleted successfully.');
     }
 
     public function storeLabour(Request $request): RedirectResponse
@@ -120,7 +244,39 @@ class LabourAttendanceController extends Controller
 
         Labour::query()->create($data);
 
-        return back()->with('success', 'Labour added successfully.');
+        return redirect()->route('admin.labours.index')->with('success', 'Labour added successfully.');
+    }
+
+    public function updateLabour(Request $request, Labour $labour): RedirectResponse
+    {
+        $this->ensureDecoupledLabourMasterSchema();
+        $this->ensureCurrentCompanyRecord($labour);
+
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'mobile' => ['nullable', 'string', 'max:20'],
+            'labour_code' => ['nullable', 'string', 'max:50'],
+            'trade' => ['nullable', 'string', 'max:100'],
+            'is_active' => ['required', 'boolean'],
+        ]);
+
+        $labour->update($data);
+
+        return redirect()->route('admin.labours.index')->with('success', 'Labour updated successfully.');
+    }
+
+    public function destroyLabour(Labour $labour): RedirectResponse
+    {
+        $this->ensureDecoupledLabourMasterSchema();
+        $this->ensureCurrentCompanyRecord($labour);
+
+        if ($labour->labourAttendances()->exists()) {
+            return back()->with('error', 'This labour is already used in attendance. Mark it inactive instead of deleting it.');
+        }
+
+        $labour->delete();
+
+        return redirect()->route('admin.labours.index')->with('success', 'Labour deleted successfully.');
     }
 
     private function ensureDecoupledLabourMasterSchema(): void
@@ -171,6 +327,15 @@ class LabourAttendanceController extends Controller
             'contractors' => Contractor::query()->forCurrentCompany()->orderBy('name')->get(),
             'labours' => Labour::query()->forCurrentCompany()->orderBy('name')->get(),
         ];
+    }
+
+    private function ensureCurrentCompanyRecord(LabourSite|Contractor|Labour $record): void
+    {
+        $companyId = app(Tenant::class)->id();
+
+        if ($companyId && (int) $record->company_id !== (int) $companyId) {
+            abort(404);
+        }
     }
 
     public function photo(LabourAttendance $labourAttendance): StreamedResponse

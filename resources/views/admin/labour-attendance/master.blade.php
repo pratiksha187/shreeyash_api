@@ -1,98 +1,17 @@
 @extends('admin.layouts.app')
 
-@section('title', 'Labour Master | Admin Panel')
-@section('headerTitle', 'Labour Master')
+@section('title', 'Labour Masters | Admin Panel')
+@section('headerTitle', 'Labour Masters')
 @section('headerSubtitle', 'Manage site, contractor, and labour master data')
 
 @section('content')
     <div class="page-header">
         <div>
-            <h1>Labour Master</h1>
-            <p>Manage the site, contractor, and labour lists used by the mobile app.</p>
+            <h1>Labour Masters</h1>
+            <p>Use separate master pages to create, edit, and manage the mobile app lists.</p>
         </div>
         <a class="btn secondary" href="{{ route('admin.labour-attendance.index') }}">View Attendance</a>
     </div>
-
-    @if (session('success'))
-        <div class="alert-success">{{ session('success') }}</div>
-    @endif
-
-    @if ($errors->any())
-        <div class="alert-error">
-            {{ $errors->first() }}
-        </div>
-    @endif
-
-    <div class="sheet-summary-grid">
-        <form class="card form-card report-filter" method="POST" action="{{ route('admin.labour-sites.store') }}">
-            @csrf
-            <section class="form-section">
-                <h2 class="section-title">Add Site</h2>
-                <div class="form-grid">
-                    <div class="field">
-                        <label for="site_name">Site Name</label>
-                        <input id="site_name" name="name" type="text" value="{{ old('name') }}" required>
-                    </div>
-                    <div class="field">
-                        <label for="site_address">Address</label>
-                        <input id="site_address" name="address" type="text" value="{{ old('address') }}">
-                    </div>
-                </div>
-                <div class="actions">
-                    <button class="btn" type="submit">Add Site</button>
-                </div>
-            </section>
-        </form>
-
-        <form class="card form-card report-filter" method="POST" action="{{ route('admin.contractors.store') }}">
-            @csrf
-            <section class="form-section">
-                <h2 class="section-title">Add Contractor</h2>
-                <div class="form-grid">
-                    <div class="field">
-                        <label for="contractor_name">Contractor Name</label>
-                        <input id="contractor_name" name="name" type="text" value="{{ old('name') }}" required>
-                    </div>
-                    <div class="field">
-                        <label for="contractor_mobile">Mobile</label>
-                        <input id="contractor_mobile" name="mobile" type="text" value="{{ old('mobile') }}">
-                    </div>
-                </div>
-                <div class="actions">
-                    <button class="btn" type="submit">Add Contractor</button>
-                </div>
-            </section>
-        </form>
-    </div>
-
-    <form class="card form-card report-filter" method="POST" action="{{ route('admin.labours.store') }}">
-        @csrf
-        <section class="form-section">
-            <h2 class="section-title">Add Labour</h2>
-            <div class="form-grid three">
-                <div class="field">
-                    <label for="labour_name">Labour Name</label>
-                    <input id="labour_name" name="name" type="text" value="{{ old('name') }}" required>
-                </div>
-                <div class="field">
-                    <label for="labour_mobile">Mobile</label>
-                    <input id="labour_mobile" name="mobile" type="text" value="{{ old('mobile') }}">
-                </div>
-                <div class="field">
-                    <label for="labour_code">Labour Code</label>
-                    <input id="labour_code" name="labour_code" type="text" value="{{ old('labour_code') }}">
-                </div>
-                <div class="field">
-                    <label for="trade">Trade</label>
-                    <input id="trade" name="trade" type="text" value="{{ old('trade') }}">
-                </div>
-                <div class="field">
-                    <label>&nbsp;</label>
-                    <button class="btn" type="submit">Add Labour</button>
-                </div>
-            </div>
-        </section>
-    </form>
 
     <section class="stats-grid">
         <div class="card stat-card">
@@ -112,4 +31,36 @@
             <strong>Live</strong>
         </div>
     </section>
+
+    <div class="sheet-summary-grid">
+        <div class="card form-card">
+            <section class="form-section">
+                <h2 class="section-title">Site Master</h2>
+                <p>Create sites, update addresses, and keep old sites inactive when needed.</p>
+                <div class="actions">
+                    <a class="btn" href="{{ route('admin.labour-sites.index') }}">Open Site Master</a>
+                </div>
+            </section>
+        </div>
+
+        <div class="card form-card">
+            <section class="form-section">
+                <h2 class="section-title">Contractor Master</h2>
+                <p>Create contractors and maintain mobile numbers used by labour attendance.</p>
+                <div class="actions">
+                    <a class="btn" href="{{ route('admin.contractors.index') }}">Open Contractor Master</a>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <div class="card form-card">
+        <section class="form-section">
+            <h2 class="section-title">Labour Master</h2>
+            <p>Create labour records with mobile number, labour code, trade, and active status.</p>
+            <div class="actions">
+                <a class="btn" href="{{ route('admin.labours.index') }}">Open Labour Master</a>
+            </div>
+        </section>
+    </div>
 @endsection

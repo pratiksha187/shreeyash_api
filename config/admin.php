@@ -79,9 +79,21 @@ return [
                 ],
                 [
                     'key' => 'labour_attendance',
+                    'label' => 'Site Master',
+                    'route' => 'admin.labour-sites.index',
+                    'active' => 'admin.labour-sites.*',
+                ],
+                [
+                    'key' => 'labour_attendance',
+                    'label' => 'Contractor Master',
+                    'route' => 'admin.contractors.index',
+                    'active' => 'admin.contractors.*',
+                ],
+                [
+                    'key' => 'labour_attendance',
                     'label' => 'Labour Master',
-                    'route' => 'admin.labour-master.index',
-                    'active' => 'admin.labour-master.*',
+                    'route' => 'admin.labours.index',
+                    'active' => 'admin.labours.*',
                 ],
                 [
                     'key' => 'payments',

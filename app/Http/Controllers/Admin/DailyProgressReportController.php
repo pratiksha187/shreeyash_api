@@ -64,7 +64,7 @@ class DailyProgressReportController extends Controller
                 'photos' => $photosCount,
             ],
         ]);
-    }
+    }   
 
     public function photo(DailyProgressReportPhoto $photo): StreamedResponse
     {
