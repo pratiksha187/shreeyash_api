@@ -40,8 +40,10 @@ class VehicleController extends Controller
             ->with('success', 'Vehicle added successfully.');
     }
 
-    public function show(Request $request, Vehicle $vehicle): View
+    public function show(Request $request, int $vehicle): View
     {
+        $vehicle = $this->findVehicle($vehicle);
+
         $filters = $request->validate([
             'month' => ['nullable', 'date_format:Y-m'],
             'log_id' => ['nullable', 'integer'],
@@ -130,20 +132,32 @@ class VehicleController extends Controller
         ]);
     }
 
-    public function edit(Vehicle $vehicle): View
+    public function edit(int $vehicle): View
     {
+        $vehicle = $this->findVehicle($vehicle);
+
         return view('admin.vehicles.edit', [
             'vehicle' => $vehicle,
         ]);
     }
 
-    public function update(Request $request, Vehicle $vehicle): RedirectResponse
+    public function update(Request $request, int $vehicle): RedirectResponse
     {
+        $vehicle = $this->findVehicle($vehicle);
+
         $vehicle->update($this->validateVehicle($request, $vehicle));
 
         return redirect()
             ->route('admin.vehicles.show', $vehicle)
             ->with('success', 'Vehicle details updated successfully.');
+    }
+
+    private function findVehicle(int $vehicle): Vehicle
+    {
+        return Vehicle::query()
+            ->forCurrentCompany()
+            ->whereKey($vehicle)
+            ->firstOrFail();
     }
 
     private function buildCalendarRows(Vehicle $vehicle, Carbon $monthStart, Carbon $monthEnd, $logsByDate)

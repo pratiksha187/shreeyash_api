@@ -12,8 +12,10 @@ use Illuminate\View\View;
 
 class VehicleLogController extends Controller
 {
-    public function storeMonthly(Request $request, Vehicle $vehicle): RedirectResponse
+    public function storeMonthly(Request $request, int $vehicle): RedirectResponse
     {
+        $vehicle = $this->findVehicle($vehicle);
+
         $data = $request->validate([
             'month' => ['required', 'date_format:Y-m'],
             'entries' => ['required', 'array'],
@@ -41,8 +43,10 @@ class VehicleLogController extends Controller
             ->with('success', 'Monthly vehicle entries saved successfully.');
     }
 
-    public function store(Request $request, Vehicle $vehicle): RedirectResponse
+    public function store(Request $request, int $vehicle): RedirectResponse
     {
+        $vehicle = $this->findVehicle($vehicle);
+
         $data = $this->validateVehicleLog($request);
         $data = $this->prepareVehicleLogData($vehicle, $data);
 
@@ -57,9 +61,10 @@ class VehicleLogController extends Controller
             ->with('success', 'Vehicle day entry saved successfully.');
     }
 
-    public function edit(Vehicle $vehicle, VehicleLog $vehicleLog): View
+    public function edit(int $vehicle, int $vehicleLog): View
     {
-        $this->ensureLogBelongsToVehicle($vehicle, $vehicleLog);
+        $vehicle = $this->findVehicle($vehicle);
+        $vehicleLog = $this->findVehicleLog($vehicle, $vehicleLog);
 
         return view('admin.vehicles.log-edit', [
             'vehicle' => $vehicle,
@@ -67,9 +72,10 @@ class VehicleLogController extends Controller
         ]);
     }
 
-    public function update(Request $request, Vehicle $vehicle, VehicleLog $vehicleLog): RedirectResponse
+    public function update(Request $request, int $vehicle, int $vehicleLog): RedirectResponse
     {
-        $this->ensureLogBelongsToVehicle($vehicle, $vehicleLog);
+        $vehicle = $this->findVehicle($vehicle);
+        $vehicleLog = $this->findVehicleLog($vehicle, $vehicleLog);
 
         $data = $this->prepareVehicleLogData($vehicle, $this->validateVehicleLog($request));
         $vehicleLog->update($data);
@@ -81,6 +87,21 @@ class VehicleLogController extends Controller
                 'log_id' => $vehicleLog->id,
             ])
             ->with('success', 'Vehicle day entry updated successfully.');
+    }
+
+    private function findVehicle(int $vehicle): Vehicle
+    {
+        return Vehicle::query()
+            ->forCurrentCompany()
+            ->whereKey($vehicle)
+            ->firstOrFail();
+    }
+
+    private function findVehicleLog(Vehicle $vehicle, int $vehicleLog): VehicleLog
+    {
+        return $vehicle->vehicleLogs()
+            ->whereKey($vehicleLog)
+            ->firstOrFail();
     }
 
     /**
@@ -122,11 +143,6 @@ class VehicleLogController extends Controller
         $data['end_reading'] = $data['end_reading'] ?? 0;
 
         return $data;
-    }
-
-    private function ensureLogBelongsToVehicle(Vehicle $vehicle, VehicleLog $vehicleLog): void
-    {
-        abort_if((int) $vehicleLog->vehicle_id !== (int) $vehicle->id, 404);
     }
 
     /**
