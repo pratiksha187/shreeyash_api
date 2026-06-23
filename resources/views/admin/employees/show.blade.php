@@ -242,7 +242,7 @@
                             <div class="table-subtext">{{ $group->photos_count }} photos</div>
                         </td>
                         <td>
-                            <button class="btn small" onclick="alert({{ Js::from($group->message) }})">Show Message</button>
+                            <button class="btn small show-dpr" data-message='@json($group->message)'>Show Message</button>
                             @if ($group->reports->first())
                                 <a class="btn small" href="{{ route('admin.dpr-reports.show', $group->reports->first()) }}">View DPR</a>
                             @endif
@@ -256,4 +256,47 @@
             </tbody>
         </table>
     </div>
+
+    <!-- DPR Message Modal -->
+    <div id="dpr-modal" style="display:none; position:fixed; inset:0; z-index:1000;">
+        <div id="dpr-modal-backdrop" style="position:absolute; inset:0; background:rgba(0,0,0,0.5);"></div>
+        <div style="position:relative; max-width:720px; margin:6% auto; background:#fff; border-radius:8px; padding:20px; box-shadow:0 8px 24px rgba(0,0,0,0.2); z-index:1001;">
+            <button id="dpr-modal-close" style="position:absolute; right:12px; top:12px; border:0; background:transparent; font-size:20px; cursor:pointer;">&times;</button>
+            <h3 style="margin-top:0;">Consolidated DPR</h3>
+            <div id="dpr-modal-content" style="white-space:pre-wrap; line-height:1.6; color:#222;"></div>
+        </div>
+    </div>
+
+    <script>
+        (function(){
+            function openModal(html){
+                var modal = document.getElementById('dpr-modal');
+                var content = document.getElementById('dpr-modal-content');
+                content.innerHTML = html;
+                modal.style.display = 'block';
+            }
+
+            function closeModal(){
+                var modal = document.getElementById('dpr-modal');
+                var content = document.getElementById('dpr-modal-content');
+                content.innerHTML = '';
+                modal.style.display = 'none';
+            }
+
+            document.querySelectorAll('.show-dpr').forEach(function(btn){
+                btn.addEventListener('click', function(){
+                    var msg = btn.getAttribute('data-message') || '';
+                    try{
+                        msg = JSON.parse(msg);
+                    }catch(e){ /* keep raw */ }
+                    // convert newlines to <br> for HTML
+                    var html = (''+msg).replace(/\n/g, '<br>');
+                    openModal(html);
+                });
+            });
+
+            document.getElementById('dpr-modal-close').addEventListener('click', closeModal);
+            document.getElementById('dpr-modal-backdrop').addEventListener('click', closeModal);
+        })();
+    </script>
 @endsection
