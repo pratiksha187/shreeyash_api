@@ -8,6 +8,7 @@ use App\Models\DailyProgressReportHour;
 use App\Models\DailyProgressReportPhoto;
 use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
@@ -67,13 +68,19 @@ class DailyProgressReportController extends Controller
         ]);
     }   
 
-    public function show(DailyProgressReport $dailyProgressReport): View
+    public function show(int $dailyProgressReport): View|RedirectResponse
     {
         $dailyProgressReport = DailyProgressReport::query()
             ->forCurrentCompany()
             ->with(['user:id,name,mobile,designation', 'hours.photos'])
             ->withCount(['hours', 'photos'])
-            ->findOrFail($dailyProgressReport->id);
+            ->find($dailyProgressReport);
+
+        if (! $dailyProgressReport) {
+            return redirect()
+                ->route('admin.dpr-reports.index')
+                ->with('error', 'DPR report not found for this company/admin.');
+        }
 
         return view('admin.dpr-reports.show', [
             'report' => $dailyProgressReport,
