@@ -245,6 +245,9 @@
                         </td>
                         <td>
                             <button class="btn small show-dpr" data-message='@json($group->message)'>Show Message</button>
+                            @if ($group->whatsapp_url)
+                                <a class="btn small whatsapp" href="{{ $group->whatsapp_url }}" target="_blank">Open WhatsApp</a>
+                            @endif
                             @if ($group->reports->first())
                                 <a class="btn small" href="{{ route('admin.dpr-reports.show', $group->reports->first()) }}">View DPR</a>
                             @endif

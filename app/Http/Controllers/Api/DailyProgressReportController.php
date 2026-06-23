@@ -18,6 +18,10 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DailyProgressReportController extends Controller
 {
+    private const PHOTO_MAX_UPLOAD_KB = 20480;
+    private const PHOTO_MAX_DIMENSION = 1600;
+    private const PHOTO_JPEG_QUALITY = 78;
+
     public function index(Request $request): JsonResponse
     {
         $filters = $request->validate([
@@ -80,9 +84,9 @@ class DailyProgressReportController extends Controller
             'hours.*.time' => ['required', 'string', 'max:20'],
             'hours.*.remark' => ['nullable', 'string', 'max:2000'],
             'hours.*.photos' => ['nullable', 'array'],
-            'hours.*.photos.*' => ['image', 'max:5120'],
+            'hours.*.photos.*' => ['image', 'max:' . self::PHOTO_MAX_UPLOAD_KB],
             'photos' => ['nullable', 'array'],
-            'photos.*' => ['image', 'max:5120'],
+            'photos.*' => ['image', 'max:' . self::PHOTO_MAX_UPLOAD_KB],
         ]);
 
         $hours = collect($data['hours'])
@@ -124,18 +128,18 @@ class DailyProgressReportController extends Controller
                     Storage::disk('public')->makeDirectory('engg_dpr');
 
                     foreach ($this->filesForHour($request, $index) as $photo) {
-                        $path = $photo->store(
-                            'engg_dpr/' . $user->id . '/' . $report->id . '/hour-' . $hour['hour_number'],
-                            'public'
+                        $storedPhoto = $this->storeCompressedPhoto(
+                            $photo,
+                            'engg_dpr/' . $user->id . '/' . $report->id . '/hour-' . $hour['hour_number']
                         );
-                        $this->mirrorPhotoToPublicStorage($path);
+                        $path = $storedPhoto['path'];
                         $storedPaths[] = $path;
 
                         $hourModel->photos()->create([
                             'photo_path' => $path,
                             'original_name' => $photo->getClientOriginalName(),
-                            'mime_type' => $photo->getClientMimeType(),
-                            'file_size' => $photo->getSize(),
+                            'mime_type' => $storedPhoto['mime_type'],
+                            'file_size' => $storedPhoto['file_size'],
                         ]);
                     }
                 }
@@ -299,6 +303,84 @@ class DailyProgressReportController extends Controller
         }
 
         return array_values(array_filter($files, fn ($file) => $file instanceof UploadedFile));
+    }
+
+    private function storeCompressedPhoto(UploadedFile $photo, string $directory): array
+    {
+        $disk = Storage::disk('public');
+        $directory = trim(str_replace('\\', '/', $directory), '/');
+
+        $timestamp = now()->format('Ymd-His');
+        $unique = strtolower(bin2hex(random_bytes(4)));
+        $path = $directory . '/dpr-' . $timestamp . '-' . $unique . '.jpg';
+
+        try {
+            $contents = file_get_contents($photo->getRealPath());
+            $source = $contents === false ? false : imagecreatefromstring($contents);
+
+            if ($source === false) {
+                return $this->storeOriginalPhotoWithTimestamp($photo, $directory, $timestamp, $unique);
+            }
+
+            $width = imagesx($source);
+            $height = imagesy($source);
+
+            if ($width <= 0 || $height <= 0) {
+                imagedestroy($source);
+
+                return $this->storeOriginalPhotoWithTimestamp($photo, $directory, $timestamp, $unique);
+            }
+
+            $scale = min(1, self::PHOTO_MAX_DIMENSION / max($width, $height));
+            $targetWidth = max(1, (int) round($width * $scale));
+            $targetHeight = max(1, (int) round($height * $scale));
+
+            $target = imagecreatetruecolor($targetWidth, $targetHeight);
+            $white = imagecolorallocate($target, 255, 255, 255);
+            imagefill($target, 0, 0, $white);
+            imagecopyresampled($target, $source, 0, 0, 0, 0, $targetWidth, $targetHeight, $width, $height);
+
+            ob_start();
+            imagejpeg($target, null, self::PHOTO_JPEG_QUALITY);
+            $compressed = ob_get_clean();
+
+            imagedestroy($source);
+            imagedestroy($target);
+
+            if ($compressed === false || $compressed === '') {
+                return $this->storeOriginalPhotoWithTimestamp($photo, $directory, $timestamp, $unique);
+            }
+
+            $disk->put($path, $compressed);
+            $this->mirrorPhotoToPublicStorage($path);
+
+            return [
+                'path' => $path,
+                'mime_type' => 'image/jpeg',
+                'file_size' => $disk->size($path),
+            ];
+        } catch (\Throwable) {
+            return $this->storeOriginalPhotoWithTimestamp($photo, $directory, $timestamp, $unique);
+        }
+    }
+
+    private function storeOriginalPhotoWithTimestamp(
+        UploadedFile $photo,
+        string $directory,
+        string $timestamp,
+        string $unique
+    ): array {
+        $extension = strtolower($photo->extension() ?: $photo->getClientOriginalExtension() ?: 'jpg');
+        $extension = preg_replace('/[^a-z0-9]+/', '', $extension) ?: 'jpg';
+        $path = $photo->storeAs($directory, 'dpr-' . $timestamp . '-' . $unique . '.' . $extension, 'public');
+
+        $this->mirrorPhotoToPublicStorage($path);
+
+        return [
+            'path' => $path,
+            'mime_type' => $photo->getClientMimeType(),
+            'file_size' => Storage::disk('public')->size($path),
+        ];
     }
 
     private function reportPayload(DailyProgressReport $report): array

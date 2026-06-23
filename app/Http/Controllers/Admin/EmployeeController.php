@@ -92,22 +92,58 @@ class EmployeeController extends Controller
             ->orderByDesc('id')
             ->get()
             ->groupBy(fn ($r) => $r->dpr_date?->toDateString() ?? '')
-            ->map(function ($reportsForDate, $date) {
+            ->map(function ($reportsForDate, $date) use ($employee) {
                 $allHours = $reportsForDate->flatMap(fn ($r) => $r->hours)->values();
                 $photos = $allHours->flatMap(fn ($h) => $h->photos)->values();
 
                 // Build consolidated message
-                $lines = [];
-                $sortedHours = $allHours->sortBy('work_time')->values();
-                foreach ($sortedHours as $i => $hour) {
-                    $remark = trim((string) $hour->remark);
-                    if ($remark === '') {
-                        continue;
+                $dateLabel = Carbon::parse($date)->format('d M Y');
+                $messageLines = [
+                    'DAILY PROGRESS REPORT',
+                    'Engineer: ' . $employee->name,
+                    'Date: ' . $dateLabel,
+                    'DPR Added: ' . $reportsForDate->count(),
+                    '',
+                ];
+
+                foreach ($reportsForDate->sortBy('created_at')->values() as $index => $report) {
+                    $messageLines[] = 'DPR #' . ($index + 1);
+                    $messageLines[] = 'Site / Project: ' . $report->site_project;
+                    $messageLines[] = 'Work Summary: ' . $report->work_summary;
+
+                    foreach ($report->hours->sortBy('work_time')->values() as $hourIndex => $hour) {
+                        $remark = trim((string) $hour->remark);
+                        if ($remark === '') {
+                            continue;
+                        }
+
+                        $time = Carbon::parse($hour->work_time)->format('h:i A');
+                        $messageLines[] = ($hourIndex + 1) . '. ' . $time . ' - ' . preg_replace('/\r?\n+/', ' ', $remark);
                     }
-                    $lines[] = trim(($i + 1) . '. ' . preg_replace('/\r?\n+/', ' ', $remark));
+
+                    $photoUrls = $report->hours
+                        ->flatMap(fn ($hour) => $hour->photos)
+                        ->map(fn ($photo) => $photo->publicUrl())
+                        ->filter()
+                        ->values();
+
+                    if ($photoUrls->isNotEmpty()) {
+                        $messageLines[] = 'Photos:';
+                        foreach ($photoUrls as $photoUrl) {
+                            $messageLines[] = $photoUrl;
+                        }
+                    }
+
+                    $messageLines[] = '';
                 }
 
-                $message = trim($date . "\nDPR\n" . implode("\n", $lines));
+                $message = trim(implode("\n", $messageLines));
+                $whatsappUrl = $employee->mobile
+                    ? 'https://web.whatsapp.com/send?phone='
+                        . $this->whatsappPhone($employee->mobile)
+                        . '&text='
+                        . rawurlencode($message)
+                    : null;
 
                 return (object) [
                     'date' => $date,
@@ -116,6 +152,7 @@ class EmployeeController extends Controller
                     'photos_count' => $photos->count(),
                     'photos' => $photos,
                     'message' => $message,
+                    'whatsapp_url' => $whatsappUrl,
                 ];
             })->values();
 
