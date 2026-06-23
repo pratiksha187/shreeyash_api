@@ -101,30 +101,14 @@ class DailyProgressReportController extends Controller
 
         $user = $request->user();
         $storedPaths = [];
-        $oldPhotoPaths = [];
-        $created = false;
         $report = null;
 
         try {
-            DB::transaction(function () use ($request, $data, $hours, $user, &$storedPaths, &$oldPhotoPaths, &$created, &$report) {
-                $report = DailyProgressReport::query()
-                    ->forCurrentCompany()
-                    ->with('photos')
-                    ->where('user_id', $user->id)
-                    ->whereDate('dpr_date', Carbon::parse($data['dpr_date'])->toDateString())
-                    ->first();
-
-                $created = ! $report;
-
-                if ($report) {
-                    $oldPhotoPaths = $report->photos->pluck('photo_path')->all();
-                    $report->hours()->delete();
-                } else {
-                    $report = new DailyProgressReport([
-                        'user_id' => $user->id,
-                        'dpr_date' => Carbon::parse($data['dpr_date'])->toDateString(),
-                    ]);
-                }
+            DB::transaction(function () use ($request, $data, $hours, $user, &$storedPaths, &$report) {
+                $report = new DailyProgressReport([
+                    'user_id' => $user->id,
+                    'dpr_date' => Carbon::parse($data['dpr_date'])->toDateString(),
+                ]);
 
                 $report->fill([
                     'site_project' => $data['site_project'],
@@ -159,16 +143,12 @@ class DailyProgressReportController extends Controller
             throw $exception;
         }
 
-        if ($oldPhotoPaths) {
-            $this->deletePublicPhotos($oldPhotoPaths);
-        }
-
         $report->load(['hours.photos']);
 
         return response()->json([
-            'message' => $created ? 'DPR submitted successfully.' : 'DPR updated successfully.',
+            'message' => 'DPR submitted successfully.',
             'dpr' => $this->reportPayload($report),
-        ], $created ? 201 : 200);
+        ], 201);
     }
 
     public function photo(Request $request, int $photo): StreamedResponse
@@ -379,20 +359,4 @@ class DailyProgressReportController extends Controller
         return $paths->first(fn (string $path) => Storage::disk('public')->exists($path));
     }
 
-    /**
-     * @param array<int, string> $photoPaths
-     */
-    private function deletePublicPhotos(array $photoPaths): void
-    {
-        $paths = collect($photoPaths)
-            ->map(fn (?string $path) => $this->publicPhotoPath($path))
-            ->filter()
-            ->unique()
-            ->values()
-            ->all();
-
-        if ($paths) {
-            Storage::disk('public')->delete($paths);
-        }
-    }
 }
