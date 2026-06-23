@@ -8,7 +8,7 @@
     <div class="page-header">
         <div>
             <h1>DPR Reports</h1>
-            <p>Review every engineer DPR as one complete report with hourly entries and photos.</p>
+            <p>Review each engineer's daily DPR as one grouped record with all submissions inside.</p>
         </div>
     </div>
 
@@ -82,6 +82,7 @@
                     <th>Engineer</th>
                     <th>Site / Project</th>
                     <th>Work Summary</th>
+                    <th>DPR Added</th>
                     <th>Entries</th>
                     <th>Photos</th>
                     <th>Submitted</th>
@@ -92,10 +93,10 @@
                 @forelse ($reports as $report)
                     <tr>
                         <td>
-                            <a class="table-link" href="{{ route('admin.dpr-reports.show', $report) }}">
+                            <a class="table-link" href="{{ route('admin.dpr-reports.show', $report->id) }}">
                                 {{ $report->dpr_date?->format('d M Y') }}
                             </a>
-                            <div class="table-subtext">DPR #{{ $report->id }}</div>
+                            <div class="table-subtext">{{ $report->reports_count }} DPR added</div>
                         </td>
                         <td>
                             @if ($report->user)
@@ -114,16 +115,17 @@
                         </td>
                         <td class="text-wrap">{{ $report->site_project }}</td>
                         <td class="text-wrap">{{ $report->work_summary }}</td>
+                        <td>{{ $report->reports_count }}</td>
                         <td>{{ $report->hours_count }}</td>
                         <td>{{ $report->photos_count }}</td>
                         <td>{{ $report->created_at?->format('d M Y h:i A') }}</td>
                         <td>
-                            <a class="btn small" href="{{ route('admin.dpr-reports.show', $report) }}">View DPR</a>
+                            <a class="btn small" href="{{ route('admin.dpr-reports.show', $report->id) }}">View DPR</a>
                         </td>
                     </tr>
                 @empty
                     <tr>
-                        <td class="empty" colspan="8">No DPR reports found for this filter.</td>
+                        <td class="empty" colspan="9">No DPR reports found for this filter.</td>
                     </tr>
                 @endforelse
             </tbody>

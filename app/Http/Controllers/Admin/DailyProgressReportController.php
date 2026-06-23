@@ -4,12 +4,13 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\DailyProgressReport;
-use App\Models\DailyProgressReportHour;
 use App\Models\DailyProgressReportPhoto;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -38,21 +39,15 @@ class DailyProgressReportController extends Controller
             ->whereBetween('dpr_date', [$fromDate, $toDate])
             ->when($userId, fn ($query) => $query->where('user_id', $userId));
 
-        $reports = (clone $baseQuery)
+        $allReports = (clone $baseQuery)
             ->with(['user:id,name,mobile,designation', 'hours.photos'])
             ->withCount(['hours', 'photos'])
             ->orderByDesc('dpr_date')
             ->orderByDesc('id')
-            ->paginate(15)
-            ->withQueryString();
+            ->get();
 
-        $hoursCount = DailyProgressReportHour::query()
-            ->whereHas('report', fn ($query) => $this->applyReportFilters($query, $fromDate, $toDate, $userId))
-            ->count();
-
-        $photosCount = DailyProgressReportPhoto::query()
-            ->whereHas('hour.report', fn ($query) => $this->applyReportFilters($query, $fromDate, $toDate, $userId))
-            ->count();
+        $reportGroups = $this->groupReportsByEngineerDate($allReports);
+        $reports = $this->paginateReportGroups($reportGroups, $request);
 
         return view('admin.dpr-reports.index', [
             'employees' => User::query()->forCurrentCompany()->employees()->orderBy('name')->get(['id', 'name', 'mobile']),
@@ -61,30 +56,41 @@ class DailyProgressReportController extends Controller
             'toDate' => $toDate,
             'selectedUserId' => $userId,
             'summary' => [
-                'total_reports' => (clone $baseQuery)->count(),
-                'engineers' => (clone $baseQuery)->distinct('user_id')->count('user_id'),
-                'hours' => $hoursCount,
-                'photos' => $photosCount,
+                'total_reports' => $reportGroups->count(),
+                'engineers' => $reportGroups->pluck('user_id')->filter()->unique()->count(),
+                'hours' => $reportGroups->sum('hours_count'),
+                'photos' => $reportGroups->sum('photos_count'),
             ],
         ]);
     }   
 
     public function show(int $dailyProgressReport): View|RedirectResponse
     {
-        $dailyProgressReport = DailyProgressReport::query()
+        $selectedReport = DailyProgressReport::query()
             ->forCurrentCompany()
-            ->with(['user:id,name,mobile,designation', 'hours.photos'])
-            ->withCount(['hours', 'photos'])
             ->find($dailyProgressReport);
 
-        if (! $dailyProgressReport) {
+        if (! $selectedReport) {
             return redirect()
                 ->route('admin.dpr-reports.index')
                 ->with('error', 'DPR report not found for this company/admin.');
         }
 
+        $reports = DailyProgressReport::query()
+            ->forCurrentCompany()
+            ->with(['user:id,name,mobile,designation', 'hours.photos'])
+            ->withCount(['hours', 'photos'])
+            ->where('user_id', $selectedReport->user_id)
+            ->whereDate('dpr_date', $selectedReport->dpr_date)
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->get();
+
+        $reportGroup = $this->makeReportGroup($reports);
+
         return view('admin.dpr-reports.show', [
-            'report' => $dailyProgressReport,
+            'report' => $reportGroup,
+            'reports' => $reports,
         ]);
     }
 
@@ -105,12 +111,50 @@ class DailyProgressReportController extends Controller
         abort(404);
     }
 
-    private function applyReportFilters($query, string $fromDate, string $toDate, ?string $userId): void
+    private function groupReportsByEngineerDate(Collection $reports): Collection
     {
-        $query
-            ->whereBetween('dpr_date', [$fromDate, $toDate])
-            ->forCurrentCompany()
-            ->when($userId, fn ($query) => $query->where('user_id', $userId));
+        return $reports
+            ->groupBy(fn (DailyProgressReport $report) => $report->user_id . '|' . $report->dpr_date?->toDateString())
+            ->map(fn (Collection $reports) => $this->makeReportGroup($reports))
+            ->sortByDesc(fn (object $group) => ($group->dpr_date?->format('Y-m-d') ?? '') . ' ' . ($group->created_at?->format('H:i:s') ?? ''))
+            ->values();
+    }
+
+    private function makeReportGroup(Collection $reports): object
+    {
+        $orderedReports = $reports
+            ->sortByDesc(fn (DailyProgressReport $report) => $report->created_at?->timestamp ?? 0)
+            ->values();
+        $latestReport = $orderedReports->first();
+
+        return (object) [
+            'id' => $latestReport?->id,
+            'user_id' => $latestReport?->user_id,
+            'user' => $latestReport?->user,
+            'dpr_date' => $latestReport?->dpr_date,
+            'site_project' => $orderedReports->pluck('site_project')->filter()->unique()->implode(', '),
+            'work_summary' => $orderedReports->pluck('work_summary')->filter()->unique()->implode(' | '),
+            'reports_count' => $orderedReports->count(),
+            'hours_count' => $orderedReports->sum('hours_count'),
+            'photos_count' => $orderedReports->sum('photos_count'),
+            'created_at' => $latestReport?->created_at,
+        ];
+    }
+
+    private function paginateReportGroups(Collection $reportGroups, Request $request, int $perPage = 15): LengthAwarePaginator
+    {
+        $page = max(1, (int) $request->input('page', 1));
+
+        return new LengthAwarePaginator(
+            $reportGroups->forPage($page, $perPage)->values(),
+            $reportGroups->count(),
+            $perPage,
+            $page,
+            [
+                'path' => $request->url(),
+                'query' => $request->query(),
+            ]
+        );
     }
 
     private function publicPhotoPath(?string $photoPath): ?string
