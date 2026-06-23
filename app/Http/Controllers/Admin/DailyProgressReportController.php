@@ -159,27 +159,8 @@ class DailyProgressReportController extends Controller
 
     private function publicPhotoPath(?string $photoPath): ?string
     {
-        if (! $photoPath) {
-            return null;
-        }
-
-        $normalizedPath = str_replace('\\', '/', ltrim($photoPath, '/\\'));
-
-        $paths = collect([
-            $photoPath,
-            $normalizedPath,
-            preg_replace('#^public/#', '', $normalizedPath),
-            preg_replace('#^storage/#', '', $normalizedPath),
-            preg_replace('#^dpr/#', 'engg_dpr/', $normalizedPath),
-            preg_replace('#^public/dpr/#', 'engg_dpr/', $normalizedPath),
-            preg_replace('#^storage/dpr/#', 'engg_dpr/', $normalizedPath),
-            preg_replace('#^engg_dpr/#', 'dpr/', $normalizedPath),
-        ])
-            ->filter()
-            ->map(fn (string $path) => str_replace('\\', '/', $path))
-            ->unique();
-
-        return $paths->first(fn (string $path) => Storage::disk('public')->exists($path));
+        return $this->photoPathCandidates($photoPath)
+            ->first(fn (string $path) => Storage::disk('public')->exists($path));
     }
 
     private function publicStoragePhotoPath(?string $photoPath): ?string
@@ -201,10 +182,14 @@ class DailyProgressReportController extends Controller
             $photoPath,
             $normalizedPath,
             preg_replace('#^public/#', '', $normalizedPath),
+            preg_replace('#^public/storage/#', '', $normalizedPath),
             preg_replace('#^storage/#', '', $normalizedPath),
+            preg_replace('#^storage/app/public/#', '', $normalizedPath),
             preg_replace('#^dpr/#', 'engg_dpr/', $normalizedPath),
             preg_replace('#^public/dpr/#', 'engg_dpr/', $normalizedPath),
+            preg_replace('#^public/storage/dpr/#', 'engg_dpr/', $normalizedPath),
             preg_replace('#^storage/dpr/#', 'engg_dpr/', $normalizedPath),
+            preg_replace('#^storage/app/public/dpr/#', 'engg_dpr/', $normalizedPath),
             preg_replace('#^engg_dpr/#', 'dpr/', $normalizedPath),
         ])
             ->filter()

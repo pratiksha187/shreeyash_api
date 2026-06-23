@@ -10,6 +10,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -127,6 +128,7 @@ class DailyProgressReportController extends Controller
                             'engg_dpr/' . $user->id . '/' . $report->id . '/hour-' . $hour['hour_number'],
                             'public'
                         );
+                        $this->mirrorPhotoToPublicStorage($path);
                         $storedPaths[] = $path;
 
                         $hourModel->photos()->create([
@@ -343,27 +345,8 @@ class DailyProgressReportController extends Controller
 
     private function publicPhotoPath(?string $photoPath): ?string
     {
-        if (! $photoPath) {
-            return null;
-        }
-
-        $normalizedPath = str_replace('\\', '/', ltrim($photoPath, '/\\'));
-
-        $paths = collect([
-            $photoPath,
-            $normalizedPath,
-            preg_replace('#^public/#', '', $normalizedPath),
-            preg_replace('#^storage/#', '', $normalizedPath),
-            preg_replace('#^dpr/#', 'engg_dpr/', $normalizedPath),
-            preg_replace('#^public/dpr/#', 'engg_dpr/', $normalizedPath),
-            preg_replace('#^storage/dpr/#', 'engg_dpr/', $normalizedPath),
-            preg_replace('#^engg_dpr/#', 'dpr/', $normalizedPath),
-        ])
-            ->filter()
-            ->map(fn (string $path) => str_replace('\\', '/', $path))
-            ->unique();
-
-        return $paths->first(fn (string $path) => Storage::disk('public')->exists($path));
+        return $this->photoPathCandidates($photoPath)
+            ->first(fn (string $path) => Storage::disk('public')->exists($path));
     }
 
     private function publicStoragePhotoPath(?string $photoPath): ?string
@@ -385,10 +368,14 @@ class DailyProgressReportController extends Controller
             $photoPath,
             $normalizedPath,
             preg_replace('#^public/#', '', $normalizedPath),
+            preg_replace('#^public/storage/#', '', $normalizedPath),
             preg_replace('#^storage/#', '', $normalizedPath),
+            preg_replace('#^storage/app/public/#', '', $normalizedPath),
             preg_replace('#^dpr/#', 'engg_dpr/', $normalizedPath),
             preg_replace('#^public/dpr/#', 'engg_dpr/', $normalizedPath),
+            preg_replace('#^public/storage/dpr/#', 'engg_dpr/', $normalizedPath),
             preg_replace('#^storage/dpr/#', 'engg_dpr/', $normalizedPath),
+            preg_replace('#^storage/app/public/dpr/#', 'engg_dpr/', $normalizedPath),
             preg_replace('#^engg_dpr/#', 'dpr/', $normalizedPath),
         ])
             ->filter()
@@ -396,5 +383,18 @@ class DailyProgressReportController extends Controller
             ->reject(fn (string $path) => str_contains($path, '..'))
             ->unique()
             ->values();
+    }
+
+    private function mirrorPhotoToPublicStorage(string $path): void
+    {
+        $sourcePath = Storage::disk('public')->path($path);
+        $targetPath = public_path('storage/' . str_replace('\\', '/', $path));
+
+        if (! is_file($sourcePath)) {
+            return;
+        }
+
+        File::ensureDirectoryExists(dirname($targetPath));
+        File::copy($sourcePath, $targetPath);
     }
 }
