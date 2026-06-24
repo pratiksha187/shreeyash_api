@@ -405,6 +405,12 @@
             margin: 0;
         }
 
+        .employee-actions {
+            display: grid;
+            gap: 8px;
+        }
+
+        .employee-actions .btn,
         .employee-action-form .btn {
             width: 100%;
             white-space: nowrap;
@@ -427,6 +433,13 @@
             font-size: 12px;
             font-weight: 700;
             white-space: normal;
+        }
+
+        .help-text {
+            margin-top: 6px;
+            color: var(--muted);
+            font-size: 12px;
+            font-weight: 700;
         }
 
         .text-wrap {

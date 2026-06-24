@@ -175,6 +175,21 @@ class EmployeeController extends Controller
         ]);
     }
 
+    public function edit(int $employee): View
+    {
+        $this->ensureCompanyAdmin();
+
+        $employee = User::query()
+            ->forCurrentCompany()
+            ->employees()
+            ->findOrFail($employee);
+
+        return view('admin.employees.edit', [
+            'employee' => $employee,
+            'roles' => $this->roles(),
+        ]);
+    }
+
     public function store(Request $request): RedirectResponse
     {
         $this->ensureCompanyAdmin();
@@ -219,6 +234,57 @@ class EmployeeController extends Controller
         return redirect()
             ->route('admin.employees.index')
             ->with('success', 'Employee added successfully. Click Open WhatsApp from the employee table to send credentials.');
+    }
+
+    public function update(Request $request, int $employee): RedirectResponse
+    {
+        $this->ensureCompanyAdmin();
+
+        $employee = User::query()
+            ->forCurrentCompany()
+            ->employees()
+            ->findOrFail($employee);
+
+        $usersTable = app(Tenant::class)->connectionName()
+            ? app(Tenant::class)->connectionName().'.users'
+            : 'users';
+
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255', Rule::unique($usersTable, 'email')->ignore($employee->id)],
+            'mobile' => ['required', 'string', 'max:20', Rule::unique($usersTable, 'mobile')->ignore($employee->id)],
+            'password' => ['nullable', 'string', 'min:6', 'confirmed'],
+            'gender' => ['nullable', 'string', 'max:20'],
+            'marital_status' => ['nullable', 'string', 'max:20'],
+            'date_of_birth' => ['nullable', 'date'],
+            'join_date' => ['nullable', 'date'],
+            'confirmation_date' => ['nullable', 'date'],
+            'probation_months' => ['nullable', 'integer', 'min:0', 'max:120'],
+            'aadhaar_number' => ['nullable', 'string', 'max:20'],
+            'hours_per_day' => ['nullable', 'numeric', 'min:0', 'max:24'],
+            'days_per_week' => ['nullable', 'integer', 'min:0', 'max:7'],
+            'salary' => ['nullable', 'numeric', 'min:0'],
+            'insurance' => ['nullable', 'numeric', 'min:0'],
+            'pt' => ['nullable', 'numeric', 'min:0'],
+            'advance' => ['nullable', 'numeric', 'min:0'],
+            'pf' => ['nullable', 'numeric', 'min:0'],
+            'designation' => ['nullable', 'string', 'max:255', Rule::exists('roles', 'name')],
+        ]);
+
+        unset($data['password_confirmation']);
+
+        if (filled($data['password'] ?? null)) {
+            $data['password'] = Hash::make($data['password']);
+            session()->put("employee_plain_passwords.{$employee->id}", $request->input('password'));
+        } else {
+            unset($data['password']);
+        }
+
+        $employee->update($data);
+
+        return redirect()
+            ->route('admin.employees.index')
+            ->with('success', 'Employee updated successfully.');
     }
 
     public function sendCredentials(Request $request, int $employee): RedirectResponse

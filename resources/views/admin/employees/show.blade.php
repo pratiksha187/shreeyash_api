@@ -10,7 +10,10 @@
             <h1>{{ $employee->name }}</h1>
             <p>{{ $employee->designation ?? 'Employee' }} · {{ $employee->mobile ?? '-' }}</p>
         </div>
-        <a class="btn secondary" href="{{ route('admin.employees.index') }}">Back to Employees</a>
+        <div class="actions" style="margin-top:0;">
+            <a class="btn" href="{{ route('admin.employees.edit', $employee) }}">Edit Employee</a>
+            <a class="btn secondary" href="{{ route('admin.employees.index') }}">Back to Employees</a>
+        </div>
     </div>
 
     @if (session('success'))

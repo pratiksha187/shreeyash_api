@@ -20,11 +20,11 @@
     <div class="card table-wrap employees-table-wrap">
         <table class="employees-table">
             <colgroup>
-                <col style="width: 26%;">
-                <col style="width: 27%;">
-                <col style="width: 17%;">
-                <col style="width: 17%;">
-                <col style="width: 13%;">
+                <col style="width: 25%;">
+                <col style="width: 25%;">
+                <col style="width: 16%;">
+                <col style="width: 16%;">
+                <col style="width: 18%;">
             </colgroup>
             <thead>
                 <tr>
@@ -62,10 +62,13 @@
                             </div>
                         </td>
                         <td data-label="Action">
-                            <form class="employee-action-form" method="POST" action="{{ route('admin.employees.send-credentials', $employee) }}" target="_blank" onsubmit="return confirm('Generate a new password and open WhatsApp Web with the credentials message?');">
-                                @csrf
-                                <button class="btn small whatsapp" type="submit">Open WhatsApp</button>
-                            </form>
+                            <div class="employee-actions">
+                                <a class="btn small secondary" href="{{ route('admin.employees.edit', $employee) }}">Edit</a>
+                                <form class="employee-action-form" method="POST" action="{{ route('admin.employees.send-credentials', $employee) }}" target="_blank" onsubmit="return confirm('Generate a new password and open WhatsApp Web with the credentials message?');">
+                                    @csrf
+                                    <button class="btn small whatsapp" type="submit">Open WhatsApp</button>
+                                </form>
+                            </div>
                         </td>
                     </tr>
                 @empty
