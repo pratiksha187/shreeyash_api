@@ -151,7 +151,6 @@
                     <th>Date</th>
                     <th>Day</th>
                     <th>Challan No</th>
-                    <th>Vehicle Number</th>
                     <th>Diesel Added</th>
                     <th>Start Reading</th>
                     <th>End Reading</th>
@@ -160,10 +159,6 @@
                     <th>Out Time</th>
                     <th>Total Hrs</th>
                     <th>Value By Total Hrs</th>
-                    <th>Per Day Rate</th>
-                    <th>Per Hour Rate</th>
-                    <th>Amount</th>
-                    <th>Site</th>
                     <th>OT Hrs</th>
                     <th>Remark</th>
                 </tr>
@@ -186,7 +181,6 @@
                         <td>
                             <input name="entries[{{ $entryKey }}][challan_no]" type="text" value="{{ $row['challan_no'] }}">
                         </td>
-                        <td>{{ $vehicle->vehicle_number }}</td>
                         <td>
                             <input class="sheet-number" name="entries[{{ $entryKey }}][diesel_added]" type="number" min="0" step="0.01" value="{{ number_format($row['diesel_added'], 2, '.', '') }}">
                         </td>
@@ -255,18 +249,9 @@
                         <td>
                             <input class="sheet-number js-hire-hours" type="number" value="{{ number_format($row['hire_hours'], 2, '.', '') }}" readonly>
                         </td>
-                        <td>
-                            <input class="sheet-number" type="number" value="{{ number_format($billingSummary['hire_per_day_rate'], 2, '.', '') }}" readonly>
-                        </td>
-                        <td>
-                            <input class="sheet-number js-hour-rate" type="number" value="{{ number_format($billingSummary['hire_per_hour_rate'], 2, '.', '') }}" readonly>
-                        </td>
-                        <td>
-                            <input class="sheet-number js-hire-amount" type="number" value="{{ number_format($row['hire_amount'], 2, '.', '') }}" readonly>
-                        </td>
-                        <td>
-                            <input name="entries[{{ $entryKey }}][site_name]" type="text" value="{{ $row['site_name'] ?: $vehicle->default_site }}">
-                        </td>
+                        <input class="js-hour-rate" type="hidden" value="{{ number_format($billingSummary['hire_per_hour_rate'], 2, '.', '') }}">
+                        <input class="js-hire-amount" type="hidden" value="{{ number_format($row['hire_amount'], 2, '.', '') }}">
+                        <input name="entries[{{ $entryKey }}][site_name]" type="hidden" value="{{ $row['site_name'] ?: $vehicle->default_site }}">
                         <td>
                             <input class="js-ot-hrs" type="text" value="{{ $row['ot_hours'] }}" readonly>
                         </td>

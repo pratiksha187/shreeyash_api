@@ -4,6 +4,15 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>@yield('title', 'Admin Panel')</title>
+    <script>
+        try {
+            if (localStorage.getItem('adminSidebarCollapsed') === '1') {
+                document.documentElement.classList.add('sidebar-collapsed');
+            }
+        } catch (exception) {
+            /* localStorage may be unavailable in private browsing. */
+        }
+    </script>
     <style>
         :root {
             --bg: #f3f6fb;
@@ -40,16 +49,45 @@
             min-height: 100vh;
             display: grid;
             grid-template-columns: 260px minmax(0, 1fr);
+            transition: grid-template-columns 180ms ease;
         }
 
         .sidebar {
             position: sticky;
             top: 0;
+            z-index: 20;
             height: 100vh;
             overflow-y: auto;
             padding: 22px 16px;
             background: var(--sidebar);
             color: #f8fafc;
+            transition: padding 180ms ease, transform 180ms ease, visibility 180ms ease;
+        }
+
+        .sidebar-head {
+            display: grid;
+            gap: 16px;
+        }
+
+        .sidebar-toggle {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 40px;
+            height: 40px;
+            padding: 0 10px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: #fff;
+            color: var(--text);
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 900;
+            line-height: 1;
+        }
+
+        .sidebar-toggle:hover {
+            background: #f8fafc;
         }
 
         .brand {
@@ -58,6 +96,20 @@
             gap: 12px;
             padding: 8px 8px 24px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+        }
+
+        .sidebar .sidebar-toggle {
+            width: 40px;
+            padding: 0;
+            margin-left: auto;
+            border-color: rgba(255, 255, 255, 0.16);
+            background: rgba(15, 23, 42, 0.65);
+            color: #f8fafc;
+            font-size: 18px;
+        }
+
+        .sidebar .sidebar-toggle:hover {
+            background: var(--sidebar-soft);
         }
 
         .brand-mark {
@@ -165,6 +217,19 @@
             grid-template-rows: auto 1fr auto;
         }
 
+        html.sidebar-collapsed .admin-shell {
+            grid-template-columns: 0 minmax(0, 1fr);
+        }
+
+        html.sidebar-collapsed .sidebar {
+            visibility: hidden;
+            overflow: hidden;
+            padding-right: 0;
+            padding-left: 0;
+            pointer-events: none;
+            transform: translateX(-100%);
+        }
+
         .topbar {
             position: sticky;
             top: 0;
@@ -177,6 +242,13 @@
             border-bottom: 1px solid var(--line);
             background: rgba(255, 255, 255, 0.94);
             backdrop-filter: blur(10px);
+        }
+
+        .topbar-left {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            min-width: 0;
         }
 
         .topbar-title {
@@ -1138,12 +1210,34 @@
             }
 
             .sidebar {
-                position: relative;
-                height: auto;
+                position: fixed;
+                top: 0;
+                bottom: 0;
+                left: 0;
+                width: min(82vw, 300px);
+                height: 100vh;
+                box-shadow: 0 20px 50px rgba(15, 23, 42, 0.35);
+                transform: translateX(-100%);
+                visibility: hidden;
+                pointer-events: none;
+            }
+
+            html.sidebar-open .sidebar {
+                visibility: visible;
+                pointer-events: auto;
+                transform: translateX(0);
+            }
+
+            html.sidebar-collapsed .admin-shell {
+                grid-template-columns: 1fr;
+            }
+
+            html.sidebar-collapsed .sidebar {
+                padding: 22px 16px;
             }
 
             .nav {
-                grid-template-columns: repeat(2, minmax(0, 1fr));
+                grid-template-columns: 1fr;
                 align-items: start;
             }
 
@@ -1176,6 +1270,11 @@
                 justify-content: center;
                 padding-top: 14px;
                 padding-bottom: 14px;
+            }
+
+            .topbar-left,
+            .admin-user {
+                width: 100%;
             }
 
             .nav,
@@ -1264,12 +1363,15 @@
 </head>
 <body class="@yield('bodyClass')">
     <div class="admin-shell">
-        <aside class="sidebar">
-            <div class="brand">
-                <div class="brand-mark">A</div>
-                <div>
-                    <strong>Attendance Admin</strong>
-                    <span>Employee management</span>
+        <aside class="sidebar" id="admin-sidebar">
+            <div class="sidebar-head">
+                <button class="sidebar-toggle" type="button" data-sidebar-toggle aria-controls="admin-sidebar" aria-label="Close sidebar">x</button>
+                <div class="brand">
+                    <div class="brand-mark">A</div>
+                    <div>
+                        <strong>Attendance Admin</strong>
+                        <span>Employee management</span>
+                    </div>
                 </div>
             </div>
 
@@ -1291,9 +1393,12 @@
 
         <div class="content-shell">
             <header class="topbar">
-                <div class="topbar-title">
-                    <strong>@yield('headerTitle', 'Admin Panel')</strong>
-                    <span>@yield('headerSubtitle', 'Manage attendance app data')</span>
+                <div class="topbar-left">
+                    <button class="sidebar-toggle" type="button" data-sidebar-toggle aria-controls="admin-sidebar" aria-label="Open sidebar">Menu</button>
+                    <div class="topbar-title">
+                        <strong>@yield('headerTitle', 'Admin Panel')</strong>
+                        <span>@yield('headerSubtitle', 'Manage attendance app data')</span>
+                    </div>
                 </div>
                 <div class="admin-user">
                     <div class="avatar">AD</div>
@@ -1318,5 +1423,62 @@
             </footer>
         </div>
     </div>
+    <script>
+        (function () {
+            var root = document.documentElement;
+            var mobileQuery = window.matchMedia('(max-width: 900px)');
+
+            function isMobile() {
+                return mobileQuery.matches;
+            }
+
+            function setSidebarState(open) {
+                if (isMobile()) {
+                    root.classList.toggle('sidebar-open', open);
+                    root.classList.remove('sidebar-collapsed');
+                    return;
+                }
+
+                root.classList.toggle('sidebar-collapsed', ! open);
+                root.classList.remove('sidebar-open');
+
+                try {
+                    localStorage.setItem('adminSidebarCollapsed', open ? '0' : '1');
+                } catch (exception) {
+                    /* localStorage may be unavailable in private browsing. */
+                }
+            }
+
+            function sidebarIsOpen() {
+                return isMobile()
+                    ? root.classList.contains('sidebar-open')
+                    : ! root.classList.contains('sidebar-collapsed');
+            }
+
+            document.querySelectorAll('[data-sidebar-toggle]').forEach(function (button) {
+                button.addEventListener('click', function () {
+                    setSidebarState(! sidebarIsOpen());
+                });
+            });
+
+            mobileQuery.addEventListener('change', function () {
+                root.classList.remove('sidebar-open');
+
+                if (! isMobile()) {
+                    try {
+                        root.classList.toggle('sidebar-collapsed', localStorage.getItem('adminSidebarCollapsed') === '1');
+                    } catch (exception) {
+                        root.classList.remove('sidebar-collapsed');
+                    }
+                }
+            });
+
+            document.addEventListener('keydown', function (event) {
+                if (event.key === 'Escape' && isMobile()) {
+                    root.classList.remove('sidebar-open');
+                }
+            });
+        })();
+    </script>
 </body>
 </html>
