@@ -65,47 +65,109 @@
         }
 
         .sidebar-head {
-            display: grid;
-            gap: 16px;
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 8px 8px 24px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.12);
         }
 
         .sidebar-toggle {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            min-width: 40px;
-            height: 40px;
-            padding: 0 10px;
+            width: 38px;
+            height: 38px;
+            flex: 0 0 auto;
+            padding: 0;
             border: 1px solid var(--line);
             border-radius: 8px;
             background: #fff;
             color: var(--text);
             cursor: pointer;
-            font-size: 13px;
             font-weight: 900;
-            line-height: 1;
+            transition: background 160ms ease, border-color 160ms ease, color 160ms ease, transform 160ms ease;
         }
 
         .sidebar-toggle:hover {
             background: #f8fafc;
+            border-color: #cbd5e1;
+            transform: translateY(-1px);
+        }
+
+        .sidebar-toggle-icon {
+            position: relative;
+            display: block;
+            width: 16px;
+            height: 12px;
+        }
+
+        .sidebar-toggle-icon::before,
+        .sidebar-toggle-icon::after,
+        .sidebar-toggle-icon span {
+            position: absolute;
+            left: 0;
+            width: 16px;
+            height: 2px;
+            border-radius: 999px;
+            background: currentColor;
+            content: '';
+        }
+
+        .sidebar-toggle-icon::before {
+            top: 0;
+        }
+
+        .sidebar-toggle-icon span {
+            top: 5px;
+        }
+
+        .sidebar-toggle-icon::after {
+            bottom: 0;
+        }
+
+        .sidebar-close-icon {
+            position: relative;
+            display: block;
+            width: 15px;
+            height: 15px;
+        }
+
+        .sidebar-close-icon::before,
+        .sidebar-close-icon::after {
+            position: absolute;
+            top: 6px;
+            left: 0;
+            width: 15px;
+            height: 2px;
+            border-radius: 999px;
+            background: currentColor;
+            content: '';
+        }
+
+        .sidebar-close-icon::before {
+            transform: rotate(45deg);
+        }
+
+        .sidebar-close-icon::after {
+            transform: rotate(-45deg);
         }
 
         .brand {
             display: flex;
             align-items: center;
             gap: 12px;
-            padding: 8px 8px 24px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+            min-width: 0;
+            padding: 0;
         }
 
         .sidebar .sidebar-toggle {
-            width: 40px;
-            padding: 0;
-            margin-left: auto;
+            width: 36px;
+            height: 36px;
             border-color: rgba(255, 255, 255, 0.16);
-            background: rgba(15, 23, 42, 0.65);
+            background: rgba(15, 23, 42, 0.4);
             color: #f8fafc;
-            font-size: 18px;
         }
 
         .sidebar .sidebar-toggle:hover {
@@ -1365,7 +1427,6 @@
     <div class="admin-shell">
         <aside class="sidebar" id="admin-sidebar">
             <div class="sidebar-head">
-                <button class="sidebar-toggle" type="button" data-sidebar-toggle aria-controls="admin-sidebar" aria-label="Close sidebar">x</button>
                 <div class="brand">
                     <div class="brand-mark">A</div>
                     <div>
@@ -1373,6 +1434,9 @@
                         <span>Employee management</span>
                     </div>
                 </div>
+                <button class="sidebar-toggle" type="button" data-sidebar-toggle aria-controls="admin-sidebar" aria-label="Close sidebar">
+                    <span class="sidebar-close-icon" aria-hidden="true"></span>
+                </button>
             </div>
 
             <nav class="nav">
@@ -1394,7 +1458,9 @@
         <div class="content-shell">
             <header class="topbar">
                 <div class="topbar-left">
-                    <button class="sidebar-toggle" type="button" data-sidebar-toggle aria-controls="admin-sidebar" aria-label="Open sidebar">Menu</button>
+                    <button class="sidebar-toggle" type="button" data-sidebar-toggle aria-controls="admin-sidebar" aria-label="Open sidebar">
+                        <span class="sidebar-toggle-icon" aria-hidden="true"><span></span></span>
+                    </button>
                     <div class="topbar-title">
                         <strong>@yield('headerTitle', 'Admin Panel')</strong>
                         <span>@yield('headerSubtitle', 'Manage attendance app data')</span>
