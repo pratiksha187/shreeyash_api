@@ -97,7 +97,10 @@ class LabourAttendanceController extends Controller
             'labour' => $labour,
             'contractors' => Contractor::query()
                 ->forCurrentCompany()
-                ->where('is_active', true)
+                ->where(function ($query) use ($labour) {
+                    $query->where('is_active', true)
+                        ->orWhereKey($labour->contractor_id);
+                })
                 ->orderBy('name')
                 ->get(['id', 'name']),
         ]);
@@ -245,9 +248,10 @@ class LabourAttendanceController extends Controller
     public function storeLabour(Request $request): RedirectResponse
     {
         $this->ensureDecoupledLabourMasterSchema();
+        $contractorsTable = $this->tenantTable('contractors');
 
         $data = $request->validate([
-            'contractor_id' => ['nullable', Rule::exists('contractors', 'id')->where('company_id', app(Tenant::class)->id())],
+            'contractor_id' => ['nullable', Rule::exists($contractorsTable, 'id')->where('company_id', app(Tenant::class)->id())],
             'name' => ['required', 'string', 'max:255'],
             'mobile' => ['nullable', 'string', 'max:20'],
             'labour_code' => ['nullable', 'string', 'max:50'],
@@ -263,9 +267,10 @@ class LabourAttendanceController extends Controller
     {
         $this->ensureDecoupledLabourMasterSchema();
         $labour = $this->findLabour($labour);
+        $contractorsTable = $this->tenantTable('contractors');
 
         $data = $request->validate([
-            'contractor_id' => ['nullable', Rule::exists('contractors', 'id')->where('company_id', app(Tenant::class)->id())],
+            'contractor_id' => ['nullable', Rule::exists($contractorsTable, 'id')->where('company_id', app(Tenant::class)->id())],
             'name' => ['required', 'string', 'max:255'],
             'mobile' => ['nullable', 'string', 'max:20'],
             'labour_code' => ['nullable', 'string', 'max:50'],
@@ -363,6 +368,13 @@ class LabourAttendanceController extends Controller
         return Labour::query()
             ->forCurrentCompany()
             ->findOrFail($labour);
+    }
+
+    private function tenantTable(string $table): string
+    {
+        $connection = app(Tenant::class)->connectionName();
+
+        return $connection ? $connection.'.'.$table : $table;
     }
 
     public function photo(LabourAttendance $labourAttendance): StreamedResponse
