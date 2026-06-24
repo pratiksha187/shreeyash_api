@@ -280,16 +280,29 @@
         }
 
         html.sidebar-collapsed .admin-shell {
-            grid-template-columns: 0 minmax(0, 1fr);
+            grid-template-columns: 76px minmax(0, 1fr);
         }
 
         html.sidebar-collapsed .sidebar {
-            visibility: hidden;
-            overflow: hidden;
-            padding-right: 0;
-            padding-left: 0;
-            pointer-events: none;
-            transform: translateX(-100%);
+            padding: 18px 10px;
+            transform: none;
+        }
+
+        html.sidebar-collapsed .sidebar-head {
+            align-items: center;
+            flex-direction: column;
+            gap: 14px;
+            padding: 4px 0 18px;
+        }
+
+        html.sidebar-collapsed .brand {
+            justify-content: center;
+        }
+
+        html.sidebar-collapsed .brand strong,
+        html.sidebar-collapsed .brand span,
+        html.sidebar-collapsed .nav {
+            display: none;
         }
 
         .topbar {
@@ -1296,6 +1309,30 @@
 
             html.sidebar-collapsed .sidebar {
                 padding: 22px 16px;
+                transform: translateX(-100%);
+            }
+
+            html.sidebar-open .sidebar {
+                transform: translateX(0);
+            }
+
+            html.sidebar-collapsed .sidebar-head {
+                align-items: flex-start;
+                flex-direction: row;
+                padding: 8px 8px 24px;
+            }
+
+            html.sidebar-collapsed .nav {
+                display: grid;
+            }
+
+            html.sidebar-collapsed .brand strong,
+            html.sidebar-collapsed .brand span {
+                display: block;
+            }
+
+            html.sidebar-collapsed .brand {
+                justify-content: flex-start;
             }
 
             .nav {
