@@ -99,7 +99,7 @@ class LabourAttendanceController extends Controller
                 ->forCurrentCompany()
                 ->where(function ($query) use ($labour) {
                     $query->where('is_active', true)
-                        ->orWhereKey($labour->contractor_id);
+                        ->orWhere('id', $labour->contractor_id);
                 })
                 ->orderBy('name')
                 ->get(['id', 'name']),
