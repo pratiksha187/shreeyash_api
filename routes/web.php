@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\EmployeeController;
 use App\Http\Controllers\Admin\FddTestRecordController;
 use App\Http\Controllers\Admin\LabourAttendanceController;
+use App\Http\Controllers\Admin\LeaveRequestController;
 use App\Http\Controllers\Admin\MissedAttendanceRequestController;
 use App\Http\Controllers\Admin\MirFileReportController;
 use App\Http\Controllers\Admin\PaymentController;
@@ -62,6 +63,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::patch('/complaints/{complaint}', [ComplaintController::class, 'update'])->name('complaints.update');
         Route::get('/missed-requests', [MissedAttendanceRequestController::class, 'index'])->name('missed-requests.index');
         Route::patch('/missed-requests/{missedAttendanceRequestId}', [MissedAttendanceRequestController::class, 'update'])->name('missed-requests.update');
+        Route::get('/leave-requests', [LeaveRequestController::class, 'index'])->name('leave-requests.index');
         Route::get('/labour-master', [LabourAttendanceController::class, 'master'])->name('labour-master.index');
         Route::get('/labour-attendance', [LabourAttendanceController::class, 'index'])->name('labour-attendance.index');
         Route::get('/labour-sites', [LabourAttendanceController::class, 'sites'])->name('labour-sites.index');

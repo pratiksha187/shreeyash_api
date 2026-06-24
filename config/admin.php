@@ -33,6 +33,7 @@ return [
         'employees' => 'Employees',
         'attendance_reports' => 'Attendance Reports',
         'missed_requests' => 'Missed Requests',
+        'leave_requests' => 'Leave Requests',
         'labour_attendance' => 'Labour Attendance',
         'site_master' => 'Site Master',
         'contractor_master' => 'Contractor Master',
@@ -93,6 +94,12 @@ return [
                     'label' => 'Missed Requests',
                     'route' => 'admin.missed-requests.index',
                     'active' => 'admin.missed-requests.*',
+                ],
+                [
+                    'key' => 'leave_requests',
+                    'label' => 'Leave Requests',
+                    'route' => 'admin.leave-requests.index',
+                    'active' => 'admin.leave-requests.*',
                 ],
                 [
                     'key' => 'labour_attendance',
@@ -212,6 +219,7 @@ return [
         'admin.companies.*' => 'companies',
         'admin.attendance-reports.*' => 'attendance_reports',
         'admin.missed-requests.*' => 'missed_requests',
+        'admin.leave-requests.*' => 'leave_requests',
         'admin.labour-master.*' => 'labour_attendance',
         'admin.labour-attendance.*' => 'labour_attendance',
         'admin.labour-sites.*' => 'site_master',
