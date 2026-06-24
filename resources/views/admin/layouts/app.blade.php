@@ -859,6 +859,45 @@
             min-width: 210px;
         }
 
+        .admin-time-text-wrap {
+            position: relative;
+            display: block;
+            min-width: 140px;
+        }
+
+        .admin-time-text {
+            width: 100%;
+            padding-right: 34px !important;
+        }
+
+        .admin-time-text-wrap::before {
+            position: absolute;
+            top: 50%;
+            right: 12px;
+            width: 13px;
+            height: 13px;
+            border: 2px solid currentColor;
+            border-radius: 50%;
+            color: #111827;
+            content: '';
+            pointer-events: none;
+            transform: translateY(-50%);
+        }
+
+        .admin-time-text-wrap::after {
+            position: absolute;
+            top: 50%;
+            right: 18px;
+            width: 5px;
+            height: 6px;
+            border-right: 2px solid currentColor;
+            border-bottom: 2px solid currentColor;
+            color: #111827;
+            content: '';
+            pointer-events: none;
+            transform: translateY(-67%);
+        }
+
         .missed-update-button {
             min-height: 40px;
         }

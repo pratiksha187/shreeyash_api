@@ -23,6 +23,16 @@
                 'period' => $parsed->format('A'),
             ];
         };
+
+        $timeLabel = function (?string $time) use ($timeParts): string {
+            $parts = $timeParts($time);
+
+            if (! $parts['hour'] || ! $parts['minute'] || ! $parts['period']) {
+                return '';
+            }
+
+            return $parts['hour'].':'.$parts['minute'].' '.$parts['period'];
+        };
     @endphp
 
     <div class="page-header">
@@ -167,8 +177,6 @@
                 @foreach ($calendarRows as $row)
                     @php
                         $entryKey = $row['date']->toDateString();
-                        $inTimeParts = $timeParts($row['in_time_value']);
-                        $outTimeParts = $timeParts($row['out_time_value']);
                     @endphp
                     <tr data-entry-row>
                         <td>{{ $row['sr_no'] }}</td>
@@ -195,52 +203,14 @@
                         </td>
                         <td>
                             <input class="js-in-time" data-time-value name="entries[{{ $entryKey }}][in_time]" type="hidden" value="{{ $row['in_time_value'] }}">
-                            <span class="admin-time-picker sheet-time-picker" data-time-picker>
-                                <select data-time-hour aria-label="In time hour">
-                                    <option value="">HH</option>
-                                    @for ($hour = 1; $hour <= 12; $hour++)
-                                        @php($hourValue = str_pad((string) $hour, 2, '0', STR_PAD_LEFT))
-                                        <option value="{{ $hourValue }}" @selected($inTimeParts['hour'] === $hourValue)>{{ $hourValue }}</option>
-                                    @endfor
-                                </select>
-                                <span class="time-separator">:</span>
-                                <select data-time-minute aria-label="In time minute">
-                                    <option value="">MM</option>
-                                    @for ($minute = 0; $minute <= 59; $minute++)
-                                        @php($minuteValue = str_pad((string) $minute, 2, '0', STR_PAD_LEFT))
-                                        <option value="{{ $minuteValue }}" @selected($inTimeParts['minute'] === $minuteValue)>{{ $minuteValue }}</option>
-                                    @endfor
-                                </select>
-                                <select data-time-period aria-label="In time AM or PM">
-                                    <option value="">AM/PM</option>
-                                    <option value="AM" @selected($inTimeParts['period'] === 'AM')>AM</option>
-                                    <option value="PM" @selected($inTimeParts['period'] === 'PM')>PM</option>
-                                </select>
+                            <span class="admin-time-text-wrap">
+                                <input class="admin-time-text" data-time-display list="vehicle-time-options" type="text" value="{{ $timeLabel($row['in_time_value']) }}" placeholder="hh:mm AM" inputmode="text" aria-label="In time">
                             </span>
                         </td>
                         <td>
                             <input class="js-out-time" data-time-value name="entries[{{ $entryKey }}][out_time]" type="hidden" value="{{ $row['out_time_value'] }}">
-                            <span class="admin-time-picker sheet-time-picker" data-time-picker>
-                                <select data-time-hour aria-label="Out time hour">
-                                    <option value="">HH</option>
-                                    @for ($hour = 1; $hour <= 12; $hour++)
-                                        @php($hourValue = str_pad((string) $hour, 2, '0', STR_PAD_LEFT))
-                                        <option value="{{ $hourValue }}" @selected($outTimeParts['hour'] === $hourValue)>{{ $hourValue }}</option>
-                                    @endfor
-                                </select>
-                                <span class="time-separator">:</span>
-                                <select data-time-minute aria-label="Out time minute">
-                                    <option value="">MM</option>
-                                    @for ($minute = 0; $minute <= 59; $minute++)
-                                        @php($minuteValue = str_pad((string) $minute, 2, '0', STR_PAD_LEFT))
-                                        <option value="{{ $minuteValue }}" @selected($outTimeParts['minute'] === $minuteValue)>{{ $minuteValue }}</option>
-                                    @endfor
-                                </select>
-                                <select data-time-period aria-label="Out time AM or PM">
-                                    <option value="">AM/PM</option>
-                                    <option value="AM" @selected($outTimeParts['period'] === 'AM')>AM</option>
-                                    <option value="PM" @selected($outTimeParts['period'] === 'PM')>PM</option>
-                                </select>
+                            <span class="admin-time-text-wrap">
+                                <input class="admin-time-text" data-time-display list="vehicle-time-options" type="text" value="{{ $timeLabel($row['out_time_value']) }}" placeholder="hh:mm AM" inputmode="text" aria-label="Out time">
                             </span>
                         </td>
                         <td>
@@ -248,10 +218,10 @@
                         </td>
                         <td>
                             <input class="sheet-number js-hire-hours" type="number" value="{{ number_format($row['hire_hours'], 2, '.', '') }}" readonly>
+                            <input class="js-hour-rate" type="hidden" value="{{ number_format($billingSummary['hire_per_hour_rate'], 2, '.', '') }}">
+                            <input class="js-hire-amount" type="hidden" value="{{ number_format($row['hire_amount'], 2, '.', '') }}">
+                            <input name="entries[{{ $entryKey }}][site_name]" type="hidden" value="{{ $row['site_name'] ?: $vehicle->default_site }}">
                         </td>
-                        <input class="js-hour-rate" type="hidden" value="{{ number_format($billingSummary['hire_per_hour_rate'], 2, '.', '') }}">
-                        <input class="js-hire-amount" type="hidden" value="{{ number_format($row['hire_amount'], 2, '.', '') }}">
-                        <input name="entries[{{ $entryKey }}][site_name]" type="hidden" value="{{ $row['site_name'] ?: $vehicle->default_site }}">
                         <td>
                             <input class="js-ot-hrs" type="text" value="{{ $row['ot_hours'] }}" readonly>
                         </td>
@@ -262,6 +232,12 @@
                 @endforeach
             </tbody>
         </table>
+
+        <datalist id="vehicle-time-options">
+            @for ($minuteOffset = 0; $minuteOffset < 1440; $minuteOffset++)
+                <option value="{{ \Carbon\Carbon::createFromTime(0, 0)->addMinutes($minuteOffset)->format('h:i A') }}"></option>
+            @endfor
+        </datalist>
 
         <div class="sheet-actions">
             <button class="btn" type="submit">Save Daily Entries</button>
@@ -369,41 +345,78 @@
         const monthlyEntryForm = document.getElementById('monthly-entry-form');
         const defaultHourRate = parseFloat(monthlyEntryForm?.dataset.hourRate || 0);
 
-        function syncTimePicker(picker) {
-            const cell = picker.closest('td') || picker.closest('label');
-            const input = cell ? cell.querySelector('[data-time-value]') : null;
-            const hour = picker.querySelector('[data-time-hour]').value;
-            const minute = picker.querySelector('[data-time-minute]').value;
-            const period = picker.querySelector('[data-time-period]').value;
+        function parseDisplayTime(value) {
+            const normalized = (value || '').trim().toUpperCase().replace(/\s+/g, ' ');
 
-            if (!input) {
+            if (!normalized) {
+                return null;
+            }
+
+            const match = normalized.match(/^(\d{1,2}):(\d{2})\s?(AM|PM)$/);
+
+            if (!match) {
+                return null;
+            }
+
+            let hour = parseInt(match[1], 10);
+            const minute = parseInt(match[2], 10);
+            const period = match[3];
+
+            if (hour < 1 || hour > 12 || minute < 0 || minute > 59) {
+                return null;
+            }
+
+            if (period === 'AM' && hour === 12) {
+                hour = 0;
+            }
+
+            if (period === 'PM' && hour !== 12) {
+                hour += 12;
+            }
+
+            return String(hour).padStart(2, '0') + ':' + String(minute).padStart(2, '0');
+        }
+
+        function formatDisplayTime(value) {
+            const hiddenValue = parseDisplayTime(value);
+
+            if (!hiddenValue) {
+                return value;
+            }
+
+            const parts = hiddenValue.split(':').map(Number);
+            const period = parts[0] >= 12 ? 'PM' : 'AM';
+            let hour = parts[0] % 12;
+
+            if (hour === 0) {
+                hour = 12;
+            }
+
+            return String(hour).padStart(2, '0') + ':' + String(parts[1]).padStart(2, '0') + ' ' + period;
+        }
+
+        function syncTimeText(displayInput, shouldFormat) {
+            const cell = displayInput.closest('td');
+            const hiddenInput = cell ? cell.querySelector('[data-time-value]') : null;
+
+            if (!hiddenInput) {
                 return;
             }
 
-            if (!hour || !minute || !period) {
-                input.value = '';
-            } else {
-                let normalizedHour = parseInt(hour, 10);
+            hiddenInput.value = parseDisplayTime(displayInput.value) || '';
 
-                if (period === 'AM' && normalizedHour === 12) {
-                    normalizedHour = 0;
-                }
-
-                if (period === 'PM' && normalizedHour !== 12) {
-                    normalizedHour += 12;
-                }
-
-                input.value = String(normalizedHour).padStart(2, '0') + ':' + minute;
+            if (shouldFormat && hiddenInput.value) {
+                displayInput.value = formatDisplayTime(displayInput.value);
             }
 
-            input.dispatchEvent(new Event('input', { bubbles: true }));
-            input.dispatchEvent(new Event('change', { bubbles: true }));
+            hiddenInput.dispatchEvent(new Event('input', { bubbles: true }));
+            hiddenInput.dispatchEvent(new Event('change', { bubbles: true }));
         }
 
-        document.querySelectorAll('[data-time-picker]').forEach((picker) => {
-            picker.querySelectorAll('select').forEach((select) => {
-                select.addEventListener('change', () => syncTimePicker(picker));
-            });
+        document.querySelectorAll('[data-time-display]').forEach((displayInput) => {
+            displayInput.addEventListener('input', () => syncTimeText(displayInput, false));
+            displayInput.addEventListener('change', () => syncTimeText(displayInput, true));
+            displayInput.addEventListener('blur', () => syncTimeText(displayInput, true));
         });
 
         document.querySelectorAll('[data-entry-row]').forEach((row) => {
