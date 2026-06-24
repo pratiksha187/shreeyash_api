@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -13,7 +14,13 @@ return new class extends Migration
         }
 
         Schema::table('daily_progress_reports', function (Blueprint $table) {
-            $this->trySchemaChange(fn () => $table->dropUnique('dpr_user_date_unique'));
+            $this->trySchemaChange(fn () => $table->dropForeign('dpr_user_fk'));
+        });
+
+        $this->trySchemaChange(fn () => DB::statement('ALTER TABLE daily_progress_reports DROP INDEX IF EXISTS dpr_user_date_unique'));
+
+        Schema::table('daily_progress_reports', function (Blueprint $table) {
+            $this->trySchemaChange(fn () => $table->foreign('user_id', 'dpr_user_fk')->references('id')->on('users')->cascadeOnDelete());
         });
     }
 
@@ -23,8 +30,14 @@ return new class extends Migration
             return;
         }
 
+        $this->trySchemaChange(fn () => DB::statement('ALTER TABLE daily_progress_reports DROP INDEX IF EXISTS dpr_user_date_unique'));
+
         Schema::table('daily_progress_reports', function (Blueprint $table) {
             $this->trySchemaChange(fn () => $table->unique(['user_id', 'dpr_date'], 'dpr_user_date_unique'));
+        });
+
+        Schema::table('daily_progress_reports', function (Blueprint $table) {
+            $this->trySchemaChange(fn () => $table->foreign('user_id', 'dpr_user_fk')->references('id')->on('users')->cascadeOnDelete());
         });
     }
 
