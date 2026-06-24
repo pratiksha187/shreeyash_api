@@ -27,6 +27,17 @@
             <h2 class="section-title">Add Labour</h2>
             <div class="form-grid three">
                 <div class="field">
+                    <label for="contractor_id">Contractor</label>
+                    <select id="contractor_id" name="contractor_id">
+                        <option value="">Select Contractor</option>
+                        @foreach ($contractors as $contractor)
+                            <option value="{{ $contractor->id }}" @selected((string) old('contractor_id') === (string) $contractor->id)>
+                                {{ $contractor->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="field">
                     <label for="labour_name">Labour Name</label>
                     <input id="labour_name" name="name" type="text" value="{{ old('name') }}" required>
                 </div>
@@ -54,6 +65,7 @@
             <thead>
                 <tr>
                     <th>ID</th>
+                    <th>Contractor</th>
                     <th>Labour Name</th>
                     <th>Mobile</th>
                     <th>Code</th>
@@ -68,6 +80,7 @@
                 @forelse ($labours as $labour)
                     <tr>
                         <td>{{ $labour->id }}</td>
+                        <td>{{ $labour->contractor?->name ?? '-' }}</td>
                         <td>{{ $labour->name }}</td>
                         <td>{{ $labour->mobile ?? '-' }}</td>
                         <td>{{ $labour->labour_code ?? '-' }}</td>
@@ -92,7 +105,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td class="empty" colspan="9">No labours added yet.</td>
+                        <td class="empty" colspan="10">No labours added yet.</td>
                     </tr>
                 @endforelse
             </tbody>

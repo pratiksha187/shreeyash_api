@@ -25,6 +25,17 @@
             <h2 class="section-title">Labour Details</h2>
             <div class="form-grid three">
                 <div class="field">
+                    <label for="contractor_id">Contractor</label>
+                    <select id="contractor_id" name="contractor_id">
+                        <option value="">Select Contractor</option>
+                        @foreach ($contractors as $contractor)
+                            <option value="{{ $contractor->id }}" @selected((string) old('contractor_id', $labour->contractor_id) === (string) $contractor->id)>
+                                {{ $contractor->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="field">
                     <label for="name">Labour Name</label>
                     <input id="name" name="name" type="text" value="{{ old('name', $labour->name) }}" required>
                 </div>
