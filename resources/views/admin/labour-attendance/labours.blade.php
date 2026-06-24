@@ -60,6 +60,32 @@
         </section>
     </form>
 
+    <form class="card form-card report-filter" method="GET" action="{{ route('admin.labours.index') }}">
+        <section class="form-section">
+            <h2 class="section-title">Labour Filter</h2>
+            <div class="form-grid three">
+                <div class="field">
+                    <label for="filter_contractor_id">Contractor</label>
+                    <select id="filter_contractor_id" name="contractor_id">
+                        <option value="">All Contractors</option>
+                        @foreach ($contractors as $contractor)
+                            <option value="{{ $contractor->id }}" @selected((string) $selectedContractorId === (string) $contractor->id)>
+                                {{ $contractor->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="field">
+                    <label>&nbsp;</label>
+                    <div class="actions compact-actions">
+                        <button class="btn" type="submit">Apply Filter</button>
+                        <a class="btn secondary" href="{{ route('admin.labours.index') }}">Clear</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </form>
+
     <div class="card table-wrap">
         <table>
             <thead>

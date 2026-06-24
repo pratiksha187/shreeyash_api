@@ -53,22 +53,28 @@ class LabourAttendanceController extends Controller
         ]);
     }
 
-    public function labours(): View
+    public function labours(Request $request): View
     {
         $this->ensureDecoupledLabourMasterSchema();
+        $contractorsTable = $this->tenantTable('contractors');
+        $filters = $request->validate([
+            'contractor_id' => ['nullable', Rule::exists($contractorsTable, 'id')->where('company_id', app(Tenant::class)->id())],
+        ]);
 
         return view('admin.labour-attendance.labours', [
             'labours' => Labour::query()
                 ->forCurrentCompany()
                 ->with('contractor:id,name')
                 ->withCount('labourAttendances')
-                ->orderBy('name')
-                ->paginate(15),
+                ->when(isset($filters['contractor_id']), fn ($query) => $query->where('contractor_id', $filters['contractor_id']))
+                ->orderByDesc('id')
+                ->paginate(15)
+                ->withQueryString(),
             'contractors' => Contractor::query()
                 ->forCurrentCompany()
-                ->where('is_active', true)
                 ->orderBy('name')
                 ->get(['id', 'name']),
+            'selectedContractorId' => $filters['contractor_id'] ?? null,
         ]);
     }
 
