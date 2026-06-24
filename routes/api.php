@@ -52,6 +52,8 @@ Route::middleware([AuthenticateApiToken::class, EnsureCompanySubscriptionActive:
     Route::get('/dpr/{dailyProgressReport}', [DailyProgressReportController::class, 'show'])->name('api.dpr.show');
     Route::get('/dpr-photos/{photo}', [DailyProgressReportController::class, 'photo'])->name('api.dpr-photos.show');
     Route::get('/labour-sites', [LabourAttendanceController::class, 'sites'])->name('api.labour-sites.index');
+    Route::get('/labour-sites/{labourSite}/contractors', [LabourAttendanceController::class, 'contractors'])->name('api.labour-sites.contractors');
+    Route::get('/labour-contractors/{contractor}/labours', [LabourAttendanceController::class, 'labours'])->name('api.labour-contractors.labours');
     Route::get('/labour/sites', [LabourAttendanceController::class, 'sites'])->name('api.labour.sites');
     Route::get('/labour/sites/{labourSite}/contractors', [LabourAttendanceController::class, 'contractors'])->name('api.labour.contractors');
     Route::get('/labour/contractors/{contractor}/labours', [LabourAttendanceController::class, 'labours'])->name('api.labour.labours');
