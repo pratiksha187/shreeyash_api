@@ -6,6 +6,26 @@
 @section('headerSubtitle', 'Employee missed attendance correction requests')
 
 @section('content')
+    @php
+        $timeParts = function (?string $time): array {
+            if (! $time) {
+                return ['hour' => '', 'minute' => '', 'period' => ''];
+            }
+
+            try {
+                $parsed = \Carbon\Carbon::createFromFormat('H:i', $time);
+            } catch (\Throwable $exception) {
+                return ['hour' => '', 'minute' => '', 'period' => ''];
+            }
+
+            return [
+                'hour' => $parsed->format('h'),
+                'minute' => $parsed->format('i'),
+                'period' => $parsed->format('A'),
+            ];
+        };
+    @endphp
+
     <div class="page-header">
         <div>
             <h1>Missed Requests</h1>
@@ -138,6 +158,10 @@
                             $missedRequest->user_id.'|'.$missedRequest->attendance_date->toDateString()
                         );
                         $showRowErrors = (string) old('request_id') === (string) $missedRequest->id;
+                        $checkInTime = $showRowErrors ? old('check_in_time') : $attendance?->localCheckInAt()?->format('H:i');
+                        $checkOutTime = $showRowErrors ? old('check_out_time') : $attendance?->localCheckOutAt()?->format('H:i');
+                        $checkInParts = $timeParts($checkInTime);
+                        $checkOutParts = $timeParts($checkOutTime);
                     @endphp
                     <tr class="missed-summary-row">
                         <td class="missed-toggle-cell">
@@ -207,7 +231,29 @@
                                 </label>
                                 <label>
                                     In Time
-                                    <input name="check_in_time" type="time" value="{{ $showRowErrors ? old('check_in_time') : $attendance?->localCheckInAt()?->format('H:i') }}">
+                                    <input data-time-value name="check_in_time" type="hidden" value="{{ $checkInTime }}">
+                                    <span class="admin-time-picker" data-time-picker>
+                                        <select data-time-hour aria-label="In time hour">
+                                            <option value="">HH</option>
+                                            @for ($hour = 1; $hour <= 12; $hour++)
+                                                @php($hourValue = str_pad((string) $hour, 2, '0', STR_PAD_LEFT))
+                                                <option value="{{ $hourValue }}" @selected($checkInParts['hour'] === $hourValue)>{{ $hourValue }}</option>
+                                            @endfor
+                                        </select>
+                                        <span class="time-separator">:</span>
+                                        <select data-time-minute aria-label="In time minute">
+                                            <option value="">MM</option>
+                                            @for ($minute = 0; $minute <= 59; $minute++)
+                                                @php($minuteValue = str_pad((string) $minute, 2, '0', STR_PAD_LEFT))
+                                                <option value="{{ $minuteValue }}" @selected($checkInParts['minute'] === $minuteValue)>{{ $minuteValue }}</option>
+                                            @endfor
+                                        </select>
+                                        <select data-time-period aria-label="In time AM or PM">
+                                            <option value="">AM/PM</option>
+                                            <option value="AM" @selected($checkInParts['period'] === 'AM')>AM</option>
+                                            <option value="PM" @selected($checkInParts['period'] === 'PM')>PM</option>
+                                        </select>
+                                    </span>
                                     @if ($showRowErrors)
                                         @error('check_in_time')
                                             <span class="error">{{ $message }}</span>
@@ -216,7 +262,29 @@
                                 </label>
                                 <label>
                                     Out Time
-                                    <input name="check_out_time" type="time" value="{{ $showRowErrors ? old('check_out_time') : $attendance?->localCheckOutAt()?->format('H:i') }}">
+                                    <input data-time-value name="check_out_time" type="hidden" value="{{ $checkOutTime }}">
+                                    <span class="admin-time-picker" data-time-picker>
+                                        <select data-time-hour aria-label="Out time hour">
+                                            <option value="">HH</option>
+                                            @for ($hour = 1; $hour <= 12; $hour++)
+                                                @php($hourValue = str_pad((string) $hour, 2, '0', STR_PAD_LEFT))
+                                                <option value="{{ $hourValue }}" @selected($checkOutParts['hour'] === $hourValue)>{{ $hourValue }}</option>
+                                            @endfor
+                                        </select>
+                                        <span class="time-separator">:</span>
+                                        <select data-time-minute aria-label="Out time minute">
+                                            <option value="">MM</option>
+                                            @for ($minute = 0; $minute <= 59; $minute++)
+                                                @php($minuteValue = str_pad((string) $minute, 2, '0', STR_PAD_LEFT))
+                                                <option value="{{ $minuteValue }}" @selected($checkOutParts['minute'] === $minuteValue)>{{ $minuteValue }}</option>
+                                            @endfor
+                                        </select>
+                                        <select data-time-period aria-label="Out time AM or PM">
+                                            <option value="">AM/PM</option>
+                                            <option value="AM" @selected($checkOutParts['period'] === 'AM')>AM</option>
+                                            <option value="PM" @selected($checkOutParts['period'] === 'PM')>PM</option>
+                                        </select>
+                                    </span>
                                     @if ($showRowErrors)
                                         @error('check_out_time')
                                             <span class="error">{{ $message }}</span>
@@ -253,6 +321,43 @@
                 actionRow.hidden = isOpen;
                 button.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
                 button.textContent = isOpen ? '+' : '-';
+            });
+        });
+
+        function syncTimePicker(picker) {
+            var label = picker.closest('label');
+            var input = label ? label.querySelector('[data-time-value]') : null;
+            var hour = picker.querySelector('[data-time-hour]').value;
+            var minute = picker.querySelector('[data-time-minute]').value;
+            var period = picker.querySelector('[data-time-period]').value;
+
+            if (! input) {
+                return;
+            }
+
+            if (! hour || ! minute || ! period) {
+                input.value = '';
+                return;
+            }
+
+            var normalizedHour = parseInt(hour, 10);
+
+            if (period === 'AM' && normalizedHour === 12) {
+                normalizedHour = 0;
+            }
+
+            if (period === 'PM' && normalizedHour !== 12) {
+                normalizedHour += 12;
+            }
+
+            input.value = String(normalizedHour).padStart(2, '0') + ':' + minute;
+        }
+
+        document.querySelectorAll('[data-time-picker]').forEach(function (picker) {
+            picker.querySelectorAll('select').forEach(function (select) {
+                select.addEventListener('change', function () {
+                    syncTimePicker(picker);
+                });
             });
         });
     </script>

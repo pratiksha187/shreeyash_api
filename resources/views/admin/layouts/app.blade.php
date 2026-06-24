@@ -625,7 +625,7 @@
 
         .missed-action-form {
             display: grid;
-            grid-template-columns: 170px 150px 150px minmax(240px, 1fr) 120px;
+            grid-template-columns: 150px 230px 230px minmax(240px, 1fr) 120px;
             gap: 12px;
             align-items: end;
         }
@@ -652,6 +652,25 @@
         .missed-action-form textarea {
             height: 40px;
             min-height: 40px;
+        }
+
+        .admin-time-picker {
+            display: grid;
+            grid-template-columns: minmax(54px, 1fr) auto minmax(54px, 1fr) minmax(72px, 1fr);
+            gap: 6px;
+            align-items: center;
+        }
+
+        .admin-time-picker .time-separator {
+            color: var(--ink);
+            font-size: 16px;
+            font-weight: 800;
+            line-height: 1;
+            text-align: center;
+        }
+
+        .sheet-time-picker {
+            min-width: 210px;
         }
 
         .missed-update-button {

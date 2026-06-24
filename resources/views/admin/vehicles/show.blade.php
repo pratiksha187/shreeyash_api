@@ -5,6 +5,26 @@
 @section('headerSubtitle', 'Calendar vehicle in and out view')
 
 @section('content')
+    @php
+        $timeParts = function (?string $time): array {
+            if (! $time) {
+                return ['hour' => '', 'minute' => '', 'period' => ''];
+            }
+
+            try {
+                $parsed = \Carbon\Carbon::createFromFormat('H:i', $time);
+            } catch (\Throwable $exception) {
+                return ['hour' => '', 'minute' => '', 'period' => ''];
+            }
+
+            return [
+                'hour' => $parsed->format('h'),
+                'minute' => $parsed->format('i'),
+                'period' => $parsed->format('A'),
+            ];
+        };
+    @endphp
+
     <div class="page-header">
         <div>
             <h1>{{ $vehicle->vehicle_number }}</h1>
@@ -152,6 +172,8 @@
                 @foreach ($calendarRows as $row)
                     @php
                         $entryKey = $row['date']->toDateString();
+                        $inTimeParts = $timeParts($row['in_time_value']);
+                        $outTimeParts = $timeParts($row['out_time_value']);
                     @endphp
                     <tr data-entry-row>
                         <td>{{ $row['sr_no'] }}</td>
@@ -178,10 +200,54 @@
                             <input class="sheet-number js-total-km" type="number" value="{{ number_format($row['total_km'], 0, '.', '') }}" readonly>
                         </td>
                         <td>
-                            <input class="js-in-time" name="entries[{{ $entryKey }}][in_time]" type="time" value="{{ $row['in_time_value'] }}">
+                            <input class="js-in-time" data-time-value name="entries[{{ $entryKey }}][in_time]" type="hidden" value="{{ $row['in_time_value'] }}">
+                            <span class="admin-time-picker sheet-time-picker" data-time-picker>
+                                <select data-time-hour aria-label="In time hour">
+                                    <option value="">HH</option>
+                                    @for ($hour = 1; $hour <= 12; $hour++)
+                                        @php($hourValue = str_pad((string) $hour, 2, '0', STR_PAD_LEFT))
+                                        <option value="{{ $hourValue }}" @selected($inTimeParts['hour'] === $hourValue)>{{ $hourValue }}</option>
+                                    @endfor
+                                </select>
+                                <span class="time-separator">:</span>
+                                <select data-time-minute aria-label="In time minute">
+                                    <option value="">MM</option>
+                                    @for ($minute = 0; $minute <= 59; $minute++)
+                                        @php($minuteValue = str_pad((string) $minute, 2, '0', STR_PAD_LEFT))
+                                        <option value="{{ $minuteValue }}" @selected($inTimeParts['minute'] === $minuteValue)>{{ $minuteValue }}</option>
+                                    @endfor
+                                </select>
+                                <select data-time-period aria-label="In time AM or PM">
+                                    <option value="">AM/PM</option>
+                                    <option value="AM" @selected($inTimeParts['period'] === 'AM')>AM</option>
+                                    <option value="PM" @selected($inTimeParts['period'] === 'PM')>PM</option>
+                                </select>
+                            </span>
                         </td>
                         <td>
-                            <input class="js-out-time" name="entries[{{ $entryKey }}][out_time]" type="time" value="{{ $row['out_time_value'] }}">
+                            <input class="js-out-time" data-time-value name="entries[{{ $entryKey }}][out_time]" type="hidden" value="{{ $row['out_time_value'] }}">
+                            <span class="admin-time-picker sheet-time-picker" data-time-picker>
+                                <select data-time-hour aria-label="Out time hour">
+                                    <option value="">HH</option>
+                                    @for ($hour = 1; $hour <= 12; $hour++)
+                                        @php($hourValue = str_pad((string) $hour, 2, '0', STR_PAD_LEFT))
+                                        <option value="{{ $hourValue }}" @selected($outTimeParts['hour'] === $hourValue)>{{ $hourValue }}</option>
+                                    @endfor
+                                </select>
+                                <span class="time-separator">:</span>
+                                <select data-time-minute aria-label="Out time minute">
+                                    <option value="">MM</option>
+                                    @for ($minute = 0; $minute <= 59; $minute++)
+                                        @php($minuteValue = str_pad((string) $minute, 2, '0', STR_PAD_LEFT))
+                                        <option value="{{ $minuteValue }}" @selected($outTimeParts['minute'] === $minuteValue)>{{ $minuteValue }}</option>
+                                    @endfor
+                                </select>
+                                <select data-time-period aria-label="Out time AM or PM">
+                                    <option value="">AM/PM</option>
+                                    <option value="AM" @selected($outTimeParts['period'] === 'AM')>AM</option>
+                                    <option value="PM" @selected($outTimeParts['period'] === 'PM')>PM</option>
+                                </select>
+                            </span>
                         </td>
                         <td>
                             <input class="js-total-hrs" type="text" value="{{ $row['total_hours'] }}" readonly>
@@ -317,6 +383,43 @@
     <script>
         const monthlyEntryForm = document.getElementById('monthly-entry-form');
         const defaultHourRate = parseFloat(monthlyEntryForm?.dataset.hourRate || 0);
+
+        function syncTimePicker(picker) {
+            const cell = picker.closest('td') || picker.closest('label');
+            const input = cell ? cell.querySelector('[data-time-value]') : null;
+            const hour = picker.querySelector('[data-time-hour]').value;
+            const minute = picker.querySelector('[data-time-minute]').value;
+            const period = picker.querySelector('[data-time-period]').value;
+
+            if (!input) {
+                return;
+            }
+
+            if (!hour || !minute || !period) {
+                input.value = '';
+            } else {
+                let normalizedHour = parseInt(hour, 10);
+
+                if (period === 'AM' && normalizedHour === 12) {
+                    normalizedHour = 0;
+                }
+
+                if (period === 'PM' && normalizedHour !== 12) {
+                    normalizedHour += 12;
+                }
+
+                input.value = String(normalizedHour).padStart(2, '0') + ':' + minute;
+            }
+
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+
+        document.querySelectorAll('[data-time-picker]').forEach((picker) => {
+            picker.querySelectorAll('select').forEach((select) => {
+                select.addEventListener('change', () => syncTimePicker(picker));
+            });
+        });
 
         document.querySelectorAll('[data-entry-row]').forEach((row) => {
             const startReading = row.querySelector('.js-start-reading');
