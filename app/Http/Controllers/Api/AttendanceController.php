@@ -406,6 +406,7 @@ class AttendanceController extends Controller
                 ],
                 [
                     'status' => 'leave',
+                    'leave_approval_status' => 'pending',
                     'check_in_at' => null,
                     'check_out_at' => null,
                     'latitude' => null,

@@ -64,6 +64,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/missed-requests', [MissedAttendanceRequestController::class, 'index'])->name('missed-requests.index');
         Route::patch('/missed-requests/{missedAttendanceRequestId}', [MissedAttendanceRequestController::class, 'update'])->name('missed-requests.update');
         Route::get('/leave-requests', [LeaveRequestController::class, 'index'])->name('leave-requests.index');
+        Route::patch('/leave-requests/{leave}', [LeaveRequestController::class, 'update'])->name('leave-requests.update');
         Route::get('/labour-master', [LabourAttendanceController::class, 'master'])->name('labour-master.index');
         Route::get('/labour-attendance', [LabourAttendanceController::class, 'index'])->name('labour-attendance.index');
         Route::get('/labour-sites', [LabourAttendanceController::class, 'sites'])->name('labour-sites.index');

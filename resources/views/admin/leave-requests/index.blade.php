@@ -9,7 +9,7 @@
         </div>
     </div>
 
-    <form method="GET" class="mb-6 grid gap-4 md:grid-cols-3">
+    <form method="GET" class="mb-6 grid gap-4 md:grid-cols-4">
         <div>
             <label class="block text-sm font-medium mb-1">Employee</label>
             <select name="employee_id" class="w-full rounded border-gray-300">
@@ -24,6 +24,15 @@
         <div>
             <label class="block text-sm font-medium mb-1">Month</label>
             <input type="month" name="month" value="{{ $selectedMonth }}" class="w-full rounded border-gray-300">
+        </div>
+        <div>
+            <label class="block text-sm font-medium mb-1">Status</label>
+            <select name="status" class="w-full rounded border-gray-300">
+                <option value="">All</option>
+                @foreach($statuses as $status)
+                    <option value="{{ $status }}" {{ $selectedStatus == $status ? 'selected' : '' }}>{{ ucfirst($status) }}</option>
+                @endforeach
+            </select>
         </div>
         <div class="flex items-end">
             <button type="submit" class="w-full rounded bg-blue-600 px-4 py-2 text-white">Filter</button>
@@ -44,9 +53,22 @@
                 @forelse($leaves as $leave)
                     <tr>
                         <td class="px-4 py-3 text-sm">{{ $leave->user?->name ?? 'N/A' }}</td>
-                        <td class="px-4 py-3 text-sm">{{ $leave->date }}</td>
-                        <td class="px-4 py-3 text-sm uppercase">{{ $leave->status }}</td>
-                        <td class="px-4 py-3 text-sm">{{ $leave->remarks ?? '-' }}</td>
+                        <td class="px-4 py-3 text-sm">{{ $leave->attendance_date->toDateString() }}</td>
+                        <td class="px-4 py-3 text-sm uppercase">
+                            <span class="rounded-full bg-gray-100 px-2 py-1 text-xs font-medium">{{ $leave->leave_approval_status ?? 'pending' }}</span>
+                        </td>
+                        <td class="px-4 py-3 text-sm">
+                            <div class="flex flex-col gap-2">
+                                <div>{{ $leave->remarks ?? '-' }}</div>
+                                <form method="POST" action="{{ route('admin.leave-requests.update', $leave) }}" class="flex items-center gap-2">
+                                    @csrf
+                                    @method('PATCH')
+                                    <input type="text" name="admin_note" placeholder="Note" value="{{ old('admin_note', $leave->leave_admin_note) }}" class="rounded border-gray-300 text-sm">
+                                    <button type="submit" name="status" value="approved" class="rounded bg-green-600 px-3 py-1 text-xs font-semibold text-white">Approve</button>
+                                    <button type="submit" name="status" value="rejected" class="rounded bg-red-600 px-3 py-1 text-xs font-semibold text-white">Reject</button>
+                                </form>
+                            </div>
+                        </td>
                     </tr>
                 @empty
                     <tr>

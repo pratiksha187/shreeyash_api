@@ -24,6 +24,8 @@ class TenantDatabaseManager
             return;
         }
 
+        $this->ensureDatabaseExists($company->database_name);
+
         $baseConnection = config('database.default') === 'sqlite' ? 'mysql' : config('database.default');
         $config = config("database.connections.$baseConnection");
         $config['database'] = $company->database_name;
@@ -62,6 +64,11 @@ class TenantDatabaseManager
         ])->save();
 
         return $company->refresh();
+    }
+
+    public function ensureDatabaseExists(string $databaseName): void
+    {
+        $this->createDatabase($databaseName);
     }
 
     private function createDatabase(string $databaseName): void

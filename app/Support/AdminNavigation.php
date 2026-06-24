@@ -51,6 +51,10 @@ class AdminNavigation
 
         $permissions = $this->permissions();
 
+        if ($permissions === []) {
+            $permissions = config('admin.company_admin_permissions', []);
+        }
+
         if (in_array('*', $permissions, true)) {
             return true;
         }
@@ -60,8 +64,9 @@ class AdminNavigation
         }
 
         $groupPermission = $this->groupPermissionForModule($permission);
+        $fallbackGroupPermissions = config('admin.company_admin_permissions', []);
 
-        if ($groupPermission && in_array($groupPermission, $permissions, true)) {
+        if ($groupPermission && (in_array($groupPermission, $permissions, true) || in_array($groupPermission, $fallbackGroupPermissions, true))) {
             return true;
         }
 
@@ -130,7 +135,7 @@ class AdminNavigation
     private function groupPermissionForModule(string $permission): ?string
     {
         return match ($permission) {
-            'employees', 'attendance_reports', 'missed_requests', 'labour_attendance', 'payments', 'site_master', 'contractor_master', 'labour_master', 'dpr_reports', 'challans', 'complaints' => 'hr',
+            'employees', 'attendance_reports', 'missed_requests', 'leave_requests', 'labour_attendance', 'payments', 'site_master', 'contractor_master', 'labour_master', 'dpr_reports', 'challans', 'complaints' => 'hr',
             'diesel_purchases' => 'purchase',
             default => null,
         };

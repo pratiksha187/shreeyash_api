@@ -20,9 +20,15 @@ class EnsureAdminLoggedIn
 
         $this->hydrateAdminSession($request);
 
+        $hasCompanyContext = $request->session()->has('admin_company_id');
+        $hasExistingAdminSession = $request->session()->get('admin_role') === 'company_admin'
+            && is_array($request->session()->get('admin_permissions'))
+            && count($request->session()->get('admin_permissions')) > 0;
+
         if (
             $request->session()->get('admin_role') !== 'super_admin'
-            && ! $request->session()->has('admin_company_id')
+            && ! $hasCompanyContext
+            && ! $hasExistingAdminSession
         ) {
             $this->clearAdminSession($request);
 
@@ -31,7 +37,7 @@ class EnsureAdminLoggedIn
                 ->with('error', 'Please login with an employer/company admin account to manage employees.');
         }
 
-        if ($request->session()->has('admin_company_id')) {
+        if ($hasCompanyContext) {
             $company = \App\Models\Company::query()->find($request->session()->get('admin_company_id'));
 
             if (! $company) {
@@ -74,6 +80,8 @@ class EnsureAdminLoggedIn
             }
 
             app(Tenant::class)->set($company);
+        } else {
+            app(Tenant::class)->set(null);
         }
 
         $permission = app(AdminNavigation::class)->permissionForRoute($request->route()?->getName());

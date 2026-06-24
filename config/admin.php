@@ -13,6 +13,7 @@ return [
         'employees',
         'attendance_reports',
         'missed_requests',
+        'leave_requests',
         'labour_attendance',
         'site_master',
         'contractor_master',

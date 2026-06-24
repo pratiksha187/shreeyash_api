@@ -24,6 +24,9 @@ class Attendance extends Model
         'latitude',
         'longitude',
         'remarks',
+        'leave_approval_status',
+        'leave_approved_at',
+        'leave_admin_note',
     ];
 
     protected function casts(): array
@@ -32,6 +35,7 @@ class Attendance extends Model
             'attendance_date' => 'date',
             'check_in_at' => 'datetime',
             'check_out_at' => 'datetime',
+            'leave_approved_at' => 'datetime',
             'latitude' => 'decimal:7',
             'longitude' => 'decimal:7',
         ];
