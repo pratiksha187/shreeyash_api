@@ -130,8 +130,8 @@ class AdminNavigation
     private function groupPermissionForModule(string $permission): ?string
     {
         return match ($permission) {
-            'employees', 'attendance_reports', 'missed_requests', 'labour_attendance', 'payments' => 'hr',
-            'challans', 'diesel_purchases' => 'purchase',
+            'employees', 'attendance_reports', 'missed_requests', 'labour_attendance', 'payments', 'site_master', 'contractor_master', 'labour_master', 'dpr_reports', 'challans', 'complaints' => 'hr',
+            'diesel_purchases' => 'purchase',
             default => null,
         };
     }
