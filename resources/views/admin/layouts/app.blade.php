@@ -300,9 +300,48 @@
         }
 
         html.sidebar-collapsed .brand strong,
-        html.sidebar-collapsed .brand span,
-        html.sidebar-collapsed .nav {
+        html.sidebar-collapsed .brand span {
             display: none;
+        }
+
+        html.sidebar-collapsed .nav {
+            gap: 10px;
+            margin-top: 18px;
+        }
+
+        html.sidebar-collapsed .nav-group {
+            border-color: rgba(255, 255, 255, 0.12);
+            background: transparent;
+        }
+
+        html.sidebar-collapsed .nav-group summary {
+            justify-content: center;
+            min-height: 44px;
+            padding: 0;
+            border-radius: 8px;
+            letter-spacing: 0;
+            text-transform: uppercase;
+        }
+
+        html.sidebar-collapsed .nav-group summary span {
+            display: none;
+        }
+
+        html.sidebar-collapsed .nav-group summary::before {
+            content: attr(data-short);
+            color: #f8fafc;
+            font-size: 13px;
+            font-weight: 900;
+        }
+
+        html.sidebar-collapsed .nav-group summary::after,
+        html.sidebar-collapsed .nav-group-links {
+            display: none;
+        }
+
+        html.sidebar-collapsed .nav-group.active summary,
+        html.sidebar-collapsed .nav-group summary:hover {
+            background: var(--sidebar-soft);
         }
 
         .topbar {
@@ -1326,6 +1365,26 @@
                 display: grid;
             }
 
+            html.sidebar-collapsed .nav-group summary {
+                justify-content: space-between;
+                min-height: 38px;
+                padding: 10px 12px;
+                letter-spacing: 0.08em;
+            }
+
+            html.sidebar-collapsed .nav-group summary span,
+            html.sidebar-collapsed .nav-group-links {
+                display: grid;
+            }
+
+            html.sidebar-collapsed .nav-group summary::before {
+                display: none;
+            }
+
+            html.sidebar-collapsed .nav-group summary::after {
+                display: block;
+            }
+
             html.sidebar-collapsed .brand strong,
             html.sidebar-collapsed .brand span {
                 display: block;
@@ -1479,7 +1538,14 @@
             <nav class="nav">
                 @foreach (app(\App\Support\AdminNavigation::class)->groups(request()) as $group)
                     <details class="nav-group {{ $group['active'] ? 'active' : '' }}" {{ $group['active'] ? 'open' : '' }}>
-                        <summary>{{ $group['label'] }}</summary>
+                        @php
+                            $shortLabel = collect(explode(' ', $group['label']))
+                                ->map(fn ($word) => strtoupper(substr($word, 0, 1)))
+                                ->implode('');
+                        @endphp
+                        <summary data-short="{{ $shortLabel }}" title="{{ $group['label'] }}">
+                            <span>{{ $group['label'] }}</span>
+                        </summary>
                         <div class="nav-group-links">
                             @foreach ($group['items'] as $item)
                                 <a class="{{ $item['active'] ? 'active' : '' }}" href="{{ $item['url'] }}">
