@@ -727,6 +727,10 @@
             max-width: none;
         }
 
+        .vehicle-show-page .main {
+            max-width: none;
+        }
+
         .missed-requests-table-wrap {
             overflow-x: visible;
         }
@@ -1122,6 +1126,11 @@
         .vehicle-sheet-table td,
         .vehicle-sheet-table th {
             padding: 10px 12px;
+        }
+
+        .vehicle-sheet-table {
+            width: 100%;
+            min-width: 1320px;
         }
 
         .editable-sheet th {

@@ -1,6 +1,7 @@
 @extends('admin.layouts.app')
 
 @section('title', $vehicle->vehicle_number . ' | Admin Panel')
+@section('bodyClass', 'vehicle-show-page')
 @section('headerTitle', 'Vehicle Details')
 @section('headerSubtitle', 'Calendar vehicle in and out view')
 

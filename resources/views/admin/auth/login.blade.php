@@ -92,6 +92,33 @@
             box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
         }
 
+        .password-wrap {
+            position: relative;
+        }
+
+        .password-wrap input {
+            padding-right: 78px;
+        }
+
+        .password-toggle {
+            position: absolute;
+            top: 50%;
+            right: 8px;
+            width: auto;
+            min-height: 32px;
+            padding: 0 10px;
+            border: 1px solid #cbd5e1;
+            border-radius: 7px;
+            background: #f8fafc;
+            color: #334155;
+            font-size: 13px;
+            transform: translateY(-50%);
+        }
+
+        .password-toggle:hover {
+            background: #e2e8f0;
+        }
+
         .error {
             margin-top: 6px;
             color: #b91c1c;
@@ -142,7 +169,10 @@
 
             <div class="field">
                 <label for="password">Password</label>
-                <input id="password" name="password" type="password" required>
+                <div class="password-wrap">
+                    <input id="password" name="password" type="password" required>
+                    <button class="password-toggle" type="button" data-password-toggle aria-controls="password">Show</button>
+                </div>
                 @error('password')
                     <div class="error">{{ $message }}</div>
                 @enderror
@@ -155,5 +185,17 @@
             </div> -->
         </form>
     </main>
+    <script>
+        document.querySelectorAll('[data-password-toggle]').forEach(function (button) {
+            button.addEventListener('click', function () {
+                var input = document.getElementById(button.getAttribute('aria-controls'));
+                var shouldShow = input.type === 'password';
+
+                input.type = shouldShow ? 'text' : 'password';
+                button.textContent = shouldShow ? 'Hide' : 'Show';
+                button.setAttribute('aria-label', shouldShow ? 'Hide password' : 'Show password');
+            });
+        });
+    </script>
 </body>
 </html>
