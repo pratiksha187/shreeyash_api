@@ -77,8 +77,8 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            width: 38px;
-            height: 38px;
+            width: 46px;
+            height: 46px;
             flex: 0 0 auto;
             padding: 0;
             border: 1px solid var(--line);
@@ -99,8 +99,8 @@
         .sidebar-toggle-icon {
             position: relative;
             display: block;
-            width: 16px;
-            height: 12px;
+            width: 18px;
+            height: 14px;
         }
 
         .sidebar-toggle-icon::before,
@@ -108,7 +108,7 @@
         .sidebar-toggle-icon span {
             position: absolute;
             left: 0;
-            width: 16px;
+            width: 18px;
             height: 2px;
             border-radius: 999px;
             background: currentColor;
@@ -163,8 +163,8 @@
         }
 
         .sidebar .sidebar-toggle {
-            width: 36px;
-            height: 36px;
+            width: 42px;
+            height: 42px;
             border-color: rgba(255, 255, 255, 0.16);
             background: rgba(15, 23, 42, 0.4);
             color: #f8fafc;
@@ -1434,8 +1434,8 @@
                         <span>Employee management</span>
                     </div>
                 </div>
-                <button class="sidebar-toggle" type="button" data-sidebar-toggle aria-controls="admin-sidebar" aria-label="Close sidebar">
-                    <span class="sidebar-close-icon" aria-hidden="true"></span>
+                <button class="sidebar-toggle" type="button" data-sidebar-toggle aria-controls="admin-sidebar" aria-label="Toggle sidebar">
+                    <span class="sidebar-toggle-icon" aria-hidden="true"><span></span></span>
                 </button>
             </div>
 
