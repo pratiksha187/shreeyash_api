@@ -18,6 +18,8 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class LabourAttendanceController extends Controller
 {
+    private const PHOTO_MAX_UPLOAD_KB = 20480;
+
     public function sites(): JsonResponse
     {
         $sites = LabourSite::query()
@@ -123,7 +125,7 @@ class LabourAttendanceController extends Controller
             'out_time' => ['nullable', 'date_format:H:i'],
             'work_hours' => ['nullable', 'numeric', 'min:0', 'max:24'],
             'remarks' => ['nullable', 'string', 'max:2000'],
-            'photo' => $request->hasFile('photo') ? ['nullable', 'image', 'max:5120'] : ['nullable', 'string'],
+            'photo' => $request->hasFile('photo') ? ['nullable', 'image', 'max:' . self::PHOTO_MAX_UPLOAD_KB] : ['nullable', 'string'],
             'photo_base64' => ['nullable', 'string'],
         ]);
 
@@ -444,9 +446,9 @@ class LabourAttendanceController extends Controller
             ]);
         }
 
-        if (strlen($decodedPhoto) > 5 * 1024 * 1024) {
+        if (strlen($decodedPhoto) > self::PHOTO_MAX_UPLOAD_KB * 1024) {
             throw ValidationException::withMessages([
-                'photo' => 'The labour photo must not be greater than 5 MB.',
+                'photo' => 'The labour photo must not be greater than '.(self::PHOTO_MAX_UPLOAD_KB / 1024).' MB.',
             ]);
         }
 
