@@ -14,11 +14,13 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class LabourAttendanceController extends Controller
 {
     private const PHOTO_MAX_UPLOAD_KB = 20480;
+    private const PHOTO_UPLOAD_DIR = 'leber_image';
 
     public function sites(): JsonResponse
     {
@@ -233,15 +235,23 @@ class LabourAttendanceController extends Controller
         return response()->json($response, $created ? 201 : 200);
     }
 
-    public function photo(Request $request, int $labourAttendance): StreamedResponse
+    public function photo(Request $request, int $labourAttendance): StreamedResponse|BinaryFileResponse
     {
         $labourAttendance = $this->findEmployeeLabourAttendance($request, $labourAttendance);
 
-        if (! $labourAttendance->photo_path || ! Storage::disk('public')->exists($labourAttendance->photo_path)) {
-            abort(404);
+        $photoPath = $this->publicPhotoPath($labourAttendance->photo_path);
+
+        if ($photoPath) {
+            return Storage::disk('public')->response($photoPath);
         }
 
-        return Storage::disk('public')->response($labourAttendance->photo_path);
+        $publicStoragePath = $this->publicStoragePhotoPath($labourAttendance->photo_path);
+
+        if ($publicStoragePath) {
+            return response()->file($publicStoragePath);
+        }
+
+        abort(404);
     }
 
     public function show(Request $request, int $labourAttendance): JsonResponse
@@ -415,7 +425,7 @@ class LabourAttendanceController extends Controller
         $photo = $request->file('photo');
 
         if ($photo instanceof UploadedFile) {
-            return $photo->store('labour-attendance/' . $request->user()->id . '/' . $attendance->id, 'public');
+            return $photo->store(self::PHOTO_UPLOAD_DIR . '/' . $request->user()->id . '/' . $attendance->id, 'public');
         }
 
         $base64Photo = $request->input('photo_base64');
@@ -466,11 +476,53 @@ class LabourAttendanceController extends Controller
             default => $extension,
         };
 
-        $path = 'labour-attendance/' . $request->user()->id . '/' . $attendance->id . '/photo-' . now()->format('YmdHis') . '.' . $extension;
+        $path = self::PHOTO_UPLOAD_DIR . '/' . $request->user()->id . '/' . $attendance->id . '/photo-' . now()->format('YmdHis') . '.' . $extension;
 
         Storage::disk('public')->put($path, $decodedPhoto);
 
         return $path;
+    }
+
+    private function publicPhotoPath(?string $photoPath): ?string
+    {
+        return $this->photoPathCandidates($photoPath)
+            ->first(fn (string $path) => Storage::disk('public')->exists($path));
+    }
+
+    private function publicStoragePhotoPath(?string $photoPath): ?string
+    {
+        return $this->photoPathCandidates($photoPath)
+            ->map(fn (string $path) => public_path('storage/' . $path))
+            ->first(fn (string $path) => is_file($path));
+    }
+
+    private function photoPathCandidates(?string $photoPath): \Illuminate\Support\Collection
+    {
+        if (! $photoPath) {
+            return collect();
+        }
+
+        $normalizedPath = str_replace('\\', '/', ltrim($photoPath, '/\\'));
+
+        return collect([
+            $photoPath,
+            $normalizedPath,
+            preg_replace('#^public/#', '', $normalizedPath),
+            preg_replace('#^public/storage/#', '', $normalizedPath),
+            preg_replace('#^storage/#', '', $normalizedPath),
+            preg_replace('#^storage/app/public/#', '', $normalizedPath),
+            preg_replace('#^labour-attendance/#', self::PHOTO_UPLOAD_DIR . '/', $normalizedPath),
+            preg_replace('#^public/labour-attendance/#', self::PHOTO_UPLOAD_DIR . '/', $normalizedPath),
+            preg_replace('#^public/storage/labour-attendance/#', self::PHOTO_UPLOAD_DIR . '/', $normalizedPath),
+            preg_replace('#^storage/labour-attendance/#', self::PHOTO_UPLOAD_DIR . '/', $normalizedPath),
+            preg_replace('#^storage/app/public/labour-attendance/#', self::PHOTO_UPLOAD_DIR . '/', $normalizedPath),
+            preg_replace('#^' . preg_quote(self::PHOTO_UPLOAD_DIR, '#') . '/#', 'labour-attendance/', $normalizedPath),
+        ])
+            ->filter()
+            ->map(fn (string $path) => str_replace('\\', '/', $path))
+            ->reject(fn (string $path) => str_contains($path, '..'))
+            ->unique()
+            ->values();
     }
 
     private function sitePayload(?LabourSite $site): ?array
