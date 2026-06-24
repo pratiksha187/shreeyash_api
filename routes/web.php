@@ -37,6 +37,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('/companies/{company}/database', [CompanyController::class, 'provisionDatabase'])->name('companies.database');
         Route::post('/companies/{company}/renew', [CompanyController::class, 'renew'])->name('companies.renew');
         Route::patch('/companies/{company}/status', [CompanyController::class, 'updateStatus'])->name('companies.status');
+        Route::patch('/companies/{company}/users/{user}/permissions', [CompanyController::class, 'updateUserPermissions'])->name('companies.users.permissions');
         Route::get('/attendance-reports', [AttendanceReportController::class, 'index'])->name('attendance-reports.index');
         Route::get('/dpr-reports', [DailyProgressReportController::class, 'index'])->name('dpr-reports.index');
         Route::get('/dpr-reports/photos/{photo}', [DailyProgressReportController::class, 'photo'])->name('dpr-reports.photo');

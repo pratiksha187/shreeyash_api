@@ -86,7 +86,7 @@ class AuthController extends Controller
         $request->session()->put('admin_company_id', $admin->company_id);
         $request->session()->put('admin_role', 'company_admin');
         $request->session()->put('tenant_database_ready', true);
-        $request->session()->put('admin_permissions', config('admin.company_admin_permissions', []));
+        $request->session()->put('admin_permissions', $admin->resolvedAdminPermissions());
 
         return redirect()->route('admin.dashboard');
     }

@@ -25,6 +25,7 @@ class User extends Authenticatable
         'name',
         'company_id',
         'role',
+        'admin_permissions',
         'is_active',
         'email',
         'mobile',
@@ -80,6 +81,23 @@ class User extends Authenticatable
     public function isCompanyAdmin(): bool
     {
         return $this->role === 'company_admin';
+    }
+
+    public function resolvedAdminPermissions(): array
+    {
+        if (is_array($this->admin_permissions) && $this->admin_permissions !== []) {
+            return array_values(array_filter($this->admin_permissions));
+        }
+
+        if ($this->isSuperAdmin()) {
+            return config('admin.super_admin_permissions', ['dashboard', 'companies']);
+        }
+
+        if ($this->isCompanyAdmin()) {
+            return config('admin.company_admin_permissions', []);
+        }
+
+        return [];
     }
 
     public function scopeForCurrentCompany(Builder $query): Builder
@@ -141,6 +159,7 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            'admin_permissions' => 'array',
             'is_active' => 'boolean',
             'date_of_birth' => 'date',
             'join_date' => 'date',

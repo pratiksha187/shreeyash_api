@@ -38,6 +38,8 @@ class CompanyController extends Controller
 
         return view('admin.companies.create', [
             'plans' => $this->plans(),
+            'modulePermissions' => config('admin.module_permissions', []),
+            'defaultAdminPermissions' => config('admin.company_admin_permissions', []),
             'defaultStartDate' => today()->toDateString(),
             'defaultEndDate' => today()->endOfMonth()->toDateString(),
         ]);
@@ -62,6 +64,8 @@ class CompanyController extends Controller
             'admin_email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'admin_mobile' => ['required', 'string', 'max:20', 'unique:users,mobile'],
             'admin_password' => ['required', 'string', 'min:6', 'confirmed'],
+            'admin_permissions' => ['nullable', 'array'],
+            'admin_permissions.*' => ['required', Rule::in(array_keys(config('admin.module_permissions', [])))],
         ]);
 
         $plan = SubscriptionPlan::query()->findOrFail($data['subscription_plan_id']);
@@ -97,6 +101,7 @@ class CompanyController extends Controller
             'name' => $data['admin_name'],
             'email' => $data['admin_email'],
             'mobile' => $data['admin_mobile'],
+            'admin_permissions' => $data['admin_permissions'] ?? config('admin.company_admin_permissions', []),
             'password' => Hash::make($data['admin_password']),
         ]);
 
@@ -116,6 +121,7 @@ class CompanyController extends Controller
         return view('admin.companies.show', [
             'company' => $company,
             'plans' => $this->plans(),
+            'modulePermissions' => config('admin.module_permissions', []),
             'defaultStartDate' => today()->toDateString(),
             'defaultEndDate' => today()->endOfMonth()->toDateString(),
         ]);
@@ -182,6 +188,24 @@ class CompanyController extends Controller
         $company->update($data);
 
         return back()->with('success', 'Company status updated successfully.');
+    }
+
+    public function updateUserPermissions(Request $request, Company $company, User $user): RedirectResponse
+    {
+        $this->ensureSuperAdmin();
+
+        abort_unless((int) $user->company_id === (int) $company->id && $user->role === 'company_admin', 404);
+
+        $data = $request->validate([
+            'admin_permissions' => ['nullable', 'array'],
+            'admin_permissions.*' => ['required', Rule::in(array_keys(config('admin.module_permissions', [])))],
+        ]);
+
+        $user->update([
+            'admin_permissions' => array_values($data['admin_permissions'] ?? []),
+        ]);
+
+        return back()->with('success', 'Admin module permissions updated successfully.');
     }
 
     private function ensureSuperAdmin(): void

@@ -96,6 +96,14 @@ class AdminNavigation
      */
     private function permissions(): array
     {
+        if (session()->has('admin_permissions')) {
+            $permissions = session('admin_permissions');
+
+            return is_array($permissions)
+                ? array_values(array_filter($permissions))
+                : [];
+        }
+
         $permissions = session('admin_permissions');
 
         if (! is_array($permissions) || $permissions === []) {

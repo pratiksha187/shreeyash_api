@@ -130,6 +130,21 @@
                     <label for="admin_password_confirmation">Confirm Password</label>
                     <input id="admin_password_confirmation" name="admin_password_confirmation" type="password" required>
                 </div>
+
+                <div class="field full">
+                    <label>Admin Modules</label>
+                    @php($selectedPermissions = old('admin_permissions', $defaultAdminPermissions))
+                    <div class="checkbox-grid">
+                        @foreach ($modulePermissions as $permissionKey => $permissionLabel)
+                            <label class="checkbox-option">
+                                <input type="checkbox" name="admin_permissions[]" value="{{ $permissionKey }}" @checked(in_array($permissionKey, $selectedPermissions, true))>
+                                <span>{{ $permissionLabel }}</span>
+                            </label>
+                        @endforeach
+                    </div>
+                    @error('admin_permissions') <div class="error">{{ $message }}</div> @enderror
+                    @error('admin_permissions.*') <div class="error">{{ $message }}</div> @enderror
+                </div>
             </div>
         </section>
 

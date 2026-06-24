@@ -52,7 +52,7 @@ class EnsureAdminLoggedIn
 
             if ($request->session()->get('admin_role') !== 'company_admin') {
                 $request->session()->put('admin_role', 'company_admin');
-                $request->session()->put('admin_permissions', config('admin.company_admin_permissions', []));
+                $request->session()->put('admin_permissions', $this->adminPermissions($request));
             }
 
             if (
@@ -132,7 +132,22 @@ class EnsureAdminLoggedIn
         $request->session()->put('admin_user_id', $admin->id);
         $request->session()->put('admin_company_id', $admin->company_id);
         $request->session()->put('admin_role', 'company_admin');
-        $request->session()->put('admin_permissions', config('admin.company_admin_permissions', []));
+        $request->session()->put('admin_permissions', $admin->resolvedAdminPermissions());
+    }
+
+    private function adminPermissions(Request $request): array
+    {
+        $adminId = $request->session()->get('admin_user_id');
+
+        if (! $adminId) {
+            return config('admin.company_admin_permissions', []);
+        }
+
+        $admin = User::query()
+            ->where('role', 'company_admin')
+            ->find($adminId);
+
+        return $admin?->resolvedAdminPermissions() ?? config('admin.company_admin_permissions', []);
     }
 
     private function clearAdminSession(Request $request): void

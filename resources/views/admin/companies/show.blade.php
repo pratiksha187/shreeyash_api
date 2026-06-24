@@ -151,6 +151,7 @@
                     <th>Email</th>
                     <th>Mobile</th>
                     <th>Role</th>
+                    <th>Modules</th>
                     <th>Status</th>
                 </tr>
             </thead>
@@ -161,11 +162,31 @@
                         <td>{{ $user->email }}</td>
                         <td>{{ $user->mobile ?? '-' }}</td>
                         <td>{{ str_replace('_', ' ', $user->role) }}</td>
+                        <td>
+                            @if ($user->role === 'company_admin')
+                                <form class="module-permission-form" method="POST" action="{{ route('admin.companies.users.permissions', [$company, $user]) }}">
+                                    @csrf
+                                    @method('PATCH')
+                                    @php($selectedPermissions = $user->resolvedAdminPermissions())
+                                    <div class="checkbox-grid compact">
+                                        @foreach ($modulePermissions as $permissionKey => $permissionLabel)
+                                            <label class="checkbox-option">
+                                                <input type="checkbox" name="admin_permissions[]" value="{{ $permissionKey }}" @checked(in_array($permissionKey, $selectedPermissions, true))>
+                                                <span>{{ $permissionLabel }}</span>
+                                            </label>
+                                        @endforeach
+                                    </div>
+                                    <button class="btn small" type="submit">Save Modules</button>
+                                </form>
+                            @else
+                                -
+                            @endif
+                        </td>
                         <td>{{ $user->is_active ? 'Active' : 'Inactive' }}</td>
                     </tr>
                 @empty
                     <tr>
-                        <td class="empty" colspan="5">No users yet.</td>
+                        <td class="empty" colspan="6">No users yet.</td>
                     </tr>
                 @endforelse
             </tbody>
