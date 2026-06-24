@@ -1028,6 +1028,69 @@
             resize: vertical;
         }
 
+        .password-eye-wrap {
+            position: relative;
+        }
+
+        .password-eye-wrap input {
+            padding-right: 48px;
+        }
+
+        .password-eye-button {
+            position: absolute;
+            top: 50%;
+            right: 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 34px;
+            height: 34px;
+            padding: 0;
+            border: 0;
+            border-radius: 7px;
+            background: transparent;
+            color: #334155;
+            cursor: pointer;
+            transform: translateY(-50%);
+        }
+
+        .password-eye-button:hover {
+            background: #f1f5f9;
+        }
+
+        .password-eye-icon {
+            position: relative;
+            display: block;
+            width: 18px;
+            height: 12px;
+            border: 2px solid currentColor;
+            border-radius: 999px / 680px;
+        }
+
+        .password-eye-icon::after {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: currentColor;
+            content: '';
+            transform: translate(-50%, -50%);
+        }
+
+        .password-eye-button.is-visible .password-eye-icon::before {
+            position: absolute;
+            top: 50%;
+            left: -3px;
+            width: 22px;
+            height: 2px;
+            border-radius: 999px;
+            background: currentColor;
+            content: '';
+            transform: rotate(-35deg);
+        }
+
         .error {
             margin-top: 6px;
             color: var(--danger);
@@ -1694,6 +1757,22 @@
                 if (event.key === 'Escape' && isMobile()) {
                     root.classList.remove('sidebar-open');
                 }
+            });
+
+            document.querySelectorAll('[data-password-toggle]').forEach(function (button) {
+                button.addEventListener('click', function () {
+                    var input = document.getElementById(button.getAttribute('aria-controls'));
+
+                    if (! input) {
+                        return;
+                    }
+
+                    var shouldShow = input.type === 'password';
+
+                    input.type = shouldShow ? 'text' : 'password';
+                    button.classList.toggle('is-visible', shouldShow);
+                    button.setAttribute('aria-label', shouldShow ? 'Hide password' : 'Show password');
+                });
             });
         })();
     </script>

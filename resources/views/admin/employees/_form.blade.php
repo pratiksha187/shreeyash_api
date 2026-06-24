@@ -25,7 +25,12 @@
 
         <div class="field">
             <label for="password">Password</label>
-            <input id="password" name="password" type="password" @unless($isEditing) required @endunless>
+            <div class="password-eye-wrap">
+                <input id="password" name="password" type="password" @unless($isEditing) required @endunless>
+                <button class="password-eye-button" type="button" data-password-toggle aria-controls="password" aria-label="Show password">
+                    <span class="password-eye-icon" aria-hidden="true"></span>
+                </button>
+            </div>
             @if ($isEditing)
                 <div class="help-text">Leave blank to keep current password.</div>
             @endif
@@ -36,7 +41,12 @@
 
         <div class="field">
             <label for="password_confirmation">Confirm Password</label>
-            <input id="password_confirmation" name="password_confirmation" type="password" @unless($isEditing) required @endunless>
+            <div class="password-eye-wrap">
+                <input id="password_confirmation" name="password_confirmation" type="password" @unless($isEditing) required @endunless>
+                <button class="password-eye-button" type="button" data-password-toggle aria-controls="password_confirmation" aria-label="Show confirm password">
+                    <span class="password-eye-icon" aria-hidden="true"></span>
+                </button>
+            </div>
         </div>
     </div>
 </section>
