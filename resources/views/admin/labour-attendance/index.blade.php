@@ -154,8 +154,13 @@
                         </td>
                         <td>
                             @if ($attendance->photo_path)
-                                <a href="{{ route('admin.labour-attendance.photo', $attendance) }}" target="_blank">
-                                    <img class="thumb" src="{{ route('admin.labour-attendance.photo', $attendance) }}" alt="Labour attendance photo">
+                                @php
+                                    $photoPath = str_replace('\\', '/', ltrim($attendance->photo_path, '/\\'));
+                                    $photoPath = preg_replace('#^(public/storage|public|storage|storage/app/public)/#', '', $photoPath);
+                                    $photoUrl = asset('storage/' . $photoPath);
+                                @endphp
+                                <a href="{{ $photoUrl }}" target="_blank">
+                                    <img class="thumb" src="{{ $photoUrl }}" alt="Labour attendance photo">
                                 </a>
                             @else
                                 -
