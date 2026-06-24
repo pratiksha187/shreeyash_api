@@ -251,6 +251,12 @@ class LabourAttendanceController extends Controller
             return response()->file($publicStoragePath);
         }
 
+        $attendancePhotoPath = $this->attendancePhotoPath($labourAttendance);
+
+        if ($attendancePhotoPath) {
+            return response()->file($attendancePhotoPath);
+        }
+
         abort(404);
     }
 
@@ -494,6 +500,35 @@ class LabourAttendanceController extends Controller
         return $this->photoPathCandidates($photoPath)
             ->map(fn (string $path) => public_path('storage/' . $path))
             ->first(fn (string $path) => is_file($path));
+    }
+
+    private function attendancePhotoPath(LabourAttendance $labourAttendance): ?string
+    {
+        $attendanceId = (int) $labourAttendance->id;
+
+        if ($attendanceId < 1) {
+            return null;
+        }
+
+        $patterns = [
+            storage_path('app/public/' . self::PHOTO_UPLOAD_DIR . '/*/' . $attendanceId . '/*'),
+            storage_path('app/public/labour-attendance/*/' . $attendanceId . '/*'),
+            public_path('storage/' . self::PHOTO_UPLOAD_DIR . '/*/' . $attendanceId . '/*'),
+            public_path('storage/labour-attendance/*/' . $attendanceId . '/*'),
+        ];
+
+        foreach ($patterns as $pattern) {
+            $file = collect(glob($pattern) ?: [])
+                ->filter(fn (string $path) => is_file($path))
+                ->sortDesc()
+                ->first();
+
+            if ($file) {
+                return $file;
+            }
+        }
+
+        return null;
     }
 
     private function photoPathCandidates(?string $photoPath): \Illuminate\Support\Collection
