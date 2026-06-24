@@ -78,6 +78,17 @@ return [
                     'active' => 'admin.labour-attendance.*',
                 ],
                 [
+                    'key' => 'payments',
+                    'label' => 'Payments',
+                    'route' => 'admin.payments.index',
+                    'active' => 'admin.payments.*',
+                ],
+            ],
+        ],
+        [
+            'label' => 'Masters',
+            'items' => [
+                [
                     'key' => 'labour_attendance',
                     'label' => 'Site Master',
                     'route' => 'admin.labour-sites.index',
@@ -94,12 +105,6 @@ return [
                     'label' => 'Labour Master',
                     'route' => 'admin.labours.index',
                     'active' => 'admin.labours.*',
-                ],
-                [
-                    'key' => 'payments',
-                    'label' => 'Payments',
-                    'route' => 'admin.payments.index',
-                    'active' => 'admin.payments.*',
                 ],
             ],
         ],
