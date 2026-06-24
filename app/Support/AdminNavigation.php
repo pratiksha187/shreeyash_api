@@ -51,7 +51,21 @@ class AdminNavigation
 
         $permissions = $this->permissions();
 
-        return in_array('*', $permissions, true) || in_array($permission, $permissions, true);
+        if (in_array('*', $permissions, true)) {
+            return true;
+        }
+
+        if (in_array($permission, $permissions, true)) {
+            return true;
+        }
+
+        $groupPermission = $this->groupPermissionForModule($permission);
+
+        if ($groupPermission && in_array($groupPermission, $permissions, true)) {
+            return true;
+        }
+
+        return false;
     }
 
     public function permissionForRoute(?string $routeName): ?string
@@ -111,5 +125,14 @@ class AdminNavigation
         }
 
         return array_values(array_filter($permissions));
+    }
+
+    private function groupPermissionForModule(string $permission): ?string
+    {
+        return match ($permission) {
+            'employees', 'attendance_reports', 'missed_requests', 'labour_attendance', 'payments' => 'hr',
+            'challans', 'diesel_purchases' => 'purchase',
+            default => null,
+        };
     }
 }

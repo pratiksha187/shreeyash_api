@@ -28,6 +28,8 @@ return [
     ],
     'module_permissions' => [
         'dashboard' => 'Dashboard',
+        'hr' => 'HR Access',
+        'purchase' => 'Purchase Access',
         'employees' => 'Employees',
         'attendance_reports' => 'Attendance Reports',
         'missed_requests' => 'Missed Requests',
@@ -103,6 +105,23 @@ return [
                     'label' => 'Payments',
                     'route' => 'admin.payments.index',
                     'active' => 'admin.payments.*',
+                ],
+            ],
+        ],
+        [
+            'label' => 'Purchase',
+            'items' => [
+                [
+                    'key' => 'challans',
+                    'label' => 'Challans',
+                    'route' => 'admin.challans.index',
+                    'active' => 'admin.challans.*',
+                ],
+                [
+                    'key' => 'diesel_purchases',
+                    'label' => 'Diesel Purchase',
+                    'route' => 'admin.diesel-purchases.index',
+                    'active' => 'admin.diesel-purchases.*',
                 ],
             ],
         ],

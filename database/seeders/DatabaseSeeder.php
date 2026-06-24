@@ -67,5 +67,31 @@ class DatabaseSeeder extends Seeder
                 'password' => Hash::make('admin123456'),
             ]
         );
+
+        User::query()->firstOrCreate(
+            ['email' => 'hr-admin@example.com'],
+            [
+                'company_id' => $constructKaro->id,
+                'role' => 'company_admin',
+                'is_active' => true,
+                'name' => 'HR Admin',
+                'mobile' => '8888888888',
+                'admin_permissions' => ['hr', 'dashboard'],
+                'password' => Hash::make('hr123456'),
+            ]
+        );
+
+        User::query()->firstOrCreate(
+            ['email' => 'purchase-admin@example.com'],
+            [
+                'company_id' => $constructKaro->id,
+                'role' => 'company_admin',
+                'is_active' => true,
+                'name' => 'Purchase Admin',
+                'mobile' => '7777777777',
+                'admin_permissions' => ['purchase', 'dashboard'],
+                'password' => Hash::make('purchase123456'),
+            ]
+        );
     }
 }
