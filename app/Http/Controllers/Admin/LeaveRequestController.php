@@ -42,7 +42,7 @@ class LeaveRequestController extends Controller
         ]);
     }
 
-    public function show(Attendance $leave): RedirectResponse
+    public function show(string $leave): RedirectResponse
     {
         return redirect()->route('admin.leave-requests.index');
     }
