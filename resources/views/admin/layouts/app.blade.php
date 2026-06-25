@@ -926,6 +926,160 @@
             }
         }
 
+        .leave-requests-page .main {
+            max-width: none;
+        }
+
+        .leave-requests-table-wrap {
+            overflow-x: visible;
+        }
+
+        .leave-requests-table {
+            table-layout: fixed;
+        }
+
+        .leave-requests-table .leave-employee-column {
+            width: 20%;
+        }
+
+        .leave-requests-table .leave-date-column {
+            width: 14%;
+        }
+
+        .leave-requests-table .leave-status-column {
+            width: 12%;
+        }
+
+        .leave-requests-table .leave-remarks-column {
+            width: 30%;
+        }
+
+        .leave-requests-table .leave-action-column {
+            width: 24%;
+        }
+
+        .leave-requests-table th,
+        .leave-requests-table td {
+            vertical-align: top;
+            white-space: normal;
+        }
+
+        .leave-requests-table tbody tr:hover td {
+            background: #f8fbff;
+        }
+
+        .leave-remarks-cell {
+            min-width: 220px;
+            line-height: 1.5;
+            overflow-wrap: anywhere;
+        }
+
+        .leave-reason {
+            color: #0f172a;
+            font-weight: 700;
+        }
+
+        .leave-action-form {
+            display: grid;
+            gap: 8px;
+            min-width: 260px;
+            margin: 0;
+        }
+
+        .leave-action-form label {
+            margin-bottom: 0;
+            color: var(--muted);
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+
+        .leave-action-form input {
+            min-height: 38px;
+            padding: 8px 10px;
+            font-size: 14px;
+        }
+
+        .leave-action-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+        }
+
+        .leave-action-buttons .btn {
+            width: 100%;
+        }
+
+        .leave-approve-button {
+            background: #16a34a;
+        }
+
+        .leave-approve-button:hover {
+            background: #15803d;
+        }
+
+        .leave-filter-action {
+            align-self: end;
+        }
+
+        @media (max-width: 760px) {
+            .leave-requests-table-wrap {
+                overflow-x: visible;
+            }
+
+            .leave-requests-table,
+            .leave-requests-table tbody,
+            .leave-requests-table tr,
+            .leave-requests-table td {
+                display: block;
+                width: 100%;
+            }
+
+            .leave-requests-table thead,
+            .leave-requests-table colgroup {
+                display: none;
+            }
+
+            .leave-requests-table tbody {
+                display: grid;
+                gap: 12px;
+                padding: 12px;
+            }
+
+            .leave-requests-table tr {
+                border: 1px solid var(--line);
+                border-radius: 8px;
+                background: #fff;
+                overflow: hidden;
+            }
+
+            .leave-requests-table td {
+                display: grid;
+                grid-template-columns: 96px minmax(0, 1fr);
+                gap: 12px;
+                padding: 12px;
+            }
+
+            .leave-requests-table td::before {
+                content: attr(data-label);
+                color: var(--muted);
+                font-size: 12px;
+                font-weight: 900;
+                text-transform: uppercase;
+            }
+
+            .leave-action-cell {
+                grid-template-columns: 1fr;
+            }
+
+            .leave-action-cell::before {
+                display: none;
+            }
+
+            .leave-action-form {
+                min-width: 0;
+            }
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;

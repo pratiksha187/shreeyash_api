@@ -1,86 +1,141 @@
 @extends('admin.layouts.app')
 
+@section('title', 'Leave Requests | Admin Panel')
+@section('bodyClass', 'leave-requests-page')
+@section('headerTitle', 'Leave Requests')
+@section('headerSubtitle', 'Review employee leave approvals')
+
 @section('content')
-<div class="container mx-auto px-4 py-6">
-    <div class="flex items-center justify-between mb-6">
+    <div class="page-header">
         <div>
-            <h1 class="text-2xl font-semibold">Leave Requests</h1>
-            <p class="text-sm text-gray-500">View all approved or recorded leave entries.</p>
+            <h1>Leave Requests</h1>
+            <p>Review recorded leave entries and approve or reject pending requests.</p>
         </div>
     </div>
 
-    <form method="GET" class="mb-6 grid gap-4 md:grid-cols-4">
-        <div>
-            <label class="block text-sm font-medium mb-1">Employee</label>
-            <select name="employee_id" class="w-full rounded border-gray-300">
-                <option value="">All Employees</option>
-                @foreach($employees as $employee)
-                    <option value="{{ $employee->id }}" {{ $selectedEmployeeId == $employee->id ? 'selected' : '' }}>
-                        {{ $employee->name }}
-                    </option>
-                @endforeach
-            </select>
-        </div>
-        <div>
-            <label class="block text-sm font-medium mb-1">Month</label>
-            <input type="month" name="month" value="{{ $selectedMonth }}" class="w-full rounded border-gray-300">
-        </div>
-        <div>
-            <label class="block text-sm font-medium mb-1">Status</label>
-            <select name="status" class="w-full rounded border-gray-300">
-                <option value="">All</option>
-                @foreach($statuses as $status)
-                    <option value="{{ $status }}" {{ $selectedStatus == $status ? 'selected' : '' }}>{{ ucfirst($status) }}</option>
-                @endforeach
-            </select>
-        </div>
-        <div class="flex items-end">
-            <button type="submit" class="w-full rounded bg-blue-600 px-4 py-2 text-white">Filter</button>
-        </div>
+    @if (session('success'))
+        <div class="alert-success">{{ session('success') }}</div>
+    @endif
+
+    <form class="card form-card report-filter" method="GET" action="{{ route('admin.leave-requests.index') }}">
+        <section class="form-section">
+            <h2 class="section-title">Filters</h2>
+            <div class="form-grid three">
+                <div class="field">
+                    <label for="employee_id">Employee</label>
+                    <select id="employee_id" name="employee_id">
+                        <option value="">All Employees</option>
+                        @foreach ($employees as $employee)
+                            <option value="{{ $employee->id }}" @selected((string) $selectedEmployeeId === (string) $employee->id)>
+                                {{ $employee->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label for="month">Month</label>
+                    <input id="month" type="month" name="month" value="{{ $selectedMonth }}">
+                </div>
+
+                <div class="field">
+                    <label for="status">Status</label>
+                    <select id="status" name="status">
+                        <option value="">All Status</option>
+                        @foreach ($statuses as $status)
+                            <option value="{{ $status }}" @selected($selectedStatus === $status)>
+                                {{ ucfirst($status) }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="field leave-filter-action">
+                    <label>&nbsp;</label>
+                    <button class="btn" type="submit">Apply Filter</button>
+                </div>
+            </div>
+        </section>
     </form>
 
-    <div class="overflow-x-auto rounded-lg border bg-white shadow-sm">
-        <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
+    <div class="card table-wrap leave-requests-table-wrap">
+        <table class="leave-requests-table">
+            <colgroup>
+                <col class="leave-employee-column">
+                <col class="leave-date-column">
+                <col class="leave-status-column">
+                <col class="leave-remarks-column">
+                <col class="leave-action-column">
+            </colgroup>
+            <thead>
                 <tr>
-                    <th class="px-4 py-3 text-left text-sm font-semibold">Employee</th>
-                    <th class="px-4 py-3 text-left text-sm font-semibold">Date</th>
-                    <th class="px-4 py-3 text-left text-sm font-semibold">Status</th>
-                    <th class="px-4 py-3 text-left text-sm font-semibold">Remarks</th>
+                    <th>Employee</th>
+                    <th>Date</th>
+                    <th>Status</th>
+                    <th>Remarks</th>
+                    <th>Action</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-gray-100">
-                @forelse($leaves as $leave)
+            <tbody>
+                @forelse ($leaves as $leave)
+                    @php($approvalStatus = $leave->leave_approval_status ?? 'pending')
                     <tr>
-                        <td class="px-4 py-3 text-sm">{{ $leave->user?->name ?? 'N/A' }}</td>
-                        <td class="px-4 py-3 text-sm">{{ $leave->attendance_date->toDateString() }}</td>
-                        <td class="px-4 py-3 text-sm uppercase">
-                            <span class="rounded-full bg-gray-100 px-2 py-1 text-xs font-medium">{{ $leave->leave_approval_status ?? 'pending' }}</span>
+                        <td data-label="Employee">
+                            @if ($leave->user)
+                                <a class="table-link" href="{{ route('admin.employees.show', $leave->user) }}">
+                                    {{ $leave->user->name }}
+                                </a>
+                                <div class="table-subtext">{{ $leave->user->designation ?? 'Employee' }}</div>
+                            @else
+                                N/A
+                            @endif
                         </td>
-                        <td class="px-4 py-3 text-sm">
-                            <div class="flex flex-col gap-2">
-                                <div>{{ $leave->remarks ?? '-' }}</div>
-                                <form method="POST" action="{{ route('admin.leave-requests.update', $leave) }}" class="flex items-center gap-2">
-                                    @csrf
-                                    @method('PATCH')
-                                    <input type="text" name="admin_note" placeholder="Note" value="{{ old('admin_note', $leave->leave_admin_note) }}" class="rounded border-gray-300 text-sm">
-                                    <button type="submit" name="status" value="approved" class="rounded bg-green-600 px-3 py-1 text-xs font-semibold text-white">Approve</button>
-                                    <button type="submit" name="status" value="rejected" class="rounded bg-red-600 px-3 py-1 text-xs font-semibold text-white">Reject</button>
-                                </form>
+                        <td data-label="Date">
+                            <div class="date-stack">
+                                <strong>{{ $leave->attendance_date?->format('d M Y') }}</strong>
+                                <span class="table-subtext">{{ $leave->attendance_date?->format('l') }}</span>
                             </div>
+                        </td>
+                        <td data-label="Status">
+                            <span class="status-pill status-{{ $approvalStatus }}">
+                                {{ $approvalStatus }}
+                            </span>
+                        </td>
+                        <td class="leave-remarks-cell" data-label="Remarks">
+                            <div class="leave-reason">{{ $leave->remarks ?: 'No employee remark added.' }}</div>
+                            @if ($leave->leave_admin_note)
+                                <div class="table-subtext">Admin note: {{ $leave->leave_admin_note }}</div>
+                            @endif
+                        </td>
+                        <td class="leave-action-cell" data-label="Action">
+                            <form method="POST" action="{{ route('admin.leave-requests.update', $leave) }}" class="leave-action-form">
+                                @csrf
+                                @method('PATCH')
+                                <label for="admin_note_{{ $leave->id }}">Admin Note</label>
+                                <input
+                                    id="admin_note_{{ $leave->id }}"
+                                    type="text"
+                                    name="admin_note"
+                                    placeholder="Add note"
+                                    value="{{ old('admin_note', $leave->leave_admin_note) }}"
+                                >
+                                <div class="leave-action-buttons">
+                                    <button type="submit" name="status" value="approved" class="btn small leave-approve-button">Approve</button>
+                                    <button type="submit" name="status" value="rejected" class="btn small danger">Reject</button>
+                                </div>
+                            </form>
                         </td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="4" class="px-4 py-6 text-center text-sm text-gray-500">No leave requests found.</td>
+                        <td colspan="5" class="empty">No leave requests found for this filter.</td>
                     </tr>
                 @endforelse
             </tbody>
         </table>
     </div>
 
-    <div class="mt-4">
-        {{ $leaves->links() }}
+    <div class="pagination">
+        {{ $leaves->links('admin.pagination') }}
     </div>
-</div>
 @endsection
