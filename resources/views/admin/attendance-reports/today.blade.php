@@ -119,4 +119,8 @@
             </tbody>
         </table>
     </div>
+
+    <div class="pagination">
+        {{ $employees->links('admin.pagination') }}
+    </div>
 @endsection

@@ -7,6 +7,7 @@ use App\Models\Attendance;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\View\View;
 
 class AttendanceReportController extends Controller
@@ -25,7 +26,7 @@ class AttendanceReportController extends Controller
             ->get()
             ->keyBy('user_id');
 
-        $employees = User::query()
+        $employeesQuery = User::query()
             ->forCurrentCompany()
             ->employees()
             ->select([
@@ -36,13 +37,13 @@ class AttendanceReportController extends Controller
                 'designation',
                 'is_active',
             ])
-            ->orderBy('name')
-            ->get()
-            ->map(function (User $employee) use ($attendances) {
-                $employee->setRelation('todayAttendance', $attendances->get($employee->id));
+            ->orderBy('name');
 
-                return $employee;
-            });
+        $allEmployees = (clone $employeesQuery)->get();
+        $employees = $employeesQuery
+            ->paginate(15)
+            ->appends($request->query())
+            ->through(fn (User $employee) => $this->withTodayAttendance($employee, $attendances));
 
         $statusCounts = [
             'present' => 0,
@@ -52,8 +53,9 @@ class AttendanceReportController extends Controller
             'not_marked' => 0,
         ];
 
-        foreach ($employees as $employee) {
-            $status = $employee->todayAttendance?->status ?? 'not_marked';
+        foreach ($allEmployees as $employee) {
+            $attendance = $attendances->get($employee->id);
+            $status = $attendance?->status ?? 'not_marked';
 
             if (! array_key_exists($status, $statusCounts)) {
                 $statusCounts[$status] = 0;
@@ -66,7 +68,7 @@ class AttendanceReportController extends Controller
             'selectedDate' => $selectedDate,
             'employees' => $employees,
             'summary' => [
-                'total_employees' => $employees->count(),
+                'total_employees' => $allEmployees->count(),
                 'present' => $statusCounts['present'],
                 'leave' => $statusCounts['leave'],
                 'absent' => $statusCounts['absent'],
@@ -132,5 +134,12 @@ class AttendanceReportController extends Controller
             'leaveAttendances' => $leaveAttendances,
             'employeeReports' => $employeeReports,
         ]);
+    }
+
+    private function withTodayAttendance(User $employee, Collection $attendances): User
+    {
+        $employee->setRelation('todayAttendance', $attendances->get($employee->id));
+
+        return $employee;
     }
 }
