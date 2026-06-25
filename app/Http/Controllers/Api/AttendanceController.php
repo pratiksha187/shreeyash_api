@@ -335,6 +335,9 @@ class AttendanceController extends Controller
         $leaveAttendances = $attendances
             ->where('status', 'leave')
             ->values();
+        $leaveReportEntries = $leaveAttendances
+            ->map(fn (Attendance $attendance) => $this->leaveReportEntry($attendance))
+            ->values();
 
         return response()->json([
             'message' => 'Daily attendance report fetched successfully.',
@@ -349,7 +352,7 @@ class AttendanceController extends Controller
             ],
             'leave_report' => [
                 'total_days' => $leaveAttendances->count(),
-                'leaves' => $leaveAttendances,
+                'leaves' => $leaveReportEntries,
             ],
             'attendances' => $attendances,
         ]);
@@ -465,5 +468,20 @@ class AttendanceController extends Controller
     private function localNow(): Carbon
     {
         return Carbon::now(Attendance::LOCAL_TIMEZONE);
+    }
+
+    private function leaveReportEntry(Attendance $attendance): array
+    {
+        $approvalStatus = $attendance->leave_approval_status ?: 'pending';
+
+        return array_merge($attendance->toArray(), [
+            'attendance_status' => $attendance->status,
+            'status' => $approvalStatus,
+            'approval_status' => $approvalStatus,
+            'leave_approval_status' => $approvalStatus,
+            'is_approved' => $approvalStatus === 'approved',
+            'is_rejected' => $approvalStatus === 'rejected',
+            'is_pending' => $approvalStatus === 'pending',
+        ]);
     }
 }
