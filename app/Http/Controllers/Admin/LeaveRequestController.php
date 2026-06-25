@@ -47,19 +47,26 @@ class LeaveRequestController extends Controller
         return redirect()->route('admin.leave-requests.index');
     }
 
-    public function update(Request $request, Attendance $leave): RedirectResponse
+    public function update(Request $request, string $leave): RedirectResponse
     {
         $data = $request->validate([
             'status' => ['required', Rule::in(['approved', 'rejected'])],
             'admin_note' => ['nullable', 'string', 'max:2000'],
         ]);
 
-        $leave->forceFill([
+        $leaveRequest = Attendance::query()
+            ->forCurrentCompany()
+            ->where('status', 'leave')
+            ->findOrFail($leave);
+
+        $leaveRequest->forceFill([
             'leave_approval_status' => $data['status'],
             'leave_approved_at' => $data['status'] === 'approved' ? now() : null,
             'leave_admin_note' => $data['admin_note'] ?? null,
         ])->save();
 
-        return back()->with('success', 'Leave request updated successfully.');
+        return redirect()
+            ->route('admin.leave-requests.index')
+            ->with('success', 'Leave request updated successfully.');
     }
 }
