@@ -91,6 +91,12 @@ return [
                     'active' => 'admin.attendance-reports.*',
                 ],
                 [
+                    'key' => 'attendance_reports',
+                    'label' => 'Today Attendance',
+                    'route' => 'admin.today-attendance.index',
+                    'active' => 'admin.today-attendance.*',
+                ],
+                [
                     'key' => 'missed_requests',
                     'label' => 'Missed Requests',
                     'route' => 'admin.missed-requests.index',
@@ -218,6 +224,7 @@ return [
     'route_permissions' => [
         'admin.dashboard' => 'dashboard',
         'admin.companies.*' => 'companies',
+        'admin.today-attendance.*' => 'attendance_reports',
         'admin.attendance-reports.*' => 'attendance_reports',
         'admin.missed-requests.*' => 'missed_requests',
         'admin.leave-requests.*' => 'leave_requests',

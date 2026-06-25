@@ -11,6 +11,71 @@ use Illuminate\View\View;
 
 class AttendanceReportController extends Controller
 {
+    public function today(Request $request): View
+    {
+        $selectedDate = $request->validate([
+            'date' => ['nullable', 'date'],
+        ])['date'] ?? Carbon::now(Attendance::LOCAL_TIMEZONE)->toDateString();
+        $selectedDate = Carbon::parse($selectedDate, Attendance::LOCAL_TIMEZONE)->toDateString();
+
+        $attendances = Attendance::query()
+            ->forCurrentCompany()
+            ->with('user:id,name,email,mobile,designation')
+            ->whereDate('attendance_date', $selectedDate)
+            ->get()
+            ->keyBy('user_id');
+
+        $employees = User::query()
+            ->forCurrentCompany()
+            ->employees()
+            ->select([
+                'id',
+                'name',
+                'email',
+                'mobile',
+                'designation',
+                'is_active',
+            ])
+            ->orderBy('name')
+            ->get()
+            ->map(function (User $employee) use ($attendances) {
+                $employee->setRelation('todayAttendance', $attendances->get($employee->id));
+
+                return $employee;
+            });
+
+        $statusCounts = [
+            'present' => 0,
+            'leave' => 0,
+            'absent' => 0,
+            'half_day' => 0,
+            'not_marked' => 0,
+        ];
+
+        foreach ($employees as $employee) {
+            $status = $employee->todayAttendance?->status ?? 'not_marked';
+
+            if (! array_key_exists($status, $statusCounts)) {
+                $statusCounts[$status] = 0;
+            }
+
+            $statusCounts[$status]++;
+        }
+
+        return view('admin.attendance-reports.today', [
+            'selectedDate' => $selectedDate,
+            'employees' => $employees,
+            'summary' => [
+                'total_employees' => $employees->count(),
+                'present' => $statusCounts['present'],
+                'leave' => $statusCounts['leave'],
+                'absent' => $statusCounts['absent'],
+                'half_day' => $statusCounts['half_day'],
+                'not_marked' => $statusCounts['not_marked'],
+            ],
+        ]);
+    }
+
     public function index(Request $request): View
     {
         $filters = $request->validate([

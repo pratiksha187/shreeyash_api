@@ -723,6 +723,66 @@
             font-size: 13px;
         }
 
+        .today-attendance-page .main {
+            max-width: none;
+        }
+
+        .today-attendance-table-wrap {
+            overflow-x: visible;
+        }
+
+        .today-attendance-table th,
+        .today-attendance-table td {
+            white-space: normal;
+            vertical-align: top;
+        }
+
+        .today-attendance-table tbody tr:hover td {
+            background: #f8fbff;
+        }
+
+        @media (max-width: 760px) {
+            .today-attendance-table,
+            .today-attendance-table tbody,
+            .today-attendance-table tr,
+            .today-attendance-table td {
+                display: block;
+                width: 100%;
+            }
+
+            .today-attendance-table thead {
+                display: none;
+            }
+
+            .today-attendance-table tbody {
+                display: grid;
+                gap: 12px;
+                padding: 12px;
+            }
+
+            .today-attendance-table tr {
+                border: 1px solid var(--line);
+                border-radius: 8px;
+                background: #fff;
+                overflow: hidden;
+            }
+
+            .today-attendance-table td {
+                display: grid;
+                grid-template-columns: 104px minmax(0, 1fr);
+                gap: 12px;
+                padding: 12px;
+            }
+
+            .today-attendance-table td::before {
+                content: attr(data-label);
+                color: var(--muted);
+                font-size: 12px;
+                font-weight: 900;
+                text-transform: uppercase;
+            }
+        }
+
         .missed-requests-page .main {
             max-width: none;
         }
