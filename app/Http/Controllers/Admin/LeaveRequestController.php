@@ -42,6 +42,11 @@ class LeaveRequestController extends Controller
         ]);
     }
 
+    public function show(Attendance $leave): RedirectResponse
+    {
+        return redirect()->route('admin.leave-requests.index');
+    }
+
     public function update(Request $request, Attendance $leave): RedirectResponse
     {
         $data = $request->validate([

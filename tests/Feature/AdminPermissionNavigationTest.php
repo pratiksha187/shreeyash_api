@@ -127,4 +127,35 @@ class AdminPermissionNavigationTest extends TestCase
         $leave->refresh();
         $this->assertSame('approved', $leave->leave_approval_status);
     }
+
+    public function test_admin_leave_request_direct_url_redirects_to_index(): void
+    {
+        $company = $this->prepareCompanyAdminContext();
+
+        $employee = User::factory()->create([
+            'company_id' => $company->id,
+            'role' => 'employee',
+            'name' => 'Jane Doe',
+        ]);
+
+        $leave = Attendance::create([
+            'company_id' => $company->id,
+            'user_id' => $employee->id,
+            'attendance_date' => now()->toDateString(),
+            'status' => 'leave',
+            'leave_approval_status' => 'pending',
+            'leave_admin_note' => null,
+        ]);
+
+        $response = $this->withSession([
+            'admin_logged_in' => true,
+            'admin_email' => 'hr@example.com',
+            'admin_permissions' => ['leave_requests'],
+            'admin_role' => 'company_admin',
+            'admin_company_id' => $company->id,
+            'tenant_database_ready' => true,
+        ])->get('/admin/leave-requests/'.$leave->id);
+
+        $response->assertRedirect('/admin/leave-requests');
+    }
 }
