@@ -27,6 +27,10 @@
             <strong>{{ $todayLeave }}</strong>
         </div>
         <div class="card stat-card">
+            <span>Pending Leave Requests</span>
+            <strong>{{ $pendingLeaveRequests }}</strong>
+        </div>
+        <div class="card stat-card">
             <span>Today Absent</span>
             <strong>{{ $todayAbsent }}</strong>
         </div>
@@ -53,7 +57,10 @@
             <h1>Today Present Employees</h1>
             <p>Employees marked present today with in and out time.</p>
         </div>
-        <a class="btn secondary" href="{{ route('admin.attendance-reports.index') }}">Attendance Reports</a>
+        <div class="actions" style="margin-top:0;">
+            <a class="btn" href="{{ route('admin.leave-requests.index') }}">Leave Requests</a>
+            <a class="btn secondary" href="{{ route('admin.attendance-reports.index') }}">Attendance Reports</a>
+        </div>
     </div>
 
     <div class="card table-wrap">

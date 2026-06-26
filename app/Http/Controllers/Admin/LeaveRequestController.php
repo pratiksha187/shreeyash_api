@@ -31,10 +31,36 @@ class LeaveRequestController extends Controller
         }
 
         $leaves = $query->with('user')->paginate(20)->appends($request->query());
+        $leaveUsage = $leaves->getCollection()
+            ->mapWithKeys(function (Attendance $leave) {
+                $year = $leave->attendance_date?->year;
+
+                if (! $year) {
+                    return [];
+                }
+
+                $usedLeaves = Attendance::query()
+                    ->forCurrentCompany()
+                    ->where('user_id', $leave->user_id)
+                    ->where('status', 'leave')
+                    ->where('leave_approval_status', 'approved')
+                    ->whereYear('attendance_date', $year)
+                    ->count();
+
+                return [
+                    $leave->id => [
+                        'year' => $year,
+                        'used' => $usedLeaves,
+                        'remaining' => max(0, Attendance::YEARLY_LEAVE_LIMIT - $usedLeaves),
+                    ],
+                ];
+            });
 
         return view('admin.leave-requests.index', [
             'leaves' => $leaves,
-            'employees' => \App\Models\User::query()->employees()->orderBy('name')->get(),
+            'leaveUsage' => $leaveUsage,
+            'yearlyLeaveLimit' => Attendance::YEARLY_LEAVE_LIMIT,
+            'employees' => \App\Models\User::query()->forCurrentCompany()->employees()->orderBy('name')->get(),
             'selectedEmployeeId' => $request->input('employee_id'),
             'selectedMonth' => $request->input('month'),
             'selectedStatus' => $request->input('status'),

@@ -9,7 +9,7 @@
     <div class="page-header">
         <div>
             <h1>Leave Requests</h1>
-            <p>Review recorded leave entries and approve or reject pending requests.</p>
+            <p>Review recorded leave entries and approve or reject pending requests. Yearly limit: {{ $yearlyLeaveLimit }} leaves.</p>
         </div>
     </div>
 
@@ -64,6 +64,7 @@
                 <col class="leave-employee-column">
                 <col class="leave-date-column">
                 <col class="leave-status-column">
+                <col class="leave-status-column">
                 <col class="leave-remarks-column">
                 <col class="leave-action-column">
             </colgroup>
@@ -72,6 +73,7 @@
                     <th>Employee</th>
                     <th>Date</th>
                     <th>Status</th>
+                    <th>Year Leaves</th>
                     <th>Remarks</th>
                     <th>Action</th>
                 </tr>
@@ -101,6 +103,15 @@
                                 {{ $approvalStatus }}
                             </span>
                         </td>
+                        <td data-label="Year Leaves">
+                            @php($usage = $leaveUsage[$leave->id] ?? null)
+                            @if ($usage)
+                                <strong>{{ $usage['used'] }}/{{ $yearlyLeaveLimit }}</strong>
+                                <div class="table-subtext">{{ $usage['remaining'] }} remaining in {{ $usage['year'] }}</div>
+                            @else
+                                -
+                            @endif
+                        </td>
                         <td class="leave-remarks-cell" data-label="Remarks">
                             <div class="leave-reason">{{ $leave->remarks ?: 'No employee remark added.' }}</div>
                             @if ($leave->leave_admin_note)
@@ -128,7 +139,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="5" class="empty">No leave requests found for this filter.</td>
+                        <td colspan="6" class="empty">No leave requests found for this filter.</td>
                     </tr>
                 @endforelse
             </tbody>

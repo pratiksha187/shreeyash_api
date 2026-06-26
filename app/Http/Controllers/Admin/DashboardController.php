@@ -29,6 +29,11 @@ class DashboardController extends Controller
                 ->whereDate('attendance_date', $today)
                 ->where('status', 'leave')
                 ->count(),
+            'pendingLeaveRequests' => Attendance::query()
+                ->forCurrentCompany()
+                ->where('status', 'leave')
+                ->where('leave_approval_status', 'pending')
+                ->count(),
             'todayAbsent' => Attendance::query()
                 ->forCurrentCompany()
                 ->whereDate('attendance_date', $today)
