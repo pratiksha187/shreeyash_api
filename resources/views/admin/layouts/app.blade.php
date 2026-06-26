@@ -591,6 +591,10 @@
             margin: 0;
         }
 
+        .employee-search-field {
+            grid-column: span 2;
+        }
+
         .employee-actions {
             display: grid;
             gap: 8px;

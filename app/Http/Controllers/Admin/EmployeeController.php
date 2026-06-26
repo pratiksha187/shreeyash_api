@@ -18,18 +18,39 @@ use Illuminate\View\View;
 
 class EmployeeController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
         $this->ensureCompanyAdmin();
 
-        $employees = User::query()
+        $filters = $request->validate([
+            'search' => ['nullable', 'string', 'max:255'],
+        ]);
+        $search = trim((string) ($filters['search'] ?? ''));
+
+        $employeesQuery = User::query()
             ->forCurrentCompany()
             ->employees()
-            ->latest()
-            ->paginate(10);
+            ->when($search !== '', function ($query) use ($search) {
+                $query->where(function ($query) use ($search) {
+                    $query->where('name', 'like', '%'.$search.'%')
+                        ->orWhere('email', 'like', '%'.$search.'%')
+                        ->orWhere('mobile', 'like', '%'.$search.'%')
+                        ->orWhere('designation', 'like', '%'.$search.'%');
+
+                    if (is_numeric($search)) {
+                        $query->orWhere('id', (int) $search);
+                    }
+                });
+            })
+            ->latest();
+
+        $employees = $employeesQuery
+            ->paginate(10)
+            ->appends($request->query());
 
         return view('admin.employees.index', [
             'employees' => $employees,
+            'search' => $search,
         ]);
     }
 

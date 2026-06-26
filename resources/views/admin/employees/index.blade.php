@@ -17,6 +17,34 @@
         <div class="alert-success">{{ session('success') }}</div>
     @endif
 
+    <form class="card form-card report-filter employee-search-form" method="GET" action="{{ route('admin.employees.index') }}">
+        <section class="form-section">
+            <h2 class="section-title">Search Employee</h2>
+            <div class="form-grid three">
+                <div class="field employee-search-field">
+                    <label for="search">Employee Search</label>
+                    <input
+                        id="search"
+                        name="search"
+                        type="search"
+                        value="{{ old('search', $search) }}"
+                        placeholder="Search name, mobile, email, designation or ID"
+                    >
+                </div>
+
+                <div class="field">
+                    <label>&nbsp;</label>
+                    <button class="btn" type="submit">Search</button>
+                </div>
+
+                <div class="field">
+                    <label>&nbsp;</label>
+                    <a class="btn secondary" href="{{ route('admin.employees.index') }}">Clear</a>
+                </div>
+            </div>
+        </section>
+    </form>
+
     <div class="card table-wrap employees-table-wrap">
         <table class="employees-table">
             <colgroup>
@@ -73,7 +101,9 @@
                     </tr>
                 @empty
                     <tr>
-                        <td class="empty" colspan="5">No employees added yet.</td>
+                        <td class="empty" colspan="5">
+                            {{ $search !== '' ? 'No employees found for this search.' : 'No employees added yet.' }}
+                        </td>
                     </tr>
                 @endforelse
             </tbody>

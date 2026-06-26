@@ -382,6 +382,32 @@ class AttendanceController extends Controller
         $dates = collect(CarbonPeriod::create($fromDate, $toDate))
             ->map(fn (Carbon $date) => $date->toDateString());
 
+        $requestedLeaveCountsByYear = $dates
+            ->groupBy(fn (string $date) => Carbon::parse($date)->year)
+            ->map->count();
+
+        foreach ($requestedLeaveCountsByYear as $year => $requestedLeaveCount) {
+            $usedLeaveCount = Attendance::query()
+                ->forCurrentCompany()
+                ->where('user_id', $request->user()->id)
+                ->where('status', 'leave')
+                ->where('leave_approval_status', '!=', 'rejected')
+                ->whereYear('attendance_date', (int) $year)
+                ->whereNotIn('attendance_date', $dates)
+                ->count();
+
+            if (($usedLeaveCount + $requestedLeaveCount) > Attendance::YEARLY_LEAVE_LIMIT) {
+                return response()->json([
+                    'message' => 'You can apply only '.Attendance::YEARLY_LEAVE_LIMIT.' leaves in a year.',
+                    'year' => (int) $year,
+                    'yearly_leave_limit' => Attendance::YEARLY_LEAVE_LIMIT,
+                    'used_leaves' => $usedLeaveCount,
+                    'requested_leaves' => $requestedLeaveCount,
+                    'remaining_leaves' => max(0, Attendance::YEARLY_LEAVE_LIMIT - $usedLeaveCount),
+                ], 422);
+            }
+        }
+
         $existingWorkedDays = Attendance::query()
             ->forCurrentCompany()
             ->where('user_id', $request->user()->id)

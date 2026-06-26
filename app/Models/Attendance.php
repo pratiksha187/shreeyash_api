@@ -13,6 +13,7 @@ class Attendance extends Model
     use BelongsToCompany, HasFactory;
 
     public const LOCAL_TIMEZONE = 'Asia/Kolkata';
+    public const YEARLY_LEAVE_LIMIT = 12;
 
     protected $fillable = [
         'company_id',

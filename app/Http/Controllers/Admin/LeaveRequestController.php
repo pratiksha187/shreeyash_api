@@ -59,6 +59,23 @@ class LeaveRequestController extends Controller
             ->where('status', 'leave')
             ->findOrFail($leave);
 
+        if ($data['status'] === 'approved') {
+            $approvedLeavesThisYear = Attendance::query()
+                ->forCurrentCompany()
+                ->where('user_id', $leaveRequest->user_id)
+                ->where('status', 'leave')
+                ->where('leave_approval_status', 'approved')
+                ->whereYear('attendance_date', $leaveRequest->attendance_date->year)
+                ->whereKeyNot($leaveRequest->getKey())
+                ->count();
+
+            if ($approvedLeavesThisYear >= Attendance::YEARLY_LEAVE_LIMIT) {
+                return redirect()
+                    ->route('admin.leave-requests.index')
+                    ->with('error', 'This employee already has '.Attendance::YEARLY_LEAVE_LIMIT.' approved leaves for '.$leaveRequest->attendance_date->year.'.');
+            }
+        }
+
         $leaveRequest->forceFill([
             'leave_approval_status' => $data['status'],
             'leave_approved_at' => $data['status'] === 'approved' ? now() : null,
