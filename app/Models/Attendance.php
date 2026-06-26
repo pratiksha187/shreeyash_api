@@ -14,6 +14,12 @@ class Attendance extends Model
 
     public const LOCAL_TIMEZONE = 'Asia/Kolkata';
     public const YEARLY_LEAVE_LIMIT = 12;
+    public const LEAVE_TYPE_LIMIT = 4;
+    public const LEAVE_TYPES = [
+        'casual' => 'Casual Leave',
+        'sick' => 'Sick Leave',
+        'paid' => 'Paid Leave',
+    ];
 
     public static function leaveYearPeriodFor(Carbon|string $date, ?User $user): array
     {
@@ -59,6 +65,7 @@ class Attendance extends Model
         'longitude',
         'remarks',
         'leave_approval_status',
+        'leave_type',
         'leave_approved_at',
         'leave_admin_note',
     ];

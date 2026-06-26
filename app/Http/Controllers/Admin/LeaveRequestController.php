@@ -30,6 +30,16 @@ class LeaveRequestController extends Controller
             $query->where('leave_approval_status', $request->input('status'));
         }
 
+        if ($request->filled('leave_type')) {
+            $query->where(function ($query) use ($request) {
+                $query->where('leave_type', $request->input('leave_type'));
+
+                if ($request->input('leave_type') === 'casual') {
+                    $query->orWhereNull('leave_type');
+                }
+            });
+        }
+
         $leaves = $query->with('user')->paginate(20)->appends($request->query());
         $leaveUsage = $leaves->getCollection()
             ->mapWithKeys(function (Attendance $leave) {
@@ -38,7 +48,7 @@ class LeaveRequestController extends Controller
                 }
 
                 $period = Attendance::leaveYearPeriodFor($leave->attendance_date, $leave->user);
-                $usedLeaves = Attendance::query()
+                $approvedLeaves = Attendance::query()
                     ->forCurrentCompany()
                     ->where('user_id', $leave->user_id)
                     ->where('status', 'leave')
@@ -47,14 +57,21 @@ class LeaveRequestController extends Controller
                         $period['start']->toDateString(),
                         $period['end']->toDateString(),
                     ])
-                    ->count();
+                    ->get();
+                $approvedLeavesByType = collect(array_keys(Attendance::LEAVE_TYPES))
+                    ->mapWithKeys(fn (string $type) => [
+                        $type => $approvedLeaves
+                            ->filter(fn (Attendance $attendance) => ($attendance->leave_type ?? 'casual') === $type)
+                            ->count(),
+                    ]);
 
                 return [
                     $leave->id => [
                         'start' => $period['start'],
                         'end' => $period['end'],
-                        'used' => $usedLeaves,
-                        'remaining' => max(0, Attendance::YEARLY_LEAVE_LIMIT - $usedLeaves),
+                        'used' => $approvedLeaves->count(),
+                        'remaining' => max(0, Attendance::YEARLY_LEAVE_LIMIT - $approvedLeaves->count()),
+                        'by_type' => $approvedLeavesByType,
                     ],
                 ];
             });
@@ -63,10 +80,13 @@ class LeaveRequestController extends Controller
             'leaves' => $leaves,
             'leaveUsage' => $leaveUsage,
             'yearlyLeaveLimit' => Attendance::YEARLY_LEAVE_LIMIT,
+            'leaveTypeLimit' => Attendance::LEAVE_TYPE_LIMIT,
+            'leaveTypes' => Attendance::LEAVE_TYPES,
             'employees' => \App\Models\User::query()->forCurrentCompany()->employees()->orderBy('name')->get(),
             'selectedEmployeeId' => $request->input('employee_id'),
             'selectedMonth' => $request->input('month'),
             'selectedStatus' => $request->input('status'),
+            'selectedLeaveType' => $request->input('leave_type'),
             'statuses' => ['pending', 'approved', 'rejected'],
         ]);
     }
@@ -91,11 +111,19 @@ class LeaveRequestController extends Controller
 
         if ($data['status'] === 'approved') {
             $period = Attendance::leaveYearPeriodFor($leaveRequest->attendance_date, $leaveRequest->user);
-            $approvedLeavesThisYear = Attendance::query()
+            $leaveType = $leaveRequest->leave_type ?? 'casual';
+            $approvedLeavesForType = Attendance::query()
                 ->forCurrentCompany()
                 ->where('user_id', $leaveRequest->user_id)
                 ->where('status', 'leave')
                 ->where('leave_approval_status', 'approved')
+                ->where(function ($query) use ($leaveType) {
+                    $query->where('leave_type', $leaveType);
+
+                    if ($leaveType === 'casual') {
+                        $query->orWhereNull('leave_type');
+                    }
+                })
                 ->whereBetween('attendance_date', [
                     $period['start']->toDateString(),
                     $period['end']->toDateString(),
@@ -103,10 +131,10 @@ class LeaveRequestController extends Controller
                 ->whereKeyNot($leaveRequest->getKey())
                 ->count();
 
-            if ($approvedLeavesThisYear >= Attendance::YEARLY_LEAVE_LIMIT) {
+            if ($approvedLeavesForType >= Attendance::LEAVE_TYPE_LIMIT) {
                 return redirect()
                     ->route('admin.leave-requests.index')
-                    ->with('error', 'This employee already has '.Attendance::YEARLY_LEAVE_LIMIT.' approved leaves from '.$period['start']->format('d M Y').' to '.$period['end']->format('d M Y').'.');
+                    ->with('error', 'This employee already has '.Attendance::LEAVE_TYPE_LIMIT.' '.Attendance::LEAVE_TYPES[$leaveType].' days from '.$period['start']->format('d M Y').' to '.$period['end']->format('d M Y').'.');
             }
         }
 

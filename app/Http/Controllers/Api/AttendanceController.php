@@ -363,6 +363,7 @@ class AttendanceController extends Controller
         $validator = Validator::make($request->all(), [
             'from_date' => ['required', 'date'],
             'to_date' => ['nullable', 'date', 'after_or_equal:from_date'],
+            'leave_type' => ['nullable', Rule::in(array_keys(Attendance::LEAVE_TYPES))],
             'remarks' => ['nullable', 'string', 'max:500'],
         ]);
 
@@ -378,6 +379,7 @@ class AttendanceController extends Controller
         $toDate = isset($data['to_date'])
             ? Carbon::parse($data['to_date'])->toDateString()
             : $fromDate;
+        $leaveType = $data['leave_type'] ?? 'casual';
 
         $dates = collect(CarbonPeriod::create($fromDate, $toDate))
             ->map(fn (Carbon $date) => $date->toDateString());
@@ -398,19 +400,29 @@ class AttendanceController extends Controller
                 ->where('user_id', $request->user()->id)
                 ->where('status', 'leave')
                 ->where('leave_approval_status', '!=', 'rejected')
+                ->where(function ($query) use ($leaveType) {
+                    $query->where('leave_type', $leaveType);
+
+                    if ($leaveType === 'casual') {
+                        $query->orWhereNull('leave_type');
+                    }
+                })
                 ->whereBetween('attendance_date', [$periodStart, $periodEnd])
                 ->whereNotIn('attendance_date', $dates->all())
                 ->count();
 
-            if (($usedLeaveCount + $requestedLeaveCount) > Attendance::YEARLY_LEAVE_LIMIT) {
+            if (($usedLeaveCount + $requestedLeaveCount) > Attendance::LEAVE_TYPE_LIMIT) {
                 return response()->json([
-                    'message' => 'You can apply only '.Attendance::YEARLY_LEAVE_LIMIT.' leaves in your leave year.',
+                    'message' => 'You can apply only '.Attendance::LEAVE_TYPE_LIMIT.' '.Attendance::LEAVE_TYPES[$leaveType].' days in your leave year.',
+                    'leave_type' => $leaveType,
+                    'leave_type_label' => Attendance::LEAVE_TYPES[$leaveType],
                     'leave_year_start' => $periodStart,
                     'leave_year_end' => $periodEnd,
                     'yearly_leave_limit' => Attendance::YEARLY_LEAVE_LIMIT,
+                    'leave_type_limit' => Attendance::LEAVE_TYPE_LIMIT,
                     'used_leaves' => $usedLeaveCount,
                     'requested_leaves' => $requestedLeaveCount,
-                    'remaining_leaves' => max(0, Attendance::YEARLY_LEAVE_LIMIT - $usedLeaveCount),
+                    'remaining_leaves' => max(0, Attendance::LEAVE_TYPE_LIMIT - $usedLeaveCount),
                 ], 422);
             }
         }
@@ -443,6 +455,7 @@ class AttendanceController extends Controller
                 [
                     'status' => 'leave',
                     'leave_approval_status' => 'pending',
+                    'leave_type' => $leaveType,
                     'check_in_at' => null,
                     'check_out_at' => null,
                     'latitude' => null,
@@ -456,6 +469,8 @@ class AttendanceController extends Controller
             'message' => 'Leave applied successfully.',
             'from_date' => $fromDate,
             'to_date' => $toDate,
+            'leave_type' => $leaveType,
+            'leave_type_label' => Attendance::LEAVE_TYPES[$leaveType],
             'attendances' => $attendances,
         ], 201);
     }
@@ -512,6 +527,8 @@ class AttendanceController extends Controller
             'status' => $approvalStatus,
             'approval_status' => $approvalStatus,
             'leave_approval_status' => $approvalStatus,
+            'leave_type' => $attendance->leave_type ?? 'casual',
+            'leave_type_label' => Attendance::LEAVE_TYPES[$attendance->leave_type ?? 'casual'] ?? Attendance::LEAVE_TYPES['casual'],
             'is_approved' => $approvalStatus === 'approved',
             'is_rejected' => $approvalStatus === 'rejected',
             'is_pending' => $approvalStatus === 'pending',

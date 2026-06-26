@@ -9,12 +9,16 @@
     <div class="page-header">
         <div>
             <h1>Leave Requests</h1>
-            <p>Review recorded leave entries and approve or reject pending requests. Limit: {{ $yearlyLeaveLimit }} leaves from each employee joining-date year.</p>
+            <p>Review recorded leave entries and approve or reject pending requests. Limit: {{ $leaveTypeLimit }} casual, {{ $leaveTypeLimit }} sick, {{ $leaveTypeLimit }} paid leaves from each employee joining-date year.</p>
         </div>
     </div>
 
     @if (session('success'))
         <div class="alert-success">{{ session('success') }}</div>
+    @endif
+
+    @if (session('error'))
+        <div class="alert-error">{{ session('error') }}</div>
     @endif
 
     <form class="card form-card report-filter" method="GET" action="{{ route('admin.leave-requests.index') }}">
@@ -50,6 +54,18 @@
                     </select>
                 </div>
 
+                <div class="field">
+                    <label for="leave_type">Leave Type</label>
+                    <select id="leave_type" name="leave_type">
+                        <option value="">All Types</option>
+                        @foreach ($leaveTypes as $type => $label)
+                            <option value="{{ $type }}" @selected($selectedLeaveType === $type)>
+                                {{ $label }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
                 <div class="field leave-filter-action">
                     <label>&nbsp;</label>
                     <button class="btn" type="submit">Apply Filter</button>
@@ -65,6 +81,7 @@
                 <col class="leave-date-column">
                 <col class="leave-status-column">
                 <col class="leave-status-column">
+                <col class="leave-status-column">
                 <col class="leave-remarks-column">
                 <col class="leave-action-column">
             </colgroup>
@@ -72,6 +89,7 @@
                 <tr>
                     <th>Employee</th>
                     <th>Date</th>
+                    <th>Type</th>
                     <th>Status</th>
                     <th>Leave Year</th>
                     <th>Remarks</th>
@@ -81,6 +99,7 @@
             <tbody>
                 @forelse ($leaves as $leave)
                     @php($approvalStatus = $leave->leave_approval_status ?? 'pending')
+                    @php($leaveType = $leave->leave_type ?? 'casual')
                     <tr>
                         <td data-label="Employee">
                             @if ($leave->user)
@@ -98,6 +117,9 @@
                                 <span class="table-subtext">{{ $leave->attendance_date?->format('l') }}</span>
                             </div>
                         </td>
+                        <td data-label="Type">
+                            {{ $leaveTypes[$leaveType] ?? ucfirst($leaveType) }}
+                        </td>
                         <td data-label="Status">
                             <span class="status-pill status-{{ $approvalStatus }}">
                                 {{ $approvalStatus }}
@@ -111,6 +133,10 @@
                                     {{ $usage['remaining'] }} remaining
                                     <br>
                                     {{ $usage['start']->format('d M Y') }} - {{ $usage['end']->format('d M Y') }}
+                                    <br>
+                                    CL {{ $usage['by_type']['casual'] ?? 0 }}/{{ $leaveTypeLimit }},
+                                    SL {{ $usage['by_type']['sick'] ?? 0 }}/{{ $leaveTypeLimit }},
+                                    PL {{ $usage['by_type']['paid'] ?? 0 }}/{{ $leaveTypeLimit }}
                                 </div>
                             @else
                                 -
@@ -143,7 +169,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="6" class="empty">No leave requests found for this filter.</td>
+                        <td colspan="7" class="empty">No leave requests found for this filter.</td>
                     </tr>
                 @endforelse
             </tbody>

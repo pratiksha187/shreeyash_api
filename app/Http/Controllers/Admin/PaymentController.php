@@ -99,6 +99,11 @@ class PaymentController extends Controller
         $presentDates = [];
         $halfDayDates = [];
         $leaveDates = [];
+        $leaveDatesByType = [
+            'casual' => [],
+            'sick' => [],
+            'paid' => [],
+        ];
         $cOffCount = 0;
 
         foreach ($attendances as $attendance) {
@@ -114,6 +119,11 @@ class PaymentController extends Controller
                 $halfDayDates[$date] = true;
             } elseif ($attendance->status === 'leave') {
                 $leaveDates[$date] = true;
+                $leaveType = $attendance->leave_type ?? 'casual';
+
+                if (array_key_exists($leaveType, $leaveDatesByType)) {
+                    $leaveDatesByType[$leaveType][$date] = true;
+                }
             }
         }
 
@@ -155,9 +165,9 @@ class PaymentController extends Controller
             'weekoff_count' => $weekoffCount,
             'holiday_count' => $holidayCount,
             'c_off_count' => $cOffCount,
-            'leave_cl' => 0,
-            'leave_sl' => 0,
-            'leave_el' => 0,
+            'leave_cl' => count($leaveDatesByType['casual']),
+            'leave_sl' => count($leaveDatesByType['sick']),
+            'leave_el' => count($leaveDatesByType['paid']),
             'leave_total' => $leaveTotal,
             'half_day_count' => $halfDayCount,
             'gross_salary' => $grossSalary,
