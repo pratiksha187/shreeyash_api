@@ -15,6 +15,39 @@ class Attendance extends Model
     public const LOCAL_TIMEZONE = 'Asia/Kolkata';
     public const YEARLY_LEAVE_LIMIT = 12;
 
+    public static function leaveYearPeriodFor(Carbon|string $date, ?User $user): array
+    {
+        $date = Carbon::parse($date)->startOfDay();
+
+        if (! $user?->join_date) {
+            return [
+                'start' => $date->copy()->startOfYear(),
+                'end' => $date->copy()->endOfYear()->startOfDay(),
+            ];
+        }
+
+        $joinDate = $user->join_date->copy();
+        $start = self::anniversaryDateForYear($joinDate, $date->year);
+
+        if ($date->lt($start)) {
+            $start = self::anniversaryDateForYear($joinDate, $date->year - 1);
+        }
+
+        $end = self::anniversaryDateForYear($joinDate, $start->year + 1)->subDay();
+
+        return [
+            'start' => $start,
+            'end' => $end,
+        ];
+    }
+
+    private static function anniversaryDateForYear(Carbon $joinDate, int $year): Carbon
+    {
+        $day = min($joinDate->day, Carbon::create($year, $joinDate->month, 1)->daysInMonth);
+
+        return Carbon::create($year, $joinDate->month, $day)->startOfDay();
+    }
+
     protected $fillable = [
         'company_id',
         'user_id',

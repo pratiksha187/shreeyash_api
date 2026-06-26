@@ -9,7 +9,7 @@
     <div class="page-header">
         <div>
             <h1>Leave Requests</h1>
-            <p>Review recorded leave entries and approve or reject pending requests. Yearly limit: {{ $yearlyLeaveLimit }} leaves.</p>
+            <p>Review recorded leave entries and approve or reject pending requests. Limit: {{ $yearlyLeaveLimit }} leaves from each employee joining-date year.</p>
         </div>
     </div>
 
@@ -73,7 +73,7 @@
                     <th>Employee</th>
                     <th>Date</th>
                     <th>Status</th>
-                    <th>Year Leaves</th>
+                    <th>Leave Year</th>
                     <th>Remarks</th>
                     <th>Action</th>
                 </tr>
@@ -103,11 +103,15 @@
                                 {{ $approvalStatus }}
                             </span>
                         </td>
-                        <td data-label="Year Leaves">
+                        <td data-label="Leave Year">
                             @php($usage = $leaveUsage[$leave->id] ?? null)
                             @if ($usage)
                                 <strong>{{ $usage['used'] }}/{{ $yearlyLeaveLimit }}</strong>
-                                <div class="table-subtext">{{ $usage['remaining'] }} remaining in {{ $usage['year'] }}</div>
+                                <div class="table-subtext">
+                                    {{ $usage['remaining'] }} remaining
+                                    <br>
+                                    {{ $usage['start']->format('d M Y') }} - {{ $usage['end']->format('d M Y') }}
+                                </div>
                             @else
                                 -
                             @endif

@@ -382,24 +382,31 @@ class AttendanceController extends Controller
         $dates = collect(CarbonPeriod::create($fromDate, $toDate))
             ->map(fn (Carbon $date) => $date->toDateString());
 
-        $requestedLeaveCountsByYear = $dates
-            ->groupBy(fn (string $date) => Carbon::parse($date)->year)
+        $requestedLeaveCountsByPeriod = $dates
+            ->groupBy(function (string $date) use ($request) {
+                $period = Attendance::leaveYearPeriodFor($date, $request->user());
+
+                return $period['start']->toDateString().'|'.$period['end']->toDateString();
+            })
             ->map->count();
 
-        foreach ($requestedLeaveCountsByYear as $year => $requestedLeaveCount) {
+        foreach ($requestedLeaveCountsByPeriod as $periodKey => $requestedLeaveCount) {
+            [$periodStart, $periodEnd] = explode('|', $periodKey);
+
             $usedLeaveCount = Attendance::query()
                 ->forCurrentCompany()
                 ->where('user_id', $request->user()->id)
                 ->where('status', 'leave')
                 ->where('leave_approval_status', '!=', 'rejected')
-                ->whereYear('attendance_date', (int) $year)
-                ->whereNotIn('attendance_date', $dates)
+                ->whereBetween('attendance_date', [$periodStart, $periodEnd])
+                ->whereNotIn('attendance_date', $dates->all())
                 ->count();
 
             if (($usedLeaveCount + $requestedLeaveCount) > Attendance::YEARLY_LEAVE_LIMIT) {
                 return response()->json([
-                    'message' => 'You can apply only '.Attendance::YEARLY_LEAVE_LIMIT.' leaves in a year.',
-                    'year' => (int) $year,
+                    'message' => 'You can apply only '.Attendance::YEARLY_LEAVE_LIMIT.' leaves in your leave year.',
+                    'leave_year_start' => $periodStart,
+                    'leave_year_end' => $periodEnd,
                     'yearly_leave_limit' => Attendance::YEARLY_LEAVE_LIMIT,
                     'used_leaves' => $usedLeaveCount,
                     'requested_leaves' => $requestedLeaveCount,

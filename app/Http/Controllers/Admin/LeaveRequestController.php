@@ -33,23 +33,26 @@ class LeaveRequestController extends Controller
         $leaves = $query->with('user')->paginate(20)->appends($request->query());
         $leaveUsage = $leaves->getCollection()
             ->mapWithKeys(function (Attendance $leave) {
-                $year = $leave->attendance_date?->year;
-
-                if (! $year) {
+                if (! $leave->attendance_date) {
                     return [];
                 }
 
+                $period = Attendance::leaveYearPeriodFor($leave->attendance_date, $leave->user);
                 $usedLeaves = Attendance::query()
                     ->forCurrentCompany()
                     ->where('user_id', $leave->user_id)
                     ->where('status', 'leave')
                     ->where('leave_approval_status', 'approved')
-                    ->whereYear('attendance_date', $year)
+                    ->whereBetween('attendance_date', [
+                        $period['start']->toDateString(),
+                        $period['end']->toDateString(),
+                    ])
                     ->count();
 
                 return [
                     $leave->id => [
-                        'year' => $year,
+                        'start' => $period['start'],
+                        'end' => $period['end'],
                         'used' => $usedLeaves,
                         'remaining' => max(0, Attendance::YEARLY_LEAVE_LIMIT - $usedLeaves),
                     ],
@@ -82,23 +85,28 @@ class LeaveRequestController extends Controller
 
         $leaveRequest = Attendance::query()
             ->forCurrentCompany()
+            ->with('user')
             ->where('status', 'leave')
             ->findOrFail($leave);
 
         if ($data['status'] === 'approved') {
+            $period = Attendance::leaveYearPeriodFor($leaveRequest->attendance_date, $leaveRequest->user);
             $approvedLeavesThisYear = Attendance::query()
                 ->forCurrentCompany()
                 ->where('user_id', $leaveRequest->user_id)
                 ->where('status', 'leave')
                 ->where('leave_approval_status', 'approved')
-                ->whereYear('attendance_date', $leaveRequest->attendance_date->year)
+                ->whereBetween('attendance_date', [
+                    $period['start']->toDateString(),
+                    $period['end']->toDateString(),
+                ])
                 ->whereKeyNot($leaveRequest->getKey())
                 ->count();
 
             if ($approvedLeavesThisYear >= Attendance::YEARLY_LEAVE_LIMIT) {
                 return redirect()
                     ->route('admin.leave-requests.index')
-                    ->with('error', 'This employee already has '.Attendance::YEARLY_LEAVE_LIMIT.' approved leaves for '.$leaveRequest->attendance_date->year.'.');
+                    ->with('error', 'This employee already has '.Attendance::YEARLY_LEAVE_LIMIT.' approved leaves from '.$period['start']->format('d M Y').' to '.$period['end']->format('d M Y').'.');
             }
         }
 
