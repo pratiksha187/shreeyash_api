@@ -56,7 +56,7 @@ class MaterialRequestController extends Controller
         $data = $request->validate([
             'request_date' => ['nullable', 'date'],
             'required_by' => ['nullable', 'date'],
-            'labour_site_id' => ['nullable', 'exists:labour_sites,id'],
+            'labour_site_id' => ['nullable', 'integer'],
             'site_project' => ['nullable', 'string', 'max:255'],
             'material_id' => ['nullable', 'exists:materials,id'],
             'material_name' => ['required_without:material_id', 'string', 'max:255'],
@@ -68,14 +68,15 @@ class MaterialRequestController extends Controller
         ]);
 
         $material = $this->resolveMaterial($data);
+        $site = $this->resolveSite($data);
 
         $materialRequest = MaterialRequest::query()->create([
             'user_id' => $request->user()->id,
-            'labour_site_id' => $data['labour_site_id'] ?? null,
+            'labour_site_id' => $site?->id,
             'material_id' => $material->id,
             'request_date' => $data['request_date'] ?? now()->toDateString(),
             'required_by' => $data['required_by'] ?? ($data['required_date'] ?? null),
-            'site_project' => $data['site_project'] ?? null,
+            'site_project' => $data['site_project'] ?? $site?->name,
             'material_name' => $data['material_name'] ?? $material->name,
             'unit' => $data['unit'] ?? $material->unit,
             'requested_quantity' => $data['requested_quantity'],
@@ -115,7 +116,14 @@ class MaterialRequestController extends Controller
                 ->forCurrentCompany()
                 ->where('is_active', true)
                 ->orderBy('name')
-                ->get(['id', 'name', 'address']),
+                ->get(['id', 'name', 'address'])
+                ->map(fn (LabourSite $site) => [
+                    'id' => $site->id,
+                    'name' => $site->name,
+                    'label' => $site->name,
+                    'value' => $site->id,
+                    'address' => $site->address,
+                ]),
         ]);
     }
 
@@ -252,5 +260,33 @@ class MaterialRequestController extends Controller
             'unit' => $unit,
             'is_active' => true,
         ]);
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     */
+    private function resolveSite(array $data): ?LabourSite
+    {
+        if (! empty($data['labour_site_id'])) {
+            $site = LabourSite::query()
+                ->forCurrentCompany()
+                ->where('id', $data['labour_site_id'])
+                ->first();
+
+            if ($site) {
+                return $site;
+            }
+        }
+
+        $siteProject = trim((string) ($data['site_project'] ?? ''));
+
+        if ($siteProject === '') {
+            return null;
+        }
+
+        return LabourSite::query()
+            ->forCurrentCompany()
+            ->whereRaw('LOWER(name) = ?', [strtolower($siteProject)])
+            ->first();
     }
 }
