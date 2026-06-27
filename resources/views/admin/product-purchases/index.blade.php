@@ -65,6 +65,7 @@
         }
 
         .purchase-table input,
+        .purchase-table select,
         .purchase-table textarea {
             width: 100%;
             min-width: 92px;
@@ -85,6 +86,7 @@
         }
 
         .purchase-table input:focus,
+        .purchase-table select:focus,
         .purchase-table textarea:focus {
             border-color: #2563eb;
             outline: none;
@@ -127,7 +129,7 @@
     <div class="page-header">
         <div>
             <h1>{{ $monthLabel }} Product Purchase</h1>
-            <p>Enter product bills with quantity, rate, tax, transport, and auto total.</p>
+            <p>Enter product bills with quantity, rate, tax, transport, stock material, and auto total.</p>
         </div>
     </div>
 
@@ -204,6 +206,8 @@
                             <th>Date</th>
                             <th>Supplier</th>
                             <th>Invoice</th>
+                            <th>Stock Material</th>
+                            <th>Stock Site</th>
                             <th>Product</th>
                             <th>Unit</th>
                             <th>Quantity</th>
@@ -220,6 +224,22 @@
                             <td><input class="purchase-date-input" form="create-purchase-form" name="purchase_date" type="date" value="{{ now()->toDateString() }}" required></td>
                             <td><input class="purchase-text-input" form="create-purchase-form" name="supplier_name"></td>
                             <td><input form="create-purchase-form" name="invoice_no"></td>
+                            <td>
+                                <select class="purchase-text-input" form="create-purchase-form" name="material_id">
+                                    <option value="">No stock update</option>
+                                    @foreach ($materials as $material)
+                                        <option value="{{ $material->id }}">{{ $material->name }}{{ $material->unit ? ' ('.$material->unit.')' : '' }}</option>
+                                    @endforeach
+                                </select>
+                            </td>
+                            <td>
+                                <select class="purchase-text-input" form="create-purchase-form" name="stock_labour_site_id">
+                                    <option value="">Main Store</option>
+                                    @foreach ($sites as $site)
+                                        <option value="{{ $site->id }}">{{ $site->name }}</option>
+                                    @endforeach
+                                </select>
+                            </td>
                             <td><input class="purchase-text-input" form="create-purchase-form" name="product_name" required></td>
                             <td><input form="create-purchase-form" name="unit" placeholder="Nos/Kg/Ltr"></td>
                             <td><input class="js-quantity" form="create-purchase-form" name="quantity" type="number" min="0" step="0.01" value="0" required></td>
@@ -250,6 +270,8 @@
                             <th>Date</th>
                             <th>Supplier</th>
                             <th>Invoice</th>
+                            <th>Stock Material</th>
+                            <th>Stock Site</th>
                             <th>Product</th>
                             <th>Unit</th>
                             <th>Quantity</th>
@@ -271,6 +293,25 @@
                                 <td><input class="purchase-date-input" form="{{ $formId }}" name="purchase_date" type="date" value="{{ $purchase->purchase_date->toDateString() }}" required></td>
                                 <td><input class="purchase-text-input" form="{{ $formId }}" name="supplier_name" value="{{ $purchase->supplier_name }}"></td>
                                 <td><input form="{{ $formId }}" name="invoice_no" value="{{ $purchase->invoice_no }}"></td>
+                                <td>
+                                    <select class="purchase-text-input" form="{{ $formId }}" name="material_id">
+                                        <option value="">No stock update</option>
+                                        @foreach ($materials as $material)
+                                            <option value="{{ $material->id }}" @selected((int) $purchase->material_id === (int) $material->id)>{{ $material->name }}{{ $material->unit ? ' ('.$material->unit.')' : '' }}</option>
+                                        @endforeach
+                                    </select>
+                                    @if ($purchase->material_id)
+                                        <div class="table-subtext">Stock added on create</div>
+                                    @endif
+                                </td>
+                                <td>
+                                    <select class="purchase-text-input" form="{{ $formId }}" name="stock_labour_site_id">
+                                        <option value="">Main Store</option>
+                                        @foreach ($sites as $site)
+                                            <option value="{{ $site->id }}" @selected((int) $purchase->stock_labour_site_id === (int) $site->id)>{{ $site->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </td>
                                 <td><input class="purchase-text-input" form="{{ $formId }}" name="product_name" value="{{ $purchase->product_name }}" required></td>
                                 <td><input form="{{ $formId }}" name="unit" value="{{ $purchase->unit }}"></td>
                                 <td><input class="js-quantity" form="{{ $formId }}" name="quantity" type="number" min="0" step="0.01" value="{{ number_format($purchase->quantity, 2, '.', '') }}" required></td>
@@ -296,7 +337,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="12">No product purchase entries found.</td>
+                                <td colspan="14">No product purchase entries found.</td>
                             </tr>
                         @endforelse
                     </tbody>

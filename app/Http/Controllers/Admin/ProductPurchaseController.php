@@ -3,7 +3,11 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\LabourSite;
+use App\Models\Material;
 use App\Models\ProductPurchase;
+use App\Models\StockMovement;
+use App\Services\MaterialStockService;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -11,6 +15,10 @@ use Illuminate\View\View;
 
 class ProductPurchaseController extends Controller
 {
+    public function __construct(private readonly MaterialStockService $stockService)
+    {
+    }
+
     public function index(Request $request): View
     {
         $filters = $request->validate([
@@ -25,6 +33,7 @@ class ProductPurchaseController extends Controller
 
         $purchases = ProductPurchase::query()
             ->forCurrentCompany()
+            ->with(['material', 'stockSite'])
             ->whereBetween('purchase_date', [$monthStart->toDateString(), $monthEnd->toDateString()])
             ->when($search, function ($query, string $search) {
                 $query->where(function ($query) use ($search) {
@@ -43,6 +52,8 @@ class ProductPurchaseController extends Controller
             'monthLabel' => $monthStart->format('M Y'),
             'search' => $search,
             'purchases' => $purchases,
+            'materials' => Material::query()->forCurrentCompany()->where('is_active', true)->orderBy('name')->get(),
+            'sites' => LabourSite::query()->forCurrentCompany()->where('is_active', true)->orderBy('name')->get(['id', 'name']),
             'summary' => [
                 'quantity' => $purchases->sum(fn (ProductPurchase $purchase) => (float) $purchase->quantity),
                 'amount' => $purchases->sum(fn (ProductPurchase $purchase) => (float) $purchase->total_amount),
@@ -57,7 +68,8 @@ class ProductPurchaseController extends Controller
         $data = $this->validatedData($request);
         $data['total_amount'] = $this->totalAmount($data);
 
-        ProductPurchase::query()->create($data);
+        $purchase = ProductPurchase::query()->create($data);
+        $this->recordPurchaseStock($purchase);
 
         return redirect()
             ->route('admin.product-purchases.index', ['month' => Carbon::parse($data['purchase_date'])->format('Y-m')])
@@ -94,6 +106,8 @@ class ProductPurchaseController extends Controller
     {
         return $request->validate([
             'purchase_date' => ['required', 'date'],
+            'material_id' => ['nullable', 'exists:materials,id'],
+            'stock_labour_site_id' => ['nullable', 'exists:labour_sites,id'],
             'supplier_name' => ['nullable', 'string', 'max:255'],
             'invoice_no' => ['nullable', 'string', 'max:100'],
             'product_name' => ['required', 'string', 'max:255'],
@@ -116,6 +130,23 @@ class ProductPurchaseController extends Controller
             + (float) ($data['tax_amount'] ?? 0)
             + (float) ($data['transport_amount'] ?? 0),
             2
+        );
+    }
+
+    private function recordPurchaseStock(ProductPurchase $purchase): void
+    {
+        if (! $purchase->material_id || (float) $purchase->quantity <= 0) {
+            return;
+        }
+
+        $this->stockService->addStock(
+            (int) $purchase->material_id,
+            $purchase->stock_labour_site_id ? (int) $purchase->stock_labour_site_id : null,
+            (float) $purchase->quantity,
+            StockMovement::PURCHASE_IN,
+            ProductPurchase::class,
+            $purchase->id,
+            'Stock added from product purchase '.$purchase->invoice_no
         );
     }
 }

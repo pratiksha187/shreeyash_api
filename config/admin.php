@@ -27,6 +27,7 @@ return [
         'vehicles',
         'diesel_purchases',
         'product_purchases',
+        'material_stock',
     ],
     'module_permissions' => [
         'dashboard' => 'Dashboard',
@@ -49,6 +50,7 @@ return [
         'vehicles' => 'Vehicles',
         'diesel_purchases' => 'Diesel Purchase',
         'product_purchases' => 'Product Purchase',
+        'material_stock' => 'Material Stock',
     ],
     'multi_device_login_mobiles' => [
         '9309886247',
@@ -144,6 +146,35 @@ return [
                     'label' => 'Product Purchase',
                     'route' => 'admin.product-purchases.index',
                     'active' => 'admin.product-purchases.*',
+                ],
+            ],
+        ],
+        [
+            'label' => 'Stock',
+            'items' => [
+                [
+                    'key' => 'material_stock',
+                    'label' => 'Material Master',
+                    'route' => 'admin.materials.index',
+                    'active' => 'admin.materials.*',
+                ],
+                [
+                    'key' => 'material_stock',
+                    'label' => 'Stock List',
+                    'route' => 'admin.material-stock.index',
+                    'active' => 'admin.material-stock.*',
+                ],
+                [
+                    'key' => 'material_stock',
+                    'label' => 'Material Requests',
+                    'route' => 'admin.material-requests.index',
+                    'active' => 'admin.material-requests.*',
+                ],
+                [
+                    'key' => 'material_stock',
+                    'label' => 'Material Issues',
+                    'route' => 'admin.material-issues.index',
+                    'active' => 'admin.material-issues.*',
                 ],
             ],
         ],
@@ -250,6 +281,10 @@ return [
         'admin.payments.*' => 'payments',
         'admin.diesel-purchases.*' => 'diesel_purchases',
         'admin.product-purchases.*' => 'diesel_purchases',
+        'admin.materials.*' => 'material_stock',
+        'admin.material-stock.*' => 'material_stock',
+        'admin.material-requests.*' => 'material_stock',
+        'admin.material-issues.*' => 'material_stock',
         'admin.vehicles.*' => 'vehicles',
         'admin.employees.*' => 'employees',
     ],
