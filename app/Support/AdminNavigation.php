@@ -63,6 +63,10 @@ class AdminNavigation
             return true;
         }
 
+        if ($permission === 'product_purchases' && in_array('diesel_purchases', $permissions, true)) {
+            return true;
+        }
+
         $groupPermission = $this->groupPermissionForModule($permission);
         $fallbackGroupPermissions = config('admin.company_admin_permissions', []);
 

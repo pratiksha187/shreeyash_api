@@ -249,7 +249,7 @@ return [
         'admin.complaints.*' => 'complaints',
         'admin.payments.*' => 'payments',
         'admin.diesel-purchases.*' => 'diesel_purchases',
-        'admin.product-purchases.*' => 'product_purchases',
+        'admin.product-purchases.*' => 'diesel_purchases',
         'admin.vehicles.*' => 'vehicles',
         'admin.employees.*' => 'employees',
     ],
