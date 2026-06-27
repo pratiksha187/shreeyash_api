@@ -100,6 +100,7 @@ class LeaveRequestController extends Controller
     {
         $data = $request->validate([
             'status' => ['required', Rule::in(['approved', 'rejected'])],
+            'leave_type' => ['required', Rule::in(array_keys(Attendance::LEAVE_TYPES))],
             'admin_note' => ['nullable', 'string', 'max:2000'],
         ]);
 
@@ -111,7 +112,7 @@ class LeaveRequestController extends Controller
 
         if ($data['status'] === 'approved') {
             $period = Attendance::leaveYearPeriodFor($leaveRequest->attendance_date, $leaveRequest->user);
-            $leaveType = $leaveRequest->leave_type ?? 'casual';
+            $leaveType = $data['leave_type'];
             $approvedLeavesForType = Attendance::query()
                 ->forCurrentCompany()
                 ->where('user_id', $leaveRequest->user_id)
@@ -140,6 +141,7 @@ class LeaveRequestController extends Controller
 
         $leaveRequest->forceFill([
             'leave_approval_status' => $data['status'],
+            'leave_type' => $data['leave_type'],
             'leave_approved_at' => $data['status'] === 'approved' ? now() : null,
             'leave_admin_note' => $data['admin_note'] ?? null,
         ])->save();

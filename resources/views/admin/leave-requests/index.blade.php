@@ -152,6 +152,14 @@
                             <form method="POST" action="{{ route('admin.leave-requests.update', $leave) }}" class="leave-action-form">
                                 @csrf
                                 @method('PATCH')
+                                <label for="leave_type_{{ $leave->id }}">Leave Type</label>
+                                <select id="leave_type_{{ $leave->id }}" name="leave_type" required>
+                                    @foreach ($leaveTypes as $type => $label)
+                                        <option value="{{ $type }}" @selected(old('leave_type', $leaveType) === $type)>
+                                            {{ $label }}
+                                        </option>
+                                    @endforeach
+                                </select>
                                 <label for="admin_note_{{ $leave->id }}">Admin Note</label>
                                 <input
                                     id="admin_note_{{ $leave->id }}"

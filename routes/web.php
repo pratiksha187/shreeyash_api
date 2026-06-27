@@ -15,6 +15,7 @@ use App\Http\Controllers\Admin\LeaveRequestController;
 use App\Http\Controllers\Admin\MissedAttendanceRequestController;
 use App\Http\Controllers\Admin\MirFileReportController;
 use App\Http\Controllers\Admin\PaymentController;
+use App\Http\Controllers\Admin\ProductPurchaseController;
 use App\Http\Controllers\Admin\VehicleController;
 use App\Http\Controllers\Admin\VehicleLogController;
 use App\Http\Middleware\EnsureAdminLoggedIn;
@@ -91,6 +92,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/payments/{payment}/slip', [PaymentController::class, 'slip'])->name('payments.slip');
         Route::get('/diesel-purchases', [DailyDieselPurchaseController::class, 'index'])->name('diesel-purchases.index');
         Route::post('/diesel-purchases/monthly-entries', [DailyDieselPurchaseController::class, 'storeMonthly'])->name('diesel-purchases.monthly');
+        Route::get('/product-purchases', [ProductPurchaseController::class, 'index'])->name('product-purchases.index');
+        Route::post('/product-purchases', [ProductPurchaseController::class, 'store'])->name('product-purchases.store');
+        Route::put('/product-purchases/{productPurchase}', [ProductPurchaseController::class, 'update'])->name('product-purchases.update');
+        Route::delete('/product-purchases/{productPurchase}', [ProductPurchaseController::class, 'destroy'])->name('product-purchases.destroy');
         Route::get('/vehicles', [VehicleController::class, 'index'])->name('vehicles.index');
         Route::get('/vehicles/create', [VehicleController::class, 'create'])->name('vehicles.create');
         Route::post('/vehicles', [VehicleController::class, 'store'])->name('vehicles.store');

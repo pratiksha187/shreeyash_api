@@ -26,6 +26,7 @@ return [
         'mir_file_reports',
         'vehicles',
         'diesel_purchases',
+        'product_purchases',
     ],
     'module_permissions' => [
         'dashboard' => 'Dashboard',
@@ -47,6 +48,7 @@ return [
         'mir_file_reports' => 'MIR File Reports',
         'vehicles' => 'Vehicles',
         'diesel_purchases' => 'Diesel Purchase',
+        'product_purchases' => 'Product Purchase',
     ],
     'multi_device_login_mobiles' => [
         '9309886247',
@@ -136,6 +138,12 @@ return [
                     'label' => 'Diesel Purchase',
                     'route' => 'admin.diesel-purchases.index',
                     'active' => 'admin.diesel-purchases.*',
+                ],
+                [
+                    'key' => 'product_purchases',
+                    'label' => 'Product Purchase',
+                    'route' => 'admin.product-purchases.index',
+                    'active' => 'admin.product-purchases.*',
                 ],
             ],
         ],
@@ -241,6 +249,7 @@ return [
         'admin.complaints.*' => 'complaints',
         'admin.payments.*' => 'payments',
         'admin.diesel-purchases.*' => 'diesel_purchases',
+        'admin.product-purchases.*' => 'product_purchases',
         'admin.vehicles.*' => 'vehicles',
         'admin.employees.*' => 'employees',
     ],

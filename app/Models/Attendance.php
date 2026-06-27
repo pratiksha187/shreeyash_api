@@ -48,7 +48,7 @@ class Attendance extends Model
     }
 
     private static function anniversaryDateForYear(Carbon $joinDate, int $year): Carbon
-    {
+    { 
         $day = min($joinDate->day, Carbon::create($year, $joinDate->month, 1)->daysInMonth);
 
         return Carbon::create($year, $joinDate->month, $day)->startOfDay();

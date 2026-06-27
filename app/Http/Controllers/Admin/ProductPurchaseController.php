@@ -1,0 +1,121 @@
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use App\Http\Controllers\Controller;
+use App\Models\ProductPurchase;
+use Carbon\Carbon;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\View\View;
+
+class ProductPurchaseController extends Controller
+{
+    public function index(Request $request): View
+    {
+        $filters = $request->validate([
+            'month' => ['nullable', 'date_format:Y-m'],
+            'search' => ['nullable', 'string', 'max:100'],
+        ]);
+
+        $selectedMonth = $filters['month'] ?? now()->format('Y-m');
+        $monthStart = Carbon::createFromFormat('Y-m', $selectedMonth)->startOfMonth();
+        $monthEnd = $monthStart->copy()->endOfMonth();
+        $search = $filters['search'] ?? null;
+
+        $purchases = ProductPurchase::query()
+            ->forCurrentCompany()
+            ->whereBetween('purchase_date', [$monthStart->toDateString(), $monthEnd->toDateString()])
+            ->when($search, function ($query, string $search) {
+                $query->where(function ($query) use ($search) {
+                    $query
+                        ->where('product_name', 'like', "%{$search}%")
+                        ->orWhere('supplier_name', 'like', "%{$search}%")
+                        ->orWhere('invoice_no', 'like', "%{$search}%");
+                });
+            })
+            ->orderBy('purchase_date')
+            ->orderBy('id')
+            ->get();
+
+        return view('admin.product-purchases.index', [
+            'selectedMonth' => $selectedMonth,
+            'monthLabel' => $monthStart->format('M Y'),
+            'search' => $search,
+            'purchases' => $purchases,
+            'summary' => [
+                'quantity' => $purchases->sum(fn (ProductPurchase $purchase) => (float) $purchase->quantity),
+                'amount' => $purchases->sum(fn (ProductPurchase $purchase) => (float) $purchase->total_amount),
+                'products' => $purchases->pluck('product_name')->filter()->unique()->count(),
+                'suppliers' => $purchases->pluck('supplier_name')->filter()->unique()->count(),
+            ],
+        ]);
+    }
+
+    public function store(Request $request): RedirectResponse
+    {
+        $data = $this->validatedData($request);
+        $data['total_amount'] = $this->totalAmount($data);
+
+        ProductPurchase::query()->create($data);
+
+        return redirect()
+            ->route('admin.product-purchases.index', ['month' => Carbon::parse($data['purchase_date'])->format('Y-m')])
+            ->with('success', 'Product purchase saved successfully.');
+    }
+
+    public function update(Request $request, ProductPurchase $productPurchase): RedirectResponse
+    {
+        $data = $this->validatedData($request);
+        $data['total_amount'] = $this->totalAmount($data);
+
+        $productPurchase->update($data);
+
+        return redirect()
+            ->route('admin.product-purchases.index', ['month' => Carbon::parse($data['purchase_date'])->format('Y-m')])
+            ->with('success', 'Product purchase updated successfully.');
+    }
+
+    public function destroy(ProductPurchase $productPurchase): RedirectResponse
+    {
+        $month = $productPurchase->purchase_date->format('Y-m');
+
+        $productPurchase->delete();
+
+        return redirect()
+            ->route('admin.product-purchases.index', ['month' => $month])
+            ->with('success', 'Product purchase deleted successfully.');
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function validatedData(Request $request): array
+    {
+        return $request->validate([
+            'purchase_date' => ['required', 'date'],
+            'supplier_name' => ['nullable', 'string', 'max:255'],
+            'invoice_no' => ['nullable', 'string', 'max:100'],
+            'product_name' => ['required', 'string', 'max:255'],
+            'unit' => ['nullable', 'string', 'max:50'],
+            'quantity' => ['required', 'numeric', 'min:0', 'max:999999999.99'],
+            'rate' => ['required', 'numeric', 'min:0', 'max:999999999.99'],
+            'tax_amount' => ['nullable', 'numeric', 'min:0', 'max:999999999.99'],
+            'transport_amount' => ['nullable', 'numeric', 'min:0', 'max:999999999.99'],
+            'remarks' => ['nullable', 'string', 'max:2000'],
+        ]);
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     */
+    private function totalAmount(array $data): float
+    {
+        return round(
+            ((float) $data['quantity'] * (float) $data['rate'])
+            + (float) ($data['tax_amount'] ?? 0)
+            + (float) ($data['transport_amount'] ?? 0),
+            2
+        );
+    }
+}

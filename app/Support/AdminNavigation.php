@@ -136,7 +136,7 @@ class AdminNavigation
     {
         return match ($permission) {
             'employees', 'attendance_reports', 'missed_requests', 'leave_requests', 'labour_attendance', 'payments', 'site_master', 'contractor_master', 'labour_master', 'dpr_reports', 'challans', 'complaints' => 'hr',
-            'diesel_purchases' => 'purchase',
+            'diesel_purchases', 'product_purchases' => 'purchase',
             default => null,
         };
     }
