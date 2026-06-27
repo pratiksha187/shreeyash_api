@@ -8,11 +8,19 @@ use App\Models\Material;
 use App\Models\MaterialRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 
 class MaterialRequestController extends Controller
 {
     public function materials(): JsonResponse
     {
+        if (! Schema::hasTable('materials')) {
+            return response()->json([
+                'message' => 'Materials table is not available yet.',
+                'materials' => [],
+            ]);
+        }
+
         $materials = Material::query()
             ->forCurrentCompany()
             ->where('is_active', true)
@@ -35,7 +43,7 @@ class MaterialRequestController extends Controller
 
         $requests = MaterialRequest::query()
             ->forCurrentCompany()
-            ->with(['material', 'site'])
+            ->with($this->requestRelations())
             ->where('user_id', $request->user()->id)
             ->when(isset($filters['status']), fn ($query) => $query->where('status', $filters['status']))
             ->latest()
@@ -58,7 +66,7 @@ class MaterialRequestController extends Controller
             'required_by' => ['nullable', 'date'],
             'labour_site_id' => ['nullable', 'integer'],
             'site_project' => ['nullable', 'string', 'max:255'],
-            'material_id' => ['nullable', 'exists:materials,id'],
+            'material_id' => ['nullable', 'integer'],
             'material_name' => ['required_without:material_id', 'string', 'max:255'],
             'unit' => ['nullable', 'string', 'max:50'],
             'requested_quantity' => ['required', 'numeric', 'min:0.01', 'max:999999999.99'],
@@ -73,12 +81,12 @@ class MaterialRequestController extends Controller
         $materialRequest = MaterialRequest::query()->create([
             'user_id' => $request->user()->id,
             'labour_site_id' => $site?->id,
-            'material_id' => $material->id,
+            'material_id' => $material?->id,
             'request_date' => $data['request_date'] ?? now()->toDateString(),
             'required_by' => $data['required_by'] ?? ($data['required_date'] ?? null),
             'site_project' => $data['site_project'] ?? $site?->name,
-            'material_name' => $data['material_name'] ?? $material->name,
-            'unit' => $data['unit'] ?? $material->unit,
+            'material_name' => $data['material_name'] ?? $material?->name,
+            'unit' => $data['unit'] ?? $material?->unit,
             'requested_quantity' => $data['requested_quantity'],
             'required_date' => $data['required_date'] ?? ($data['required_by'] ?? null),
             'priority' => $data['priority'] ?? 'normal',
@@ -86,7 +94,7 @@ class MaterialRequestController extends Controller
             'status' => 'pending',
         ]);
 
-        $materialRequest->load(['material', 'site']);
+        $materialRequest->load($this->requestRelations());
 
         return response()->json([
             'message' => 'Material request submitted successfully.',
@@ -98,7 +106,7 @@ class MaterialRequestController extends Controller
     {
         $materialRequest = MaterialRequest::query()
             ->forCurrentCompany()
-            ->with(['material', 'site', 'issues'])
+            ->with($this->requestRelations(includeIssues: true))
             ->where('user_id', $request->user()->id)
             ->findOrFail($materialRequest);
 
@@ -140,20 +148,23 @@ class MaterialRequestController extends Controller
 
     private function requestPayload(MaterialRequest $materialRequest): array
     {
+        $material = $materialRequest->relationLoaded('material') ? $materialRequest->material : null;
+        $site = $materialRequest->relationLoaded('site') ? $materialRequest->site : null;
+
         return [
             'id' => $materialRequest->id,
-            'site' => $materialRequest->site ? [
-                'id' => $materialRequest->site->id,
-                'name' => $materialRequest->site->name,
+            'site' => $site ? [
+                'id' => $site->id,
+                'name' => $site->name,
             ] : null,
-            'material' => $materialRequest->material ? $this->materialPayload($materialRequest->material) : null,
+            'material' => $material ? $this->materialPayload($material) : null,
             'request_date' => $materialRequest->request_date?->toDateString(),
             'required_by' => $materialRequest->required_by?->toDateString(),
             'site_project' => $materialRequest->site_project,
-            'material_name' => $materialRequest->material_name ?: $materialRequest->material?->name,
+            'material_name' => $materialRequest->material_name ?: $material?->name,
             'requested_quantity' => $materialRequest->requested_quantity,
             'quantity' => $materialRequest->requested_quantity,
-            'unit' => $materialRequest->unit ?: $materialRequest->material?->unit,
+            'unit' => $materialRequest->unit ?: $material?->unit,
             'approved_quantity' => $materialRequest->approved_quantity,
             'issued_quantity' => $materialRequest->issued_quantity,
             'required_date' => $materialRequest->required_date?->toDateString(),
@@ -233,10 +244,18 @@ class MaterialRequestController extends Controller
     /**
      * @param array<string, mixed> $data
      */
-    private function resolveMaterial(array $data): Material
+    private function resolveMaterial(array $data): ?Material
     {
+        if (! Schema::hasTable('materials')) {
+            return null;
+        }
+
         if (! empty($data['material_id'])) {
-            return Material::query()->forCurrentCompany()->findOrFail($data['material_id']);
+            $material = Material::query()->forCurrentCompany()->find($data['material_id']);
+
+            if ($material) {
+                return $material;
+            }
         }
 
         $materialName = trim((string) $data['material_name']);
@@ -288,5 +307,23 @@ class MaterialRequestController extends Controller
             ->forCurrentCompany()
             ->whereRaw('LOWER(name) = ?', [strtolower($siteProject)])
             ->first();
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function requestRelations(bool $includeIssues = false): array
+    {
+        $relations = ['site'];
+
+        if (Schema::hasTable('materials')) {
+            $relations[] = 'material';
+        }
+
+        if ($includeIssues) {
+            $relations[] = 'issues';
+        }
+
+        return $relations;
     }
 }
