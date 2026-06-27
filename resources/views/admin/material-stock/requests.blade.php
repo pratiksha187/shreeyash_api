@@ -114,7 +114,7 @@
                                 </form>
                             </td>
                             <td>
-                                @if (in_array($requestRow->status, ['approved', 'partially_approved'], true) && $remainingApproved > 0)
+                                @if (in_array($requestRow->status, ['approved', 'partially_approved'], true) && $remainingApproved > 0 && $available > 0 && $requestRow->material_id)
                                     <form class="inline-status-form" method="POST" action="{{ route('admin.material-requests.issue', $requestRow) }}">
                                         @csrf
                                         <select name="issue_source_labour_site_id">
@@ -127,6 +127,12 @@
                                         <textarea name="remarks" placeholder="Issue remarks"></textarea>
                                         <button class="btn small" type="submit">Issue Material</button>
                                     </form>
+                                @elseif (in_array($requestRow->status, ['approved', 'partially_approved'], true) && ! $requestRow->material_id)
+                                    <span class="table-subtext">Typed material request. Add this material in Material Master, purchase/add stock, then issue.</span>
+                                    <a class="btn small" href="{{ route('admin.materials.index') }}">Add Material</a>
+                                @elseif (in_array($requestRow->status, ['approved', 'partially_approved'], true) && $remainingApproved > 0 && $available <= 0)
+                                    <span class="table-subtext">No stock available for issue.</span>
+                                    <a class="btn small" href="{{ route('admin.product-purchases.index') }}">Create Purchase</a>
                                 @elseif ($requestRow->status === 'purchase_required')
                                     <a class="btn small" href="{{ route('admin.product-purchases.index') }}">Create Purchase</a>
                                 @else
