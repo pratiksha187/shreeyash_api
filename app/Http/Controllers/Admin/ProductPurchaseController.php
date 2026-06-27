@@ -11,6 +11,7 @@ use App\Services\MaterialStockService;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class ProductPurchaseController extends Controller
@@ -52,7 +53,9 @@ class ProductPurchaseController extends Controller
             'monthLabel' => $monthStart->format('M Y'),
             'search' => $search,
             'purchases' => $purchases,
-            'materials' => Material::query()->forCurrentCompany()->where('is_active', true)->orderBy('name')->get(),
+            'materials' => $this->hasTable('materials')
+                ? Material::query()->forCurrentCompany()->where('is_active', true)->orderBy('name')->get()
+                : collect(),
             'sites' => LabourSite::query()->forCurrentCompany()->where('is_active', true)->orderBy('name')->get(['id', 'name']),
             'summary' => [
                 'quantity' => $purchases->sum(fn (ProductPurchase $purchase) => (float) $purchase->quantity),
@@ -106,8 +109,8 @@ class ProductPurchaseController extends Controller
     {
         return $request->validate([
             'purchase_date' => ['required', 'date'],
-            'material_id' => ['nullable', 'exists:materials,id'],
-            'stock_labour_site_id' => ['nullable', 'exists:labour_sites,id'],
+            'material_id' => ['nullable', 'integer'],
+            'stock_labour_site_id' => ['nullable', 'integer'],
             'supplier_name' => ['nullable', 'string', 'max:255'],
             'invoice_no' => ['nullable', 'string', 'max:100'],
             'product_name' => ['required', 'string', 'max:255'],
@@ -139,6 +142,10 @@ class ProductPurchaseController extends Controller
             return;
         }
 
+        if (! $this->hasTable('materials') || ! $this->hasTable('material_stocks') || ! $this->hasTable('stock_movements')) {
+            return;
+        }
+
         $this->stockService->addStock(
             (int) $purchase->material_id,
             $purchase->stock_labour_site_id ? (int) $purchase->stock_labour_site_id : null,
@@ -148,5 +155,12 @@ class ProductPurchaseController extends Controller
             $purchase->id,
             'Stock added from product purchase '.$purchase->invoice_no
         );
+    }
+
+    private function hasTable(string $table): bool
+    {
+        return DB::connection(app(\App\Support\Tenant::class)->connectionName())
+            ->getSchemaBuilder()
+            ->hasTable($table);
     }
 }
