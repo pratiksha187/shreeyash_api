@@ -37,6 +37,13 @@ class MaterialRequestController extends Controller
 
     public function index(Request $request): JsonResponse
     {
+        if (! $this->hasTable('material_requests')) {
+            return response()->json([
+                'message' => 'Material request table is not available yet.',
+                'material_requests' => [],
+            ], 503);
+        }
+
         $filters = $request->validate([
             'status' => ['nullable', 'string', 'max:40'],
             'limit' => ['nullable', 'integer', 'min:1', 'max:100'],
@@ -60,6 +67,12 @@ class MaterialRequestController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        if (! $this->hasTable('material_requests')) {
+            return response()->json([
+                'message' => 'Material request table is not available yet.',
+            ], 503);
+        }
+
         $this->normalizeStoreInput($request);
 
         $data = $request->validate([
@@ -105,6 +118,12 @@ class MaterialRequestController extends Controller
 
     public function show(Request $request, int $materialRequest): JsonResponse
     {
+        if (! $this->hasTable('material_requests')) {
+            return response()->json([
+                'message' => 'Material request table is not available yet.',
+            ], 503);
+        }
+
         $materialRequest = MaterialRequest::query()
             ->forCurrentCompany()
             ->with($this->requestRelations(includeIssues: true))

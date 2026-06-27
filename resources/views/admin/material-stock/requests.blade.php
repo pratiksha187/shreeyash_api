@@ -101,12 +101,23 @@
                                 <form class="inline-status-form" method="POST" action="{{ route('admin.material-requests.update', $requestRow) }}">
                                     @csrf
                                     @method('PATCH')
+                                    @if ($materials->isNotEmpty())
+                                        <select name="material_id">
+                                            <option value="">Auto / Keep material</option>
+                                            @foreach ($materials as $materialOption)
+                                                <option value="{{ $materialOption->id }}" @selected((int) $requestRow->material_id === (int) $materialOption->id)>
+                                                    Link: {{ $materialOption->name }}{{ $materialOption->unit ? ' ('.$materialOption->unit.')' : '' }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    @endif
                                     <select name="status">
-                                        <option value="approved">Approved</option>
-                                        <option value="partially_approved">Partially Approved</option>
-                                        <option value="purchase_required">Purchase Required</option>
-                                        <option value="rejected">Rejected</option>
-                                        <option value="cancelled">Cancelled</option>
+                                        <option value="pending" @selected($requestRow->status === 'pending')>Pending</option>
+                                        <option value="approved" @selected($requestRow->status === 'approved')>Approved</option>
+                                        <option value="partially_approved" @selected($requestRow->status === 'partially_approved')>Partially Approved</option>
+                                        <option value="purchase_required" @selected($requestRow->status === 'purchase_required')>Purchase Required</option>
+                                        <option value="rejected" @selected($requestRow->status === 'rejected')>Rejected</option>
+                                        <option value="cancelled" @selected($requestRow->status === 'cancelled')>Cancelled</option>
                                     </select>
                                     <input name="approved_quantity" type="number" min="0" step="0.01" value="{{ number_format($requestRow->approved_quantity ?: $requestRow->requested_quantity, 2, '.', '') }}">
                                     <textarea name="admin_note" placeholder="Admin note">{{ $requestRow->admin_note }}</textarea>

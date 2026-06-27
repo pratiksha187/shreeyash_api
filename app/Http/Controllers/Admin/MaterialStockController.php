@@ -27,6 +27,12 @@ class MaterialStockController extends Controller
 
     public function materials(): View
     {
+        if (! $this->hasTable('materials')) {
+            return view('admin.material-stock.materials', [
+                'materials' => $this->emptyPaginator(),
+            ])->with('error', 'Materials table is missing. Please create the materials table first.');
+        }
+
         return view('admin.material-stock.materials', [
             'materials' => Material::query()
                 ->forCurrentCompany()
@@ -38,6 +44,10 @@ class MaterialStockController extends Controller
 
     public function storeMaterial(Request $request): RedirectResponse
     {
+        if (! $this->hasTable('materials')) {
+            return back()->with('error', 'Materials table is missing. Please create the materials table first.');
+        }
+
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'material_type' => ['nullable', 'string', 'max:120'],
@@ -52,6 +62,10 @@ class MaterialStockController extends Controller
 
     public function updateMaterial(Request $request, Material $material): RedirectResponse
     {
+        if (! $this->hasTable('materials')) {
+            return back()->with('error', 'Materials table is missing. Please create the materials table first.');
+        }
+
         $this->ensureCurrentCompany($material);
 
         $data = $request->validate([
@@ -69,9 +83,24 @@ class MaterialStockController extends Controller
 
     public function stock(Request $request): View
     {
+        if (! $this->hasTable('materials') || ! $this->hasTable('material_stocks')) {
+            return view('admin.material-stock.stock', [
+                'stocks' => $this->emptyPaginator(),
+                'materials' => $this->activeMaterials(),
+                'sites' => $this->activeSites(),
+                'selectedMaterialId' => null,
+                'selectedSiteId' => null,
+                'summary' => [
+                    'materials' => $this->hasTable('materials') ? Material::query()->forCurrentCompany()->count() : 0,
+                    'low_stock' => 0,
+                    'stock_rows' => 0,
+                ],
+            ])->with('error', 'Material stock tables are missing. Please create materials and material_stocks tables first.');
+        }
+
         $filters = $request->validate([
-            'material_id' => ['nullable', 'exists:materials,id'],
-            'labour_site_id' => ['nullable', 'exists:labour_sites,id'],
+            'material_id' => ['nullable', 'integer'],
+            'labour_site_id' => ['nullable', 'integer'],
         ]);
 
         $stocks = MaterialStock::query()
@@ -103,13 +132,21 @@ class MaterialStockController extends Controller
 
     public function adjustStock(Request $request): RedirectResponse
     {
+        if (! $this->hasTable('materials') || ! $this->hasTable('material_stocks') || ! $this->hasTable('stock_movements')) {
+            return back()->with('error', 'Material stock tables are missing. Please create materials, material_stocks, and stock_movements tables first.');
+        }
+
         $data = $request->validate([
-            'material_id' => ['required', 'exists:materials,id'],
-            'labour_site_id' => ['nullable', 'exists:labour_sites,id'],
+            'material_id' => ['required', 'integer'],
+            'labour_site_id' => ['nullable', 'integer'],
             'type' => ['required', Rule::in([StockMovement::ADJUSTMENT_IN, StockMovement::ADJUSTMENT_OUT, StockMovement::RETURN_IN])],
             'quantity' => ['required', 'numeric', 'min:0.01', 'max:999999999.99'],
             'remarks' => ['nullable', 'string', 'max:2000'],
         ]);
+
+        if (! Material::query()->forCurrentCompany()->whereKey($data['material_id'])->exists()) {
+            return back()->with('error', 'Selected material was not found in Material Master.');
+        }
 
         if ($data['type'] === StockMovement::ADJUSTMENT_OUT) {
             $this->stockService->removeStock(
@@ -201,17 +238,20 @@ class MaterialStockController extends Controller
         $this->ensureCurrentCompany($materialRequest);
 
         $data = $request->validate([
-            'status' => ['required', Rule::in(['approved', 'partially_approved', 'rejected', 'purchase_required', 'cancelled'])],
+            'status' => ['required', Rule::in(['pending', 'approved', 'partially_approved', 'rejected', 'purchase_required', 'cancelled'])],
+            'material_id' => ['nullable', 'integer'],
             'approved_quantity' => ['nullable', 'numeric', 'min:0', 'max:999999999.99'],
             'admin_note' => ['nullable', 'string', 'max:2000'],
         ]);
 
+        $materialId = $this->resolvedRequestMaterialId($materialRequest, $data['material_id'] ?? null);
         $approvedQuantity = (float) ($data['approved_quantity'] ?? 0);
         if (in_array($data['status'], ['approved', 'partially_approved'], true) && $approvedQuantity <= 0) {
             $approvedQuantity = (float) $materialRequest->requested_quantity;
         }
 
         $materialRequest->update([
+            'material_id' => $materialId,
             'status' => $data['status'],
             'approved_quantity' => $approvedQuantity,
             'admin_note' => $data['admin_note'] ?? null,
@@ -231,6 +271,10 @@ class MaterialStockController extends Controller
 
         $materialRequest = MaterialRequest::query()->forCurrentCompany()->findOrFail($materialRequestId);
         $this->ensureCurrentCompany($materialRequest);
+
+        if (! $this->hasTable('material_issues') || ! $this->hasTable('material_stocks') || ! $this->hasTable('stock_movements')) {
+            return back()->with('error', 'Issue or stock tables are missing. Please create material_issues, material_stocks, and stock_movements tables first.');
+        }
 
         if (! $materialRequest->material_id) {
             return back()->with('error', 'This request has typed material only. Link it to a material master item before issuing stock.');
@@ -371,5 +415,45 @@ class MaterialStockController extends Controller
         return DB::connection(app(Tenant::class)->connectionName())
             ->getSchemaBuilder()
             ->hasTable($table);
+    }
+
+    private function resolvedRequestMaterialId(MaterialRequest $materialRequest, mixed $selectedMaterialId): ?int
+    {
+        if (! $this->hasTable('materials')) {
+            return $materialRequest->material_id;
+        }
+
+        if ($selectedMaterialId && Material::query()->forCurrentCompany()->whereKey($selectedMaterialId)->exists()) {
+            return (int) $selectedMaterialId;
+        }
+
+        if ($materialRequest->material_id) {
+            return (int) $materialRequest->material_id;
+        }
+
+        $materialName = trim((string) $materialRequest->material_name);
+
+        if ($materialName === '') {
+            return null;
+        }
+
+        $material = Material::query()
+            ->forCurrentCompany()
+            ->whereRaw('LOWER(name) = ?', [strtolower($materialName)])
+            ->first();
+
+        if ($material) {
+            if (! $material->unit && $materialRequest->unit) {
+                $material->update(['unit' => $materialRequest->unit]);
+            }
+
+            return (int) $material->id;
+        }
+
+        return (int) Material::query()->create([
+            'name' => $materialName,
+            'unit' => $materialRequest->unit,
+            'is_active' => true,
+        ])->id;
     }
 }
