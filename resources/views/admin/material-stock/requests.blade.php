@@ -73,6 +73,7 @@
                         @php
                             $available = $availableByRequest[$requestRow->id] ?? 0;
                             $remainingApproved = max(0, (float) $requestRow->approved_quantity - (float) $requestRow->issued_quantity);
+                            $material = $requestRow->relationLoaded('material') ? $requestRow->material : null;
                         @endphp
                         <tr>
                             <td>
@@ -81,18 +82,18 @@
                             </td>
                             <td>{{ $requestRow->site?->name ?? $requestRow->site_project ?? 'Main Store' }}</td>
                             <td>
-                                <strong>{{ $requestRow->material_name ?: $requestRow->material?->name }}</strong>
-                                <div class="table-subtext">{{ $requestRow->material?->material_type ?? '-' }} | {{ $requestRow->unit ?: $requestRow->material?->unit ?? '-' }}</div>
+                                <strong>{{ $requestRow->material_name ?: $material?->name }}</strong>
+                                <div class="table-subtext">{{ $material?->material_type ?? '-' }} | {{ $requestRow->unit ?: $material?->unit ?? '-' }}</div>
                             </td>
                             <td>
-                                {{ number_format($requestRow->requested_quantity, 2) }} {{ $requestRow->unit ?: $requestRow->material?->unit }}
+                                {{ number_format($requestRow->requested_quantity, 2) }} {{ $requestRow->unit ?: $material?->unit }}
                                 <div class="table-subtext">Request: {{ $requestRow->request_date?->format('d M Y') ?? '-' }}</div>
                                 <div class="table-subtext">Required: {{ $requestRow->required_by?->format('d M Y') ?? $requestRow->required_date?->format('d M Y') ?? '-' }}</div>
                                 <div class="table-subtext">Priority: {{ ucfirst($requestRow->priority ?? 'normal') }}</div>
                                 <div class="table-subtext">{{ $requestRow->purpose }}</div>
                             </td>
                             <td>
-                                {{ number_format($available, 2) }} {{ $requestRow->unit ?: $requestRow->material?->unit }}
+                                {{ number_format($available, 2) }} {{ $requestRow->unit ?: $material?->unit }}
                                 <div class="table-subtext">All stock locations</div>
                             </td>
                             <td><span class="status-pill status-{{ $requestRow->status }}">{{ ucwords(str_replace('_', ' ', $requestRow->status)) }}</span></td>

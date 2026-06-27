@@ -6,15 +6,16 @@ use App\Http\Controllers\Controller;
 use App\Models\LabourSite;
 use App\Models\Material;
 use App\Models\MaterialRequest;
+use App\Support\Tenant;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 class MaterialRequestController extends Controller
 {
     public function materials(): JsonResponse
     {
-        if (! Schema::hasTable('materials')) {
+        if (! $this->hasTable('materials')) {
             return response()->json([
                 'message' => 'Materials table is not available yet.',
                 'materials' => [],
@@ -246,7 +247,7 @@ class MaterialRequestController extends Controller
      */
     private function resolveMaterial(array $data): ?Material
     {
-        if (! Schema::hasTable('materials')) {
+        if (! $this->hasTable('materials')) {
             return null;
         }
 
@@ -316,7 +317,7 @@ class MaterialRequestController extends Controller
     {
         $relations = ['site'];
 
-        if (Schema::hasTable('materials')) {
+        if ($this->hasTable('materials')) {
             $relations[] = 'material';
         }
 
@@ -325,5 +326,12 @@ class MaterialRequestController extends Controller
         }
 
         return $relations;
+    }
+
+    private function hasTable(string $table): bool
+    {
+        return DB::connection(app(Tenant::class)->connectionName())
+            ->getSchemaBuilder()
+            ->hasTable($table);
     }
 }
