@@ -43,11 +43,17 @@ return new class extends Migration
                 $table->foreignId('company_id')->nullable()->constrained()->nullOnDelete();
                 $table->foreignId('user_id')->constrained()->cascadeOnDelete();
                 $table->foreignId('labour_site_id')->nullable()->constrained()->nullOnDelete();
-                $table->foreignId('material_id')->constrained()->cascadeOnDelete();
+                $table->foreignId('material_id')->nullable()->constrained()->nullOnDelete();
+                $table->date('request_date')->nullable();
+                $table->date('required_by')->nullable();
+                $table->string('site_project')->nullable();
+                $table->string('material_name')->nullable();
+                $table->string('unit', 50)->nullable();
                 $table->decimal('requested_quantity', 12, 2);
                 $table->decimal('approved_quantity', 12, 2)->default(0);
                 $table->decimal('issued_quantity', 12, 2)->default(0);
                 $table->date('required_date')->nullable();
+                $table->string('priority', 30)->default('normal');
                 $table->text('purpose')->nullable();
                 $table->string('status', 40)->default('pending');
                 $table->text('admin_note')->nullable();

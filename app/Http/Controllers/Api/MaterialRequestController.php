@@ -51,20 +51,36 @@ class MaterialRequestController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        $this->normalizeStoreInput($request);
+
         $data = $request->validate([
+            'request_date' => ['nullable', 'date'],
+            'required_by' => ['nullable', 'date'],
             'labour_site_id' => ['nullable', 'exists:labour_sites,id'],
-            'material_id' => ['required', 'exists:materials,id'],
+            'site_project' => ['nullable', 'string', 'max:255'],
+            'material_id' => ['nullable', 'exists:materials,id'],
+            'material_name' => ['required_without:material_id', 'string', 'max:255'],
+            'unit' => ['nullable', 'string', 'max:50'],
             'requested_quantity' => ['required', 'numeric', 'min:0.01', 'max:999999999.99'],
             'required_date' => ['nullable', 'date'],
+            'priority' => ['nullable', 'string', 'max:30'],
             'purpose' => ['nullable', 'string', 'max:2000'],
         ]);
+
+        $material = $this->resolveMaterial($data);
 
         $materialRequest = MaterialRequest::query()->create([
             'user_id' => $request->user()->id,
             'labour_site_id' => $data['labour_site_id'] ?? null,
-            'material_id' => $data['material_id'],
+            'material_id' => $material->id,
+            'request_date' => $data['request_date'] ?? now()->toDateString(),
+            'required_by' => $data['required_by'] ?? ($data['required_date'] ?? null),
+            'site_project' => $data['site_project'] ?? null,
+            'material_name' => $data['material_name'] ?? $material->name,
+            'unit' => $data['unit'] ?? $material->unit,
             'requested_quantity' => $data['requested_quantity'],
-            'required_date' => $data['required_date'] ?? null,
+            'required_date' => $data['required_date'] ?? ($data['required_by'] ?? null),
+            'priority' => $data['priority'] ?? 'normal',
             'purpose' => $data['purpose'] ?? null,
             'status' => 'pending',
         ]);
@@ -123,15 +139,118 @@ class MaterialRequestController extends Controller
                 'name' => $materialRequest->site->name,
             ] : null,
             'material' => $materialRequest->material ? $this->materialPayload($materialRequest->material) : null,
+            'request_date' => $materialRequest->request_date?->toDateString(),
+            'required_by' => $materialRequest->required_by?->toDateString(),
+            'site_project' => $materialRequest->site_project,
+            'material_name' => $materialRequest->material_name ?: $materialRequest->material?->name,
             'requested_quantity' => $materialRequest->requested_quantity,
+            'quantity' => $materialRequest->requested_quantity,
+            'unit' => $materialRequest->unit ?: $materialRequest->material?->unit,
             'approved_quantity' => $materialRequest->approved_quantity,
             'issued_quantity' => $materialRequest->issued_quantity,
             'required_date' => $materialRequest->required_date?->toDateString(),
+            'priority' => $materialRequest->priority ?? 'normal',
             'purpose' => $materialRequest->purpose,
+            'remarks' => $materialRequest->purpose,
             'status' => $materialRequest->status,
             'admin_note' => $materialRequest->admin_note,
             'submitted_at' => $materialRequest->created_at,
             'updated_at' => $materialRequest->updated_at,
         ];
+    }
+
+    private function normalizeStoreInput(Request $request): void
+    {
+        $data = [];
+
+        if (! $request->has('request_date')) {
+            foreach (['requestDate', 'date'] as $key) {
+                if ($request->has($key)) {
+                    $data['request_date'] = $request->input($key);
+                    break;
+                }
+            }
+        }
+
+        if (! $request->has('required_by')) {
+            foreach (['requiredBy', 'required_date', 'requiredDate'] as $key) {
+                if ($request->has($key)) {
+                    $data['required_by'] = $request->input($key);
+                    break;
+                }
+            }
+        }
+
+        if (! $request->has('site_project')) {
+            foreach (['siteProject', 'site_project', 'site_name', 'site', 'project'] as $key) {
+                if ($request->has($key)) {
+                    $data['site_project'] = $request->input($key);
+                    break;
+                }
+            }
+        }
+
+        if (! $request->has('material_name')) {
+            foreach (['materialName', 'material', 'product_name', 'productName'] as $key) {
+                if ($request->has($key)) {
+                    $data['material_name'] = $request->input($key);
+                    break;
+                }
+            }
+        }
+
+        if (! $request->has('requested_quantity')) {
+            foreach (['quantity', 'qty', 'requestedQuantity'] as $key) {
+                if ($request->has($key)) {
+                    $data['requested_quantity'] = $request->input($key);
+                    break;
+                }
+            }
+        }
+
+        if (! $request->has('purpose')) {
+            foreach (['remarks', 'remark', 'purpose_remarks', 'purposeRemarks'] as $key) {
+                if ($request->has($key)) {
+                    $data['purpose'] = $request->input($key);
+                    break;
+                }
+            }
+        }
+
+        if ($data) {
+            $request->merge($data);
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     */
+    private function resolveMaterial(array $data): Material
+    {
+        if (! empty($data['material_id'])) {
+            return Material::query()->forCurrentCompany()->findOrFail($data['material_id']);
+        }
+
+        $materialName = trim((string) $data['material_name']);
+        $unit = $data['unit'] ?? null;
+
+        $material = Material::query()
+            ->forCurrentCompany()
+            ->whereRaw('LOWER(name) = ?', [strtolower($materialName)])
+            ->first();
+
+        if ($material) {
+            if (! $material->unit && $unit) {
+                $material->update(['unit' => $unit]);
+            }
+
+            return $material;
+        }
+
+        return Material::query()->create([
+            'name' => $materialName,
+            'unit' => $unit,
+            'is_active' => true,
+        ]);
     }
 }

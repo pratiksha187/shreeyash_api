@@ -58,6 +58,9 @@ Route::middleware([AuthenticateApiToken::class, EnsureCompanySubscriptionActive:
     Route::get('/material-requests', [MaterialRequestController::class, 'index'])->name('api.material-requests.index');
     Route::post('/material-requests', [MaterialRequestController::class, 'store'])->name('api.material-requests.store');
     Route::get('/material-requests/{materialRequest}', [MaterialRequestController::class, 'show'])->name('api.material-requests.show');
+    Route::get('/material-request', [MaterialRequestController::class, 'index'])->name('api.material-request.index');
+    Route::post('/material-request', [MaterialRequestController::class, 'store'])->name('api.material-request.store');
+    Route::get('/material-request/{materialRequest}', [MaterialRequestController::class, 'show'])->name('api.material-request.show');
     Route::get('/labour-sites/{labourSite}/contractors', [LabourAttendanceController::class, 'contractors'])->name('api.labour-sites.contractors');
     Route::get('/labour-contractors/{contractor}/labours', [LabourAttendanceController::class, 'labours'])->name('api.labour-contractors.labours');
     Route::get('/labour/sites', [LabourAttendanceController::class, 'sites'])->name('api.labour.sites');

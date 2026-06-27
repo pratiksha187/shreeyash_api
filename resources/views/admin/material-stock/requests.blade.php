@@ -79,18 +79,20 @@
                                 <strong>{{ $requestRow->engineer?->name ?? '-' }}</strong>
                                 <div class="table-subtext">{{ $requestRow->engineer?->mobile }}</div>
                             </td>
-                            <td>{{ $requestRow->site?->name ?? 'Main Store' }}</td>
+                            <td>{{ $requestRow->site?->name ?? $requestRow->site_project ?? 'Main Store' }}</td>
                             <td>
-                                <strong>{{ $requestRow->material?->name }}</strong>
-                                <div class="table-subtext">{{ $requestRow->material?->material_type ?? '-' }} | {{ $requestRow->material?->unit ?? '-' }}</div>
+                                <strong>{{ $requestRow->material_name ?: $requestRow->material?->name }}</strong>
+                                <div class="table-subtext">{{ $requestRow->material?->material_type ?? '-' }} | {{ $requestRow->unit ?: $requestRow->material?->unit ?? '-' }}</div>
                             </td>
                             <td>
-                                {{ number_format($requestRow->requested_quantity, 2) }} {{ $requestRow->material?->unit }}
-                                <div class="table-subtext">Need: {{ $requestRow->required_date?->format('d M Y') ?? '-' }}</div>
+                                {{ number_format($requestRow->requested_quantity, 2) }} {{ $requestRow->unit ?: $requestRow->material?->unit }}
+                                <div class="table-subtext">Request: {{ $requestRow->request_date?->format('d M Y') ?? '-' }}</div>
+                                <div class="table-subtext">Required: {{ $requestRow->required_by?->format('d M Y') ?? $requestRow->required_date?->format('d M Y') ?? '-' }}</div>
+                                <div class="table-subtext">Priority: {{ ucfirst($requestRow->priority ?? 'normal') }}</div>
                                 <div class="table-subtext">{{ $requestRow->purpose }}</div>
                             </td>
                             <td>
-                                {{ number_format($available, 2) }} {{ $requestRow->material?->unit }}
+                                {{ number_format($available, 2) }} {{ $requestRow->unit ?: $requestRow->material?->unit }}
                                 <div class="table-subtext">All stock locations</div>
                             </td>
                             <td><span class="status-pill status-{{ $requestRow->status }}">{{ ucwords(str_replace('_', ' ', $requestRow->status)) }}</span></td>
