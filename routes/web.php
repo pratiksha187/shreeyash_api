@@ -103,8 +103,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/material-stock', [MaterialStockController::class, 'stock'])->name('material-stock.index');
         Route::post('/material-stock/adjust', [MaterialStockController::class, 'adjustStock'])->name('material-stock.adjust');
         Route::get('/material-requests', [MaterialStockController::class, 'requests'])->name('material-requests.index');
-        Route::patch('/material-requests/{materialRequest}', [MaterialStockController::class, 'updateRequest'])->name('material-requests.update');
-        Route::post('/material-requests/{materialRequest}/issue', [MaterialStockController::class, 'issue'])->name('material-requests.issue');
+        Route::patch('/material-requests/{materialRequestId}', [MaterialStockController::class, 'updateRequest'])->name('material-requests.update');
+        Route::post('/material-requests/{materialRequestId}/issue', [MaterialStockController::class, 'issue'])->name('material-requests.issue');
         Route::get('/material-issues', [MaterialStockController::class, 'issues'])->name('material-issues.index');
         Route::get('/vehicles', [VehicleController::class, 'index'])->name('vehicles.index');
         Route::get('/vehicles/create', [VehicleController::class, 'create'])->name('vehicles.create');

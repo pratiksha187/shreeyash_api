@@ -13,7 +13,9 @@ use App\Services\MaterialStockService;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -136,6 +138,23 @@ class MaterialStockController extends Controller
 
     public function requests(Request $request): View
     {
+        if (! Schema::hasTable('material_requests')) {
+            return view('admin.material-stock.requests', [
+                'requests' => $this->emptyPaginator(),
+                'availableByRequest' => collect(),
+                'materials' => collect(),
+                'statuses' => MaterialRequest::STATUSES,
+                'sites' => $this->activeSites(),
+                'selectedStatus' => null,
+                'selectedSiteId' => null,
+                'summary' => [
+                    'pending' => 0,
+                    'purchase_required' => 0,
+                    'issued' => 0,
+                ],
+            ])->with('error', 'Material request table is missing. Please create the material_requests table first.');
+        }
+
         $filters = $request->validate([
             'status' => ['nullable', Rule::in(MaterialRequest::STATUSES)],
             'labour_site_id' => ['nullable', 'exists:labour_sites,id'],
@@ -170,8 +189,15 @@ class MaterialStockController extends Controller
         ]);
     }
 
-    public function updateRequest(Request $request, MaterialRequest $materialRequest): RedirectResponse
+    public function updateRequest(Request $request, int $materialRequestId): RedirectResponse
     {
+        if (! Schema::hasTable('material_requests')) {
+            return redirect()
+                ->route('admin.material-requests.index')
+                ->with('error', 'Material request table is missing. Please create the material_requests table first.');
+        }
+
+        $materialRequest = MaterialRequest::query()->forCurrentCompany()->findOrFail($materialRequestId);
         $this->ensureCurrentCompany($materialRequest);
 
         $data = $request->validate([
@@ -195,8 +221,15 @@ class MaterialStockController extends Controller
         return back()->with('success', 'Material request updated successfully.');
     }
 
-    public function issue(Request $request, MaterialRequest $materialRequest): RedirectResponse
+    public function issue(Request $request, int $materialRequestId): RedirectResponse
     {
+        if (! Schema::hasTable('material_requests')) {
+            return redirect()
+                ->route('admin.material-requests.index')
+                ->with('error', 'Material request table is missing. Please create the material_requests table first.');
+        }
+
+        $materialRequest = MaterialRequest::query()->forCurrentCompany()->findOrFail($materialRequestId);
         $this->ensureCurrentCompany($materialRequest);
 
         $data = $request->validate([
@@ -250,6 +283,13 @@ class MaterialStockController extends Controller
 
     public function issues(): View
     {
+        if (! Schema::hasTable('material_issues') || ! Schema::hasTable('stock_movements')) {
+            return view('admin.material-stock.issues', [
+                'issues' => $this->emptyPaginator(),
+                'movements' => collect(),
+            ])->with('error', 'Material issue or stock movement table is missing. Please create the material stock tables first.');
+        }
+
         return view('admin.material-stock.issues', [
             'issues' => MaterialIssue::query()
                 ->forCurrentCompany()
@@ -267,6 +307,10 @@ class MaterialStockController extends Controller
 
     private function activeMaterials()
     {
+        if (! Schema::hasTable('materials')) {
+            return collect();
+        }
+
         return Material::query()->forCurrentCompany()->where('is_active', true)->orderBy('name')->get();
     }
 
@@ -277,6 +321,10 @@ class MaterialStockController extends Controller
 
     private function totalAvailableQuantity(int $materialId): float
     {
+        if (! Schema::hasTable('material_stocks')) {
+            return 0.0;
+        }
+
         return (float) MaterialStock::query()
             ->forCurrentCompany()
             ->where('material_id', $materialId)
@@ -290,5 +338,13 @@ class MaterialStockController extends Controller
         if ($companyId && (int) $record->company_id !== (int) $companyId) {
             abort(404);
         }
+    }
+
+    private function emptyPaginator(): LengthAwarePaginator
+    {
+        return new LengthAwarePaginator(collect(), 0, 20, 1, [
+            'path' => request()->url(),
+            'query' => request()->query(),
+        ]);
     }
 }
