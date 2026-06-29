@@ -34,7 +34,7 @@
 
     <section class="detail-grid">
         <div class="card detail-item">
-            <span>Photos</span>
+            <span>Files</span>
             <strong>{{ $report->photos_count }}</strong>
         </div>
         <div class="card detail-item">
@@ -93,7 +93,7 @@
                         <td>
                             <strong>DPR #{{ $dailyReport->id }}</strong>
                             <div class="table-subtext">
-                                {{ $dailyReport->hours_count }} entries, {{ $dailyReport->photos_count }} photos
+                                {{ $dailyReport->hours_count }} entries, {{ $dailyReport->photos_count }} files
                             </div>
                         </td>
                         <td class="text-wrap">{{ $dailyReport->site_project }}</td>
@@ -112,9 +112,15 @@
                                             <div class="thumb-grid">
                                                 @foreach ($hour->photos as $photo)
                                                     @if ($photo->publicUrl())
-                                                        <a href="{{ $photo->publicUrl() }}" target="_blank">
-                                                            <img class="thumb" src="{{ $photo->publicUrl() }}" alt="DPR photo">
-                                                        </a>
+                                                        @if (str_starts_with((string) $photo->mime_type, 'image/'))
+                                                            <a href="{{ $photo->publicUrl() }}" target="_blank">
+                                                                <img class="thumb" src="{{ $photo->publicUrl() }}" alt="DPR file">
+                                                            </a>
+                                                        @else
+                                                            <a class="btn secondary" href="{{ $photo->publicUrl() }}" target="_blank">
+                                                                {{ $photo->original_name ?: 'View file' }}
+                                                            </a>
+                                                        @endif
                                                     @endif
                                                 @endforeach
                                             </div>

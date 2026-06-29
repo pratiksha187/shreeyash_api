@@ -18,9 +18,10 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DailyProgressReportController extends Controller
 {
-    private const PHOTO_MAX_UPLOAD_KB = 20480;
+    private const DPR_FILE_MAX_UPLOAD_KB = 20480;
     private const PHOTO_MAX_DIMENSION = 1600;
     private const PHOTO_JPEG_QUALITY = 78;
+    private const DPR_FILE_EXTENSIONS = 'jpg,jpeg,png,gif,webp,bmp,heic,heif,pdf,xls,xlsx,doc,docx,csv';
 
     public function index(Request $request): JsonResponse
     {
@@ -83,11 +84,16 @@ class DailyProgressReportController extends Controller
             'hours.*.hour_number' => ['nullable', 'integer', 'min:1', 'max:24'],
             'hours.*.time' => ['required', 'string', 'max:20'],
             'hours.*.remark' => ['nullable', 'string', 'max:2000'],
-            'hours.*.photos' => ['nullable', 'array'],
-            'hours.*.photos.*' => ['image', 'max:' . self::PHOTO_MAX_UPLOAD_KB],
-            'photos' => ['nullable', 'array'],
-            'photos.*' => ['image', 'max:' . self::PHOTO_MAX_UPLOAD_KB],
+            'hours.*.photos' => ['nullable'],
+            'hours.*.files' => ['nullable'],
+            'hours.*.dpr_files' => ['nullable'],
+            'photos' => ['nullable'],
+            'files' => ['nullable'],
+            'dpr_files' => ['nullable'],
+            'dprFiles' => ['nullable'],
         ]);
+
+        $this->validateDprFiles($request);
 
         $hours = collect($data['hours'])
             ->values()
@@ -127,19 +133,19 @@ class DailyProgressReportController extends Controller
 
                     Storage::disk('public')->makeDirectory('engg_dpr');
 
-                    foreach ($this->filesForHour($request, $index) as $photo) {
-                        $storedPhoto = $this->storeCompressedPhoto(
-                            $photo,
+                    foreach ($this->filesForHour($request, $index) as $file) {
+                        $storedFile = $this->storeDprFile(
+                            $file,
                             'engg_dpr/' . $user->id . '/' . $report->id . '/hour-' . $hour['hour_number']
                         );
-                        $path = $storedPhoto['path'];
+                        $path = $storedFile['path'];
                         $storedPaths[] = $path;
 
                         $hourModel->photos()->create([
                             'photo_path' => $path,
-                            'original_name' => $photo->getClientOriginalName(),
-                            'mime_type' => $storedPhoto['mime_type'],
-                            'file_size' => $storedPhoto['file_size'],
+                            'original_name' => $file->getClientOriginalName(),
+                            'mime_type' => $storedFile['mime_type'],
+                            'file_size' => $storedFile['file_size'],
                         ]);
                     }
                 }
@@ -293,16 +299,98 @@ class DailyProgressReportController extends Controller
      */
     private function filesForHour(Request $request, int $index): array
     {
-        $files = $request->file('hours.' . $index . '.photos', []);
-        $files = $files instanceof UploadedFile ? [$files] : (array) $files;
+        $files = [];
+
+        foreach (['photos', 'files', 'dpr_files', 'dprFiles'] as $key) {
+            $hourFiles = $request->file('hours.' . $index . '.' . $key, []);
+            $hourFiles = $hourFiles instanceof UploadedFile ? [$hourFiles] : (array) $hourFiles;
+            $files = array_merge($files, $hourFiles);
+        }
 
         if ($index === 0) {
-            $topLevelFiles = $request->file('photos', []);
-            $topLevelFiles = $topLevelFiles instanceof UploadedFile ? [$topLevelFiles] : (array) $topLevelFiles;
-            $files = array_merge($files, $topLevelFiles);
+            foreach (['photos', 'files', 'dpr_files', 'dprFiles', 'dpr_documents', 'documents'] as $key) {
+                $topLevelFiles = $request->file($key, []);
+                $topLevelFiles = $topLevelFiles instanceof UploadedFile ? [$topLevelFiles] : (array) $topLevelFiles;
+                $files = array_merge($files, $topLevelFiles);
+            }
         }
 
         return array_values(array_filter($files, fn ($file) => $file instanceof UploadedFile));
+    }
+
+    private function validateDprFiles(Request $request): void
+    {
+        $files = collect();
+
+        $hours = $request->input('hours', []);
+        $hourCount = is_array($hours) ? count($hours) : 0;
+
+        for ($index = 0; $index < $hourCount; $index++) {
+            foreach (['photos', 'files', 'dpr_files', 'dprFiles'] as $key) {
+                $hourFiles = $request->file('hours.' . $index . '.' . $key, []);
+                $hourFiles = $hourFiles instanceof UploadedFile ? [$hourFiles] : (array) $hourFiles;
+                $files = $files->merge($hourFiles);
+            }
+        }
+
+        foreach (['photos', 'files', 'dpr_files', 'dprFiles', 'dpr_documents', 'documents'] as $key) {
+            $topLevelFiles = $request->file($key, []);
+            $topLevelFiles = $topLevelFiles instanceof UploadedFile ? [$topLevelFiles] : (array) $topLevelFiles;
+            $files = $files->merge($topLevelFiles);
+        }
+
+        $invalidFile = $files->first(fn ($file) => ! $file instanceof UploadedFile || ! $file->isValid());
+
+        if ($invalidFile) {
+            throw ValidationException::withMessages([
+                'dpr_files' => 'One or more DPR files could not be uploaded.',
+            ]);
+        }
+
+        foreach ($files->filter(fn ($file) => $file instanceof UploadedFile) as $file) {
+            $extension = strtolower($file->getClientOriginalExtension());
+
+            if (! in_array($extension, explode(',', self::DPR_FILE_EXTENSIONS), true)) {
+                throw ValidationException::withMessages([
+                    'dpr_files' => 'DPR files must be images, PDF, Excel, Word or CSV files.',
+                ]);
+            }
+
+            if ($file->getSize() > self::DPR_FILE_MAX_UPLOAD_KB * 1024) {
+                throw ValidationException::withMessages([
+                    'dpr_files' => 'Each DPR file must not be greater than ' . (int) (self::DPR_FILE_MAX_UPLOAD_KB / 1024) . ' MB.',
+                ]);
+            }
+        }
+    }
+
+    private function storeDprFile(UploadedFile $file, string $directory): array
+    {
+        if (str_starts_with((string) $file->getClientMimeType(), 'image/')) {
+            return $this->storeCompressedPhoto($file, $directory);
+        }
+
+        return $this->storeOriginalDprFile($file, $directory);
+    }
+
+    private function storeOriginalDprFile(UploadedFile $file, string $directory): array
+    {
+        $disk = Storage::disk('public');
+        $directory = trim(str_replace('\\', '/', $directory), '/');
+
+        $timestamp = now()->format('Ymd-His');
+        $unique = strtolower(bin2hex(random_bytes(4)));
+        $extension = strtolower($file->getClientOriginalExtension() ?: $file->extension() ?: 'bin');
+        $extension = preg_replace('/[^a-z0-9]+/', '', $extension) ?: 'bin';
+        $path = $file->storeAs($directory, 'dpr-' . $timestamp . '-' . $unique . '.' . $extension, 'public');
+
+        $this->mirrorPhotoToPublicStorage($path);
+
+        return [
+            'path' => $path,
+            'mime_type' => $file->getClientMimeType(),
+            'file_size' => $disk->size($path),
+        ];
     }
 
     private function storeCompressedPhoto(UploadedFile $photo, string $directory): array
@@ -401,6 +489,7 @@ class DailyProgressReportController extends Controller
             ],
             'hour_count' => $report->hours->count(),
             'photo_count' => $report->hours->sum(fn ($hour) => $hour->photos->count()),
+            'file_count' => $report->hours->sum(fn ($hour) => $hour->photos->count()),
             'hours' => $report->hours
                 ->sortBy('hour_number')
                 ->values()
@@ -419,6 +508,18 @@ class DailyProgressReportController extends Controller
                         'original_name' => $photo->original_name,
                         'mime_type' => $photo->mime_type,
                         'file_size' => $photo->file_size,
+                        'is_image' => str_starts_with((string) $photo->mime_type, 'image/'),
+                    ])->values(),
+                    'files' => $hour->photos->map(fn (DailyProgressReportPhoto $photo) => [
+                        'id' => $photo->id,
+                        'url' => $photo->publicUrl(),
+                        'file_url' => $photo->publicUrl(),
+                        'api_url' => route('api.dpr-photos.show', $photo),
+                        'path' => $photo->photo_path,
+                        'original_name' => $photo->original_name,
+                        'mime_type' => $photo->mime_type,
+                        'file_size' => $photo->file_size,
+                        'is_image' => str_starts_with((string) $photo->mime_type, 'image/'),
                     ])->values(),
                 ]),
             'submitted_at' => $report->created_at,
