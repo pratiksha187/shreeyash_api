@@ -48,17 +48,19 @@
     <div class="card table-wrap employees-table-wrap">
         <table class="employees-table">
             <colgroup>
-                <col style="width: 25%;">
-                <col style="width: 25%;">
-                <col style="width: 16%;">
-                <col style="width: 16%;">
-                <col style="width: 18%;">
+                <col style="width: 22%;">
+                <col style="width: 24%;">
+                <col style="width: 14%;">
+                <col style="width: 13%;">
+                <col style="width: 13%;">
+                <col style="width: 14%;">
             </colgroup>
             <thead>
                 <tr>
                     <th>Employee</th>
                     <th>Contact</th>
                     <th>Designation</th>
+                    <th>Birthday</th>
                     <th>Dates</th>
                     <th>Action</th>
                 </tr>
@@ -83,6 +85,11 @@
                         <td data-label="Designation">
                             <span class="designation-pill">{{ $employee->designation ?? 'Employee' }}</span>
                         </td>
+                        <td data-label="Birthday">
+                            <div class="date-stack">
+                                <span>{{ $employee->date_of_birth?->format('d M Y') ?? '-' }}</span>
+                            </div>
+                        </td>
                         <td data-label="Dates">
                             <div class="date-stack">
                                 <span>{{ $employee->join_date?->format('d M Y') ?? '-' }}</span>
@@ -101,7 +108,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td class="empty" colspan="5">
+                        <td class="empty" colspan="6">
                             {{ $search !== '' ? 'No employees found for this search.' : 'No employees added yet.' }}
                         </td>
                     </tr>
