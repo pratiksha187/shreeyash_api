@@ -78,9 +78,9 @@ class LabourAttendanceController extends Controller
         ]);
     }
 
-    public function editSite(LabourSite $labourSite): View
+    public function editSite(int $labourSite): View
     {
-        $this->ensureCurrentCompanyRecord($labourSite);
+        $labourSite = $this->findSite($labourSite);
 
         return view('admin.labour-attendance.edit-site', [
             'site' => $labourSite,
@@ -173,7 +173,13 @@ class LabourAttendanceController extends Controller
     public function storeSite(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'name' => ['required', 'string', 'max:255', 'unique:labour_sites,name'],
+            'name' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique($this->tenantTable('labour_sites'), 'name')
+                    ->where('company_id', app(Tenant::class)->id()),
+            ],
             'address' => ['nullable', 'string', 'max:255'],
         ]);
 
@@ -182,12 +188,19 @@ class LabourAttendanceController extends Controller
         return redirect()->route('admin.labour-sites.index')->with('success', 'Site added successfully.');
     }
 
-    public function updateSite(Request $request, LabourSite $labourSite): RedirectResponse
+    public function updateSite(Request $request, int $labourSite): RedirectResponse
     {
-        $this->ensureCurrentCompanyRecord($labourSite);
+        $labourSite = $this->findSite($labourSite);
 
         $data = $request->validate([
-            'name' => ['required', 'string', 'max:255', Rule::unique('labour_sites', 'name')->ignore($labourSite->id)],
+            'name' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique($this->tenantTable('labour_sites'), 'name')
+                    ->where('company_id', app(Tenant::class)->id())
+                    ->ignore($labourSite->id),
+            ],
             'address' => ['nullable', 'string', 'max:255'],
             'is_active' => ['required', 'boolean'],
         ]);
@@ -197,9 +210,9 @@ class LabourAttendanceController extends Controller
         return redirect()->route('admin.labour-sites.index')->with('success', 'Site updated successfully.');
     }
 
-    public function destroySite(LabourSite $labourSite): RedirectResponse
+    public function destroySite(int $labourSite): RedirectResponse
     {
-        $this->ensureCurrentCompanyRecord($labourSite);
+        $labourSite = $this->findSite($labourSite);
 
         if ($labourSite->contractors()->exists() || $labourSite->labourAttendances()->exists()) {
             return back()->with('error', 'This site is already used. Mark it inactive instead of deleting it.');
@@ -356,13 +369,11 @@ class LabourAttendanceController extends Controller
         ];
     }
 
-    private function ensureCurrentCompanyRecord(LabourSite|Contractor|Labour $record): void
+    private function findSite(int $labourSite): LabourSite
     {
-        $companyId = app(Tenant::class)->id();
-
-        if ($companyId && (int) $record->company_id !== (int) $companyId) {
-            abort(404);
-        }
+        return LabourSite::query()
+            ->forCurrentCompany()
+            ->findOrFail($labourSite);
     }
 
     private function findContractor(int $contractor): Contractor
