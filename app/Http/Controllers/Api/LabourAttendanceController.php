@@ -47,6 +47,7 @@ class LabourAttendanceController extends Controller
         $contractors = Contractor::query()
             ->forCurrentCompany()
             ->where('is_active', true)
+            ->where('labour_site_id', $labourSite->id)
             ->orderBy('name')
             ->get()
             ->map(fn (Contractor $contractor) => $this->contractorPayload($contractor));
@@ -68,6 +69,7 @@ class LabourAttendanceController extends Controller
         $labours = Labour::query()
             ->forCurrentCompany()
             ->where('is_active', true)
+            ->where('contractor_id', $contractor->id)
             ->orderBy('name')
             ->get()
             ->map(fn (Labour $labour) => $this->labourPayload($labour));
@@ -145,13 +147,14 @@ class LabourAttendanceController extends Controller
         $labourIds = $this->labourIdsFromData($data);
         $labours = Labour::query()
             ->forCurrentCompany()
+            ->where('contractor_id', $contractor->id)
             ->whereIn('id', $labourIds)
             ->get()
             ->keyBy('id');
 
         if ($labours->count() !== count($labourIds)) {
             throw ValidationException::withMessages([
-                'labour_ids' => 'One or more selected labours are invalid.',
+                'labour_ids' => 'One or more selected labours are invalid for this contractor.',
             ]);
         }
 
