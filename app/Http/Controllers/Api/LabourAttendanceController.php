@@ -47,7 +47,6 @@ class LabourAttendanceController extends Controller
         $contractors = Contractor::query()
             ->forCurrentCompany()
             ->where('is_active', true)
-            ->where('labour_site_id', $labourSite->id)
             ->orderBy('name')
             ->get()
             ->map(fn (Contractor $contractor) => $this->contractorPayload($contractor));

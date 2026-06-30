@@ -52,7 +52,6 @@ Route::middleware([AuthenticateApiToken::class, EnsureCompanySubscriptionActive:
     Route::post('/dpr', [DailyProgressReportController::class, 'store'])->name('api.dpr.store');
     Route::get('/dpr/{dailyProgressReport}', [DailyProgressReportController::class, 'show'])->name('api.dpr.show');
     Route::get('/dpr-photos/{photo}', [DailyProgressReportController::class, 'photo'])->name('api.dpr-photos.show');
-    Route::get('/labour-sites', [LabourAttendanceController::class, 'sites'])->name('api.labour-sites.index');
     Route::get('/materials', [MaterialRequestController::class, 'materials'])->name('api.materials.index');
     Route::get('/material-sites', [MaterialRequestController::class, 'sites'])->name('api.material-sites.index');
     Route::get('/material-requests', [MaterialRequestController::class, 'index'])->name('api.material-requests.index');
@@ -61,6 +60,7 @@ Route::middleware([AuthenticateApiToken::class, EnsureCompanySubscriptionActive:
     Route::get('/material-request', [MaterialRequestController::class, 'index'])->name('api.material-request.index');
     Route::post('/material-request', [MaterialRequestController::class, 'store'])->name('api.material-request.store');
     Route::get('/material-request/{materialRequest}', [MaterialRequestController::class, 'show'])->name('api.material-request.show');
+    
     Route::get('/labour-sites/{labourSite}/contractors', [LabourAttendanceController::class, 'contractors'])->name('api.labour-sites.contractors');
     Route::get('/labour-contractors/{contractor}/labours', [LabourAttendanceController::class, 'labours'])->name('api.labour-contractors.labours');
     Route::get('/labour/sites', [LabourAttendanceController::class, 'sites'])->name('api.labour.sites');
@@ -77,6 +77,8 @@ Route::middleware([AuthenticateApiToken::class, EnsureCompanySubscriptionActive:
     Route::post('/labor/attendances', [LabourAttendanceController::class, 'store'])->name('api.labor-attendances.store');
     Route::get('/labor/attendances/{labourAttendance}/photo', [LabourAttendanceController::class, 'photo'])->name('api.labor-attendances.photo');
     Route::get('/labor/attendances/{labourAttendance}', [LabourAttendanceController::class, 'show'])->name('api.labor-attendances.show');
+    Route::get('/labour-sites', [LabourAttendanceController::class, 'sites'])->name('api.labour-sites.index');
+
     Route::post('/payments', [PaymentController::class, 'store'])->name('api.payments.store');
     Route::get('/payments', [PaymentController::class, 'index'])->name('api.payments.index');
     Route::get('/payments/{payment}', [PaymentController::class, 'show'])->name('api.payments.show');
