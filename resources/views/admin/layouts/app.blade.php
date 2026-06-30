@@ -995,35 +995,45 @@
         }
 
         .leave-requests-table-wrap {
-            overflow-x: visible;
+            overflow-x: auto;
         }
 
         .leave-requests-table {
             table-layout: fixed;
+            min-width: 1180px;
         }
 
         .leave-requests-table .leave-employee-column {
-            width: 20%;
+            width: 16%;
         }
 
         .leave-requests-table .leave-date-column {
-            width: 14%;
-        }
-
-        .leave-requests-table .leave-status-column {
             width: 12%;
         }
 
+        .leave-requests-table .leave-type-column {
+            width: 10%;
+        }
+
+        .leave-requests-table .leave-status-column {
+            width: 9%;
+        }
+
+        .leave-requests-table .leave-year-column {
+            width: 14%;
+        }
+
         .leave-requests-table .leave-remarks-column {
-            width: 30%;
+            width: 23%;
         }
 
         .leave-requests-table .leave-action-column {
-            width: 24%;
+            width: 16%;
         }
 
         .leave-requests-table th,
         .leave-requests-table td {
+            padding: 16px 14px;
             vertical-align: top;
             white-space: normal;
         }
@@ -1033,7 +1043,6 @@
         }
 
         .leave-remarks-cell {
-            min-width: 220px;
             line-height: 1.5;
             overflow-wrap: anywhere;
         }
@@ -1045,32 +1054,37 @@
 
         .leave-action-form {
             display: grid;
-            gap: 8px;
-            min-width: 260px;
+            gap: 7px;
             margin: 0;
         }
 
         .leave-action-form label {
             margin-bottom: 0;
             color: var(--muted);
-            font-size: 12px;
+            font-size: 11px;
+            line-height: 1.2;
             text-transform: uppercase;
         }
 
+        .leave-action-form select,
         .leave-action-form input {
-            min-height: 38px;
-            padding: 8px 10px;
-            font-size: 14px;
+            min-height: 36px;
+            padding: 7px 10px;
+            font-size: 13px;
         }
 
         .leave-action-buttons {
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 8px;
+            gap: 7px;
+            margin-top: 3px;
         }
 
         .leave-action-buttons .btn {
             width: 100%;
+            min-height: 36px;
+            padding-right: 8px;
+            padding-left: 8px;
         }
 
         .leave-approve-button {
@@ -1085,7 +1099,7 @@
             align-self: end;
         }
 
-        @media (max-width: 760px) {
+        @media (max-width: 1180px) {
             .leave-requests-table-wrap {
                 overflow-x: visible;
             }
@@ -1105,7 +1119,7 @@
 
             .leave-requests-table tbody {
                 display: grid;
-                gap: 12px;
+                gap: 14px;
                 padding: 12px;
             }
 
@@ -1118,7 +1132,7 @@
 
             .leave-requests-table td {
                 display: grid;
-                grid-template-columns: 96px minmax(0, 1fr);
+                grid-template-columns: 118px minmax(0, 1fr);
                 gap: 12px;
                 padding: 12px;
             }
@@ -1133,6 +1147,8 @@
 
             .leave-action-cell {
                 grid-template-columns: 1fr;
+                padding: 14px;
+                background: #f8fafc;
             }
 
             .leave-action-cell::before {
@@ -1141,6 +1157,33 @@
 
             .leave-action-form {
                 min-width: 0;
+            }
+
+            .leave-action-form {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                align-items: end;
+            }
+
+            .leave-action-form label {
+                margin-bottom: -3px;
+            }
+
+            .leave-action-buttons {
+                grid-column: 1 / -1;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .leave-requests-table tbody {
+                padding: 10px;
+            }
+
+            .leave-requests-table td {
+                grid-template-columns: 96px minmax(0, 1fr);
+            }
+
+            .leave-action-form {
+                grid-template-columns: 1fr;
             }
         }
 

@@ -79,9 +79,9 @@
             <colgroup>
                 <col class="leave-employee-column">
                 <col class="leave-date-column">
+                <col class="leave-type-column">
                 <col class="leave-status-column">
-                <col class="leave-status-column">
-                <col class="leave-status-column">
+                <col class="leave-year-column">
                 <col class="leave-remarks-column">
                 <col class="leave-action-column">
             </colgroup>
