@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\ChallanController;
 use App\Http\Controllers\Api\ComplaintController;
 use App\Http\Controllers\Api\DailyProgressReportController;
 use App\Http\Controllers\Api\LabourAttendanceController;
+use App\Http\Controllers\Api\MachineryDieselLogController;
 use App\Http\Controllers\Api\MaterialRequestController;
 use App\Http\Controllers\Api\MissedAttendanceRequestController;
 use App\Http\Controllers\Api\PaymentController;
@@ -78,6 +79,13 @@ Route::middleware([AuthenticateApiToken::class, EnsureCompanySubscriptionActive:
     Route::get('/labor/attendances/{labourAttendance}/photo', [LabourAttendanceController::class, 'photo'])->name('api.labor-attendances.photo');
     Route::get('/labor/attendances/{labourAttendance}', [LabourAttendanceController::class, 'show'])->name('api.labor-attendances.show');
     Route::get('/labour-sites', [LabourAttendanceController::class, 'sites'])->name('api.labour-sites.index');
+
+    Route::get('/machinery-diesel-logs', [MachineryDieselLogController::class, 'index'])->name('api.machinery-diesel-logs.index');
+    Route::post('/machinery-diesel-logs', [MachineryDieselLogController::class, 'store'])->name('api.machinery-diesel-logs.store');
+    Route::get('/machinery-diesel-logs/{machineryDieselLog}', [MachineryDieselLogController::class, 'show'])->name('api.machinery-diesel-logs.show');
+    Route::get('/machine-diesel', [MachineryDieselLogController::class, 'index'])->name('api.machine-diesel.index');
+    Route::post('/machine-diesel', [MachineryDieselLogController::class, 'store'])->name('api.machine-diesel.store');
+    Route::get('/machine-diesel/{machineryDieselLog}', [MachineryDieselLogController::class, 'show'])->name('api.machine-diesel.show');
 
     Route::post('/payments', [PaymentController::class, 'store'])->name('api.payments.store');
     Route::get('/payments', [PaymentController::class, 'index'])->name('api.payments.index');
