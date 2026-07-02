@@ -8,8 +8,15 @@
 @section('content')
     <style>
         .machinery-diesel-page .main {
+            min-width: 0;
             max-width: none;
             padding: 24px 28px;
+            overflow-x: hidden;
+        }
+
+        .machinery-diesel-page .content-shell {
+            min-width: 0;
+            overflow-x: hidden;
         }
 
         .machinery-diesel-page .page-header {
@@ -18,11 +25,12 @@
 
         .diesel-sheet-toolbar {
             display: grid;
-            grid-template-columns: minmax(0, 1fr) auto;
+            grid-template-columns: minmax(0, 560px) minmax(0, 1fr);
             gap: 14px;
             align-items: end;
             margin-bottom: 16px;
             padding: 14px 16px;
+            overflow: hidden;
         }
 
         .diesel-filter-grid {
@@ -65,6 +73,7 @@
         .diesel-entry-card {
             margin-bottom: 16px;
             padding: 16px;
+            overflow: hidden;
         }
 
         .diesel-section-head {
@@ -86,8 +95,8 @@
 
         .diesel-entry-grid {
             display: grid;
-            grid-template-columns: 130px minmax(170px, 1.2fr) minmax(150px, 1fr) repeat(6, minmax(120px, 1fr)) minmax(180px, 1.2fr) auto;
-            gap: 10px;
+            grid-template-columns: repeat(5, minmax(150px, 1fr));
+            gap: 12px;
             align-items: end;
         }
 
@@ -136,13 +145,20 @@
             height: 100%;
         }
 
+        .diesel-save-field .btn {
+            width: 100%;
+        }
+
         .diesel-sheet-card {
             overflow: hidden;
             border-color: #8da17f;
         }
 
         .diesel-table-scroll {
+            width: 100%;
+            max-width: 100%;
             overflow-x: auto;
+            overflow-y: hidden;
         }
 
         .machinery-diesel-table {
@@ -201,7 +217,7 @@
             }
 
             .diesel-entry-grid {
-                grid-template-columns: repeat(4, minmax(150px, 1fr));
+                grid-template-columns: repeat(3, minmax(150px, 1fr));
             }
 
             .diesel-save-field {
@@ -284,7 +300,17 @@
                 </div>
                 <div class="diesel-field">
                     <label for="machinery">Machinery</label>
-                    <input id="machinery" name="machinery" type="text" value="{{ old('machinery') }}" placeholder="Poclain 210 JCB" required>
+                    <select id="machinery" name="machinery" required>
+                        <option value="">Select vehicle</option>
+                        @foreach ($vehicles as $vehicle)
+                            @php
+                                $vehicleLabel = trim($vehicle->vehicle_number . ($vehicle->vehicle_type ? ' - ' . $vehicle->vehicle_type : ''));
+                            @endphp
+                            <option value="{{ $vehicleLabel }}" @selected(old('machinery') === $vehicleLabel || old('machinery') === $vehicle->vehicle_number)>
+                                {{ $vehicleLabel }}
+                            </option>
+                        @endforeach
+                    </select>
                 </div>
                 <div class="diesel-field">
                     <label for="labour_site_id">Site</label>

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\LabourSite;
 use App\Models\MachineryDieselLog;
+use App\Models\Vehicle;
 use App\Support\Tenant;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
@@ -43,6 +44,10 @@ class MachineryDieselLogController extends Controller
                 ->where('is_active', true)
                 ->orderBy('name')
                 ->get(['id', 'name']),
+            'vehicles' => Vehicle::query()
+                ->forCurrentCompany()
+                ->orderBy('vehicle_number')
+                ->get(['id', 'vehicle_number', 'vehicle_type', 'driver_name']),
             'selectedDate' => $selectedDate,
             'selectedMonth' => $selectedMonth,
             'summary' => [
