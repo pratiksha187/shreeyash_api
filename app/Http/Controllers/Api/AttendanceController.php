@@ -446,7 +446,7 @@ class AttendanceController extends Controller
             ], 409);
         }
 
-        $attendances = $dates->map(function (string $date) use ($request, $data) {
+        $attendances = $dates->map(function (string $date) use ($request, $data, $leaveType) {
             return Attendance::query()->forCurrentCompany()->updateOrCreate(
                 [
                     'user_id' => $request->user()->id,
