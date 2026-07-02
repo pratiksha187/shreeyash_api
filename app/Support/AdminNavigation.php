@@ -63,7 +63,7 @@ class AdminNavigation
             return true;
         }
 
-        if (in_array($permission, ['product_purchases', 'material_stock'], true) && in_array('diesel_purchases', $permissions, true)) {
+        if (in_array($permission, ['machinery_diesel_logs', 'product_purchases', 'material_stock'], true) && in_array('diesel_purchases', $permissions, true)) {
             return true;
         }
 
@@ -140,7 +140,7 @@ class AdminNavigation
     {
         return match ($permission) {
             'employees', 'attendance_reports', 'missed_requests', 'leave_requests', 'labour_attendance', 'payments', 'site_master', 'contractor_master', 'labour_master', 'dpr_reports', 'challans', 'complaints' => 'hr',
-            'diesel_purchases', 'product_purchases', 'material_stock' => 'purchase',
+            'diesel_purchases', 'machinery_diesel_logs', 'product_purchases', 'material_stock' => 'purchase',
             default => null,
         };
     }

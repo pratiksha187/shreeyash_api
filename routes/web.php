@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\EmployeeController;
 use App\Http\Controllers\Admin\FddTestRecordController;
 use App\Http\Controllers\Admin\LabourAttendanceController;
 use App\Http\Controllers\Admin\LeaveRequestController;
+use App\Http\Controllers\Admin\MachineryDieselLogController;
 use App\Http\Controllers\Admin\MaterialStockController;
 use App\Http\Controllers\Admin\MissedAttendanceRequestController;
 use App\Http\Controllers\Admin\MirFileReportController;
@@ -93,6 +94,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/payments/{payment}/slip', [PaymentController::class, 'slip'])->name('payments.slip');
         Route::get('/diesel-purchases', [DailyDieselPurchaseController::class, 'index'])->name('diesel-purchases.index');
         Route::post('/diesel-purchases/monthly-entries', [DailyDieselPurchaseController::class, 'storeMonthly'])->name('diesel-purchases.monthly');
+        Route::get('/machinery-diesel-logs', [MachineryDieselLogController::class, 'index'])->name('machinery-diesel-logs.index');
+        Route::post('/machinery-diesel-logs', [MachineryDieselLogController::class, 'store'])->name('machinery-diesel-logs.store');
         Route::get('/product-purchases', [ProductPurchaseController::class, 'index'])->name('product-purchases.index');
         Route::post('/product-purchases', [ProductPurchaseController::class, 'store'])->name('product-purchases.store');
         Route::put('/product-purchases/{productPurchase}', [ProductPurchaseController::class, 'update'])->name('product-purchases.update');
