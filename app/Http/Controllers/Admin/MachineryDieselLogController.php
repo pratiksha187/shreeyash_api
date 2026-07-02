@@ -10,6 +10,7 @@ use App\Support\Tenant;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class MachineryDieselLogController extends Controller
@@ -63,7 +64,7 @@ class MachineryDieselLogController extends Controller
     {
         $data = $request->validate([
             'issue_date' => ['required', 'date'],
-            'labour_site_id' => ['nullable', 'exists:labour_sites,id'],
+            'labour_site_id' => ['nullable', Rule::exists($this->tenantTable('labour_sites'), 'id')],
             'machinery' => ['required', 'string', 'max:255'],
             'minimum_stock_ltr' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
             'daily_diesel_for_8hr_ltr' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
@@ -98,5 +99,12 @@ class MachineryDieselLogController extends Controller
         return redirect()
             ->route('admin.machinery-diesel-logs.index', ['date' => $issueDate])
             ->with('success', 'Machinery diesel entry saved successfully.');
+    }
+
+    private function tenantTable(string $table): string
+    {
+        $connection = app(Tenant::class)->connectionName();
+
+        return $connection ? $connection . '.' . $table : $table;
     }
 }
