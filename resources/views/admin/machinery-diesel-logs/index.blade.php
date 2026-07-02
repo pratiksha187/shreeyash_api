@@ -9,15 +9,156 @@
     <style>
         .machinery-diesel-page .main {
             max-width: none;
+            padding: 24px 28px;
+        }
+
+        .machinery-diesel-page .page-header {
+            margin-bottom: 16px;
+        }
+
+        .diesel-sheet-toolbar {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 14px;
+            align-items: end;
+            margin-bottom: 16px;
+            padding: 14px 16px;
+        }
+
+        .diesel-filter-grid {
+            display: grid;
+            grid-template-columns: minmax(150px, 210px) minmax(150px, 210px) auto;
+            gap: 12px;
+            align-items: end;
+        }
+
+        .diesel-summary-strip {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(110px, 1fr));
+            gap: 10px;
+        }
+
+        .diesel-summary-item {
+            min-height: 58px;
+            padding: 10px 12px;
+            border: 1px solid #dbe3ee;
+            border-radius: 8px;
+            background: #f8fafc;
+        }
+
+        .diesel-summary-item span {
+            display: block;
+            color: #64748b;
+            font-size: 11px;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        .diesel-summary-item strong {
+            display: block;
+            margin-top: 6px;
+            color: #0f172a;
+            font-size: 20px;
+            line-height: 1;
+        }
+
+        .diesel-entry-card {
+            margin-bottom: 16px;
+            padding: 16px;
+        }
+
+        .diesel-section-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 14px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #d6a24c;
+        }
+
+        .diesel-section-head h2 {
+            margin: 0;
+            color: #0f172a;
+            font-size: 20px;
+            line-height: 1.2;
+        }
+
+        .diesel-entry-grid {
+            display: grid;
+            grid-template-columns: 130px minmax(170px, 1.2fr) minmax(150px, 1fr) repeat(6, minmax(120px, 1fr)) minmax(180px, 1.2fr) auto;
+            gap: 10px;
+            align-items: end;
+        }
+
+        .diesel-field {
+            min-width: 0;
+        }
+
+        .diesel-field label {
+            display: block;
+            margin-bottom: 6px;
+            color: #0f172a;
+            font-size: 12px;
+            font-weight: 900;
+            line-height: 1.2;
+        }
+
+        .diesel-field input,
+        .diesel-field select,
+        .diesel-field textarea {
+            width: 100%;
+            min-height: 38px;
+            padding: 8px 10px;
+            border: 1px solid #cbd5e1;
+            border-radius: 7px;
+            background: #fff;
+            color: #0f172a;
+            font-size: 13px;
+        }
+
+        .diesel-field textarea {
+            min-height: 38px;
+            resize: vertical;
+        }
+
+        .diesel-field input:focus,
+        .diesel-field select:focus,
+        .diesel-field textarea:focus {
+            border-color: #2563eb;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12);
+        }
+
+        .diesel-save-field {
+            display: flex;
+            align-items: end;
+            height: 100%;
+        }
+
+        .diesel-sheet-card {
+            overflow: hidden;
+            border-color: #8da17f;
+        }
+
+        .diesel-table-scroll {
+            overflow-x: auto;
         }
 
         .machinery-diesel-table {
-            min-width: 1680px;
+            width: 100%;
+            min-width: 1720px;
+            border-collapse: collapse;
+            table-layout: fixed;
         }
 
         .machinery-diesel-table th,
         .machinery-diesel-table td {
-            padding: 9px 10px;
+            border: 1px solid #64748b;
+            padding: 8px 7px;
+            color: #0f172a;
+            font-size: 12px;
+            line-height: 1.22;
             text-align: center;
             vertical-align: middle;
             white-space: normal;
@@ -26,17 +167,58 @@
         .machinery-diesel-table th {
             background: #d9ead3;
             color: #0f172a;
-            font-size: 12px;
+            font-size: 11px;
+            font-weight: 900;
             letter-spacing: 0;
             text-transform: none;
+        }
+
+        .machinery-diesel-table tbody tr:nth-child(even) td {
+            background: #f8fafc;
+        }
+
+        .machinery-diesel-table tbody tr:hover td {
+            background: #eff6ff;
         }
 
         .machinery-diesel-table .number-cell {
             white-space: nowrap;
         }
 
-        .machinery-form-card {
-            margin-bottom: 22px;
+        .machinery-diesel-table .sheet-text {
+            min-width: 140px;
+            text-align: left;
+        }
+
+        .machinery-diesel-table .empty {
+            padding: 14px;
+            font-size: 14px;
+        }
+
+        @media (max-width: 1500px) {
+            .diesel-sheet-toolbar {
+                grid-template-columns: 1fr;
+            }
+
+            .diesel-entry-grid {
+                grid-template-columns: repeat(4, minmax(150px, 1fr));
+            }
+
+            .diesel-save-field {
+                align-items: stretch;
+            }
+        }
+
+        @media (max-width: 760px) {
+            .machinery-diesel-page .main {
+                padding: 18px;
+            }
+
+            .diesel-filter-grid,
+            .diesel-summary-strip,
+            .diesel-entry-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 
@@ -55,59 +237,56 @@
         <div class="alert-error">{{ $errors->first() }}</div>
     @endif
 
-    <form class="card form-card report-filter" method="GET" action="{{ route('admin.machinery-diesel-logs.index') }}">
-        <section class="form-section">
-            <h2 class="section-title">Filter</h2>
-            <div class="form-grid three">
-                <div class="field">
+    <section class="card diesel-sheet-toolbar">
+        <form class="diesel-filter-grid" method="GET" action="{{ route('admin.machinery-diesel-logs.index') }}">
+                <div class="diesel-field">
                     <label for="date">Date</label>
                     <input id="date" name="date" type="date" value="{{ old('date', $selectedDate) }}">
                 </div>
-                <div class="field">
+                <div class="diesel-field">
                     <label for="month">Month</label>
                     <input id="month" name="month" type="month" value="{{ old('month', $selectedMonth) }}">
                 </div>
-                <div class="field">
-                    <label>&nbsp;</label>
+                <div class="diesel-save-field">
                     <button class="btn" type="submit">Show Sheet</button>
                 </div>
-            </div>
-        </section>
-    </form>
+        </form>
 
-    <section class="stats-grid">
-        <div class="card stat-card">
-            <span>Machinery</span>
-            <strong>{{ $summary['machinery_count'] }}</strong>
-        </div>
-        <div class="card stat-card">
-            <span>Issued</span>
-            <strong>{{ number_format($summary['actual_issued'], 2) }}</strong>
-        </div>
-        <div class="card stat-card">
-            <span>Expected Used</span>
-            <strong>{{ number_format($summary['expected_consumption'], 2) }}</strong>
-        </div>
-        <div class="card stat-card">
-            <span>Closing Balance</span>
-            <strong>{{ number_format($summary['closing_balance'], 2) }}</strong>
+        <div class="diesel-summary-strip">
+            <div class="diesel-summary-item">
+                <span>Machinery</span>
+                <strong>{{ $summary['machinery_count'] }}</strong>
+            </div>
+            <div class="diesel-summary-item">
+                <span>Issued</span>
+                <strong>{{ number_format($summary['actual_issued'], 2) }}</strong>
+            </div>
+            <div class="diesel-summary-item">
+                <span>Expected Used</span>
+                <strong>{{ number_format($summary['expected_consumption'], 2) }}</strong>
+            </div>
+            <div class="diesel-summary-item">
+                <span>Closing Balance</span>
+                <strong>{{ number_format($summary['closing_balance'], 2) }}</strong>
+            </div>
         </div>
     </section>
 
-    <form class="card form-card machinery-form-card" method="POST" action="{{ route('admin.machinery-diesel-logs.store') }}">
+    <form class="card diesel-entry-card" method="POST" action="{{ route('admin.machinery-diesel-logs.store') }}">
         @csrf
-        <section class="form-section">
-            <h2 class="section-title">Add / Update Entry</h2>
-            <div class="form-grid three">
-                <div class="field">
+        <div class="diesel-section-head">
+            <h2>Add / Update Entry</h2>
+        </div>
+        <div class="diesel-entry-grid">
+                <div class="diesel-field">
                     <label for="issue_date">Date</label>
                     <input id="issue_date" name="issue_date" type="date" value="{{ old('issue_date', $selectedDate ?? now()->toDateString()) }}" required>
                 </div>
-                <div class="field">
+                <div class="diesel-field">
                     <label for="machinery">Machinery</label>
                     <input id="machinery" name="machinery" type="text" value="{{ old('machinery') }}" placeholder="Poclain 210 JCB" required>
                 </div>
-                <div class="field">
+                <div class="diesel-field">
                     <label for="labour_site_id">Site</label>
                     <select id="labour_site_id" name="labour_site_id">
                         <option value="">No site</option>
@@ -116,42 +295,42 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="field">
+                <div class="diesel-field">
                     <label for="minimum_stock_ltr">Minimum Stock (L)</label>
                     <input id="minimum_stock_ltr" name="minimum_stock_ltr" type="number" min="0" step="0.01" value="{{ old('minimum_stock_ltr', 0) }}">
                 </div>
-                <div class="field">
+                <div class="diesel-field">
                     <label for="daily_diesel_for_8hr_ltr">Daily Diesel for 8 Hr (L)</label>
                     <input id="daily_diesel_for_8hr_ltr" name="daily_diesel_for_8hr_ltr" type="number" min="0" step="0.01" value="{{ old('daily_diesel_for_8hr_ltr', 0) }}">
                 </div>
-                <div class="field">
+                <div class="diesel-field">
                     <label for="yesterday_balance_ltr">Yesterday Balance (L)</label>
                     <input id="yesterday_balance_ltr" name="yesterday_balance_ltr" type="number" min="0" step="0.01" value="{{ old('yesterday_balance_ltr', 0) }}">
                 </div>
-                <div class="field">
+                <div class="diesel-field">
                     <label for="actual_diesel_issued_today_ltr">Actual Issued Today (L)</label>
                     <input id="actual_diesel_issued_today_ltr" name="actual_diesel_issued_today_ltr" type="number" min="0" step="0.01" value="{{ old('actual_diesel_issued_today_ltr', 0) }}">
                 </div>
-                <div class="field">
+                <div class="diesel-field">
                     <label for="hours_worked">Hours Worked</label>
                     <input id="hours_worked" name="hours_worked" type="number" min="0" max="24" step="0.01" value="{{ old('hours_worked', 8) }}">
                 </div>
-                <div class="field">
+                <div class="diesel-field">
                     <label for="evening_physical_balance_ltr">Evening Physical Balance (L)</label>
                     <input id="evening_physical_balance_ltr" name="evening_physical_balance_ltr" type="number" min="0" step="0.01" value="{{ old('evening_physical_balance_ltr') }}">
                 </div>
-                <div class="field">
+                <div class="diesel-field">
                     <label for="remarks">Remarks</label>
                     <textarea id="remarks" name="remarks" rows="2">{{ old('remarks') }}</textarea>
                 </div>
-            </div>
-            <div class="actions">
+                <div class="diesel-save-field">
                 <button class="btn" type="submit">Save Entry</button>
-            </div>
-        </section>
+                </div>
+        </div>
     </form>
 
-    <section class="card table-wrap">
+    <section class="card diesel-sheet-card">
+        <div class="diesel-table-scroll">
         <table class="sheet-table machinery-diesel-table">
             <thead>
                 <tr>
@@ -200,5 +379,6 @@
                 @endforelse
             </tbody>
         </table>
+        </div>
     </section>
 @endsection
