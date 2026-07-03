@@ -144,6 +144,76 @@ class VehicleDriverAttendanceController extends Controller
         return redirect()->route('admin.driver-attendance.index')->with('success', 'Driver attendance saved successfully.');
     }
 
+    public function edit(int $vehicleDriverAttendance): View
+    {
+        return view('admin.driver-attendance.edit', [
+            'attendance' => $this->findAttendance($vehicleDriverAttendance),
+            'vehicles' => Vehicle::query()
+                ->forCurrentCompany()
+                ->orderBy('vehicle_number')
+                ->get(['id', 'vehicle_number', 'vehicle_type']),
+            'drivers' => VehicleDriver::query()
+                ->forCurrentCompany()
+                ->with('vehicle:id,vehicle_number')
+                ->orderBy('name')
+                ->get(['id', 'vehicle_id', 'name', 'mobile']),
+            'statuses' => VehicleDriverAttendance::STATUSES,
+        ]);
+    }
+
+    public function update(Request $request, int $vehicleDriverAttendance): RedirectResponse
+    {
+        $attendance = $this->findAttendance($vehicleDriverAttendance);
+
+        $data = $request->validate([
+            'vehicle_id' => ['required', Rule::exists($this->tenantTable('vehicles'), 'id')->where('company_id', app(Tenant::class)->id())],
+            'vehicle_driver_id' => ['required', Rule::exists($this->tenantTable('vehicle_drivers'), 'id')->where('company_id', app(Tenant::class)->id())],
+            'attendance_date' => [
+                'required',
+                'date',
+                Rule::unique($this->tenantTable('vehicle_driver_attendances'), 'attendance_date')
+                    ->where('vehicle_driver_id', $request->input('vehicle_driver_id'))
+                    ->ignore($attendance->id),
+            ],
+            'status' => ['required', Rule::in(VehicleDriverAttendance::STATUSES)],
+            'in_time' => ['nullable', 'date_format:H:i'],
+            'out_time' => ['nullable', 'date_format:H:i'],
+            'remarks' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $driver = VehicleDriver::query()
+            ->forCurrentCompany()
+            ->whereKey($data['vehicle_driver_id'])
+            ->where('vehicle_id', $data['vehicle_id'])
+            ->first();
+
+        if (! $driver) {
+            return back()
+                ->withErrors(['vehicle_driver_id' => 'Selected driver is not assigned to this vehicle.'])
+                ->withInput();
+        }
+
+        $attendance->update([
+            'vehicle_id' => $data['vehicle_id'],
+            'vehicle_driver_id' => $data['vehicle_driver_id'],
+            'attendance_date' => Carbon::parse($data['attendance_date'])->toDateString(),
+            'status' => $data['status'],
+            'in_time' => $data['in_time'] ?? null,
+            'out_time' => $data['out_time'] ?? null,
+            'remarks' => $data['remarks'] ?? null,
+        ]);
+
+        return redirect()->route('admin.driver-attendance.index')->with('success', 'Driver attendance updated successfully.');
+    }
+
+    private function findAttendance(int $vehicleDriverAttendance): VehicleDriverAttendance
+    {
+        return VehicleDriverAttendance::query()
+            ->forCurrentCompany()
+            ->with(['vehicle:id,vehicle_number,vehicle_type', 'driver:id,name,mobile,vehicle_id'])
+            ->findOrFail($vehicleDriverAttendance);
+    }
+
     private function tenantTable(string $table): string
     {
         $connection = app(Tenant::class)->connectionName();

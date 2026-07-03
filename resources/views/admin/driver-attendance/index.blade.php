@@ -168,6 +168,7 @@
                     <th>In</th>
                     <th>Out</th>
                     <th>Remarks</th>
+                    <th>Action</th>
                 </tr>
             </thead>
             <tbody>
@@ -194,10 +195,13 @@
                         <td>{{ $attendance->in_time ?? '-' }}</td>
                         <td>{{ $attendance->out_time ?? '-' }}</td>
                         <td>{{ $attendance->remarks ?? '-' }}</td>
+                        <td>
+                            <a class="btn small secondary" href="{{ route('admin.driver-attendance.edit', $attendance) }}">Edit</a>
+                        </td>
                     </tr>
                 @empty
                     <tr>
-                        <td class="empty" colspan="7">No driver attendance found.</td>
+                        <td class="empty" colspan="8">No driver attendance found.</td>
                     </tr>
                 @endforelse
             </tbody>
