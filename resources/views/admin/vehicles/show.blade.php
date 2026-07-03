@@ -324,7 +324,7 @@
             <table>
                 <tbody>
                     <tr>
-                        <th>Fixed Monthly Amount</th>
+                        <th>{{ $isCamper ? 'Fixed Monthly Amount' : 'Reference Monthly Amount' }}</th>
                         <td>{{ number_format($billingSummary['fixed_monthly_amount'], 2) }}</td>
                     </tr>
                     <tr>
@@ -344,7 +344,7 @@
                         <td>{{ number_format($billingSummary['hire_per_hour_rate'], 2) }}</td>
                     </tr>
                     <tr>
-                        <th>Total</th>
+                        <th>{{ $isCamper ? 'Total' : 'Amount' }}</th>
                         <td>{{ number_format($billingSummary['hire_total_amount'], 2) }}</td>
                     </tr>
                     <tr>
@@ -374,7 +374,7 @@
                         </tr>
                     @endif
                     <tr>
-                        <th>{{ $isCamper ? 'Total Billing Amount' : 'Gross Billing Amount' }}</th>
+                        <th>{{ $isCamper ? 'Total Billing Amount' : 'Net Pay Before GST' }}</th>
                         <td>{{ number_format($billingSummary['gross_billing_amount'], 2) }}</td>
                     </tr>
                     <tr>
@@ -382,7 +382,7 @@
                         <td>{{ number_format($billingSummary['gst_amount'], 2) }}</td>
                     </tr>
                     <tr>
-                        <th>Billing Amount With GST</th>
+                        <th>{{ $isCamper ? 'Billing Amount With GST' : 'Net Pay' }}</th>
                         <td>{{ number_format($billingSummary['total_billing_amount'], 2) }}</td>
                     </tr>
                     <tr>
@@ -390,7 +390,7 @@
                         <td>{{ number_format($billingSummary['tds_amount'], 2) }}</td>
                     </tr>
                     <tr>
-                        <th>Net Payable</th>
+                        <th>{{ $isCamper ? 'Net Payable' : 'Final Net Pay' }}</th>
                         <td><strong>{{ number_format($billingSummary['net_payable'], 2) }}</strong></td>
                     </tr>
                 </tbody>

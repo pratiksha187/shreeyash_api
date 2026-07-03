@@ -85,7 +85,10 @@ class VehicleController extends Controller
         $extraKmAmount = round($extraKm * $extraKmRate, 2);
         $effectiveOtRate = $isCamper ? $this->camperBillingValue($vehicle, 'Company OT Rate', 55) : (float) $vehicle->ot_rate;
         $totalOtAmount = round(($totalOtMinutes / 60) * $effectiveOtRate, 2);
-        $grossBillingAmount = (float) $vehicle->fixed_monthly_amount + $hireTotalAmount + (float) $vehicle->extra_sunday_paid_amount + $totalOtAmount + $extraKmAmount;
+        $baseBillingAmount = $isCamper
+            ? (float) $vehicle->fixed_monthly_amount
+            : $hireTotalAmount;
+        $grossBillingAmount = $baseBillingAmount + (float) $vehicle->extra_sunday_paid_amount + $totalOtAmount + $extraKmAmount;
         $gstAmount = round($grossBillingAmount * ((float) $vehicle->gst_percentage / 100), 2);
         $totalBillingAmount = $grossBillingAmount + $gstAmount;
         $tdsAmount = round($totalBillingAmount * ((float) $vehicle->tds_percentage / 100), 2);
@@ -122,6 +125,7 @@ class VehicleController extends Controller
                 'diesel_total' => $dieselTotal,
                 'average' => $dieselTotal > 0 ? $totalKm / $dieselTotal : 0,
                 'fixed_monthly_amount' => (float) $vehicle->fixed_monthly_amount,
+                'base_billing_amount' => $baseBillingAmount,
                 'hire_per_day_rate' => (float) $vehicle->hire_per_day_rate,
                 'hire_per_hour_rate' => (float) $vehicle->hire_per_hour_rate,
                 'total_duty_hours' => $this->formatMinutes($totalDutyMinutes),
