@@ -10,6 +10,7 @@ use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class DailyDieselPurchaseController extends Controller
@@ -66,7 +67,11 @@ class DailyDieselPurchaseController extends Controller
             'entries.*.diesel_ltr' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
             'entries.*.rate' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
             'entries.*.sites' => ['nullable', 'array'],
-            'entries.*.sites.*.labour_site_id' => ['required', 'exists:labour_sites,id'],
+            'entries.*.sites.*.labour_site_id' => [
+                'required',
+                Rule::exists($this->tenantTable('labour_sites'), 'id')
+                    ->where('company_id', app(Tenant::class)->id()),
+            ],
             'entries.*.sites.*.opening_balance' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
             'entries.*.sites.*.today_supply' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
             'entries.*.sites.*.used' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
@@ -215,5 +220,12 @@ class DailyDieselPurchaseController extends Controller
         }
 
         return false;
+    }
+
+    private function tenantTable(string $table): string
+    {
+        $connection = app(Tenant::class)->connectionName();
+
+        return $connection ? $connection . '.' . $table : $table;
     }
 }
