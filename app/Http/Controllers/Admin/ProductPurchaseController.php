@@ -25,23 +25,27 @@ class ProductPurchaseController extends Controller
         $filters = $request->validate([
             'month' => ['nullable', 'date_format:Y-m'],
             'search' => ['nullable', 'string', 'max:100'],
+            'stock_labour_site_id' => ['nullable', 'integer'],
         ]);
 
         $selectedMonth = $filters['month'] ?? now()->format('Y-m');
         $monthStart = Carbon::createFromFormat('Y-m', $selectedMonth)->startOfMonth();
         $monthEnd = $monthStart->copy()->endOfMonth();
         $search = $filters['search'] ?? null;
+        $selectedSiteId = $filters['stock_labour_site_id'] ?? null;
 
         $purchases = ProductPurchase::query()
             ->forCurrentCompany()
             ->with(['material', 'stockSite'])
             ->whereBetween('purchase_date', [$monthStart->toDateString(), $monthEnd->toDateString()])
+            ->when($selectedSiteId, fn ($query) => $query->where('stock_labour_site_id', $selectedSiteId))
             ->when($search, function ($query, string $search) {
                 $query->where(function ($query) use ($search) {
                     $query
                         ->where('product_name', 'like', "%{$search}%")
                         ->orWhere('supplier_name', 'like', "%{$search}%")
-                        ->orWhere('invoice_no', 'like', "%{$search}%");
+                        ->orWhere('invoice_no', 'like', "%{$search}%")
+                        ->orWhere('size', 'like', "%{$search}%");
                 });
             })
             ->orderBy('purchase_date')
@@ -52,6 +56,7 @@ class ProductPurchaseController extends Controller
             'selectedMonth' => $selectedMonth,
             'monthLabel' => $monthStart->format('M Y'),
             'search' => $search,
+            'selectedSiteId' => $selectedSiteId,
             'purchases' => $purchases,
             'materials' => $this->hasTable('materials')
                 ? Material::query()->forCurrentCompany()->where('is_active', true)->orderBy('name')->get()
@@ -59,6 +64,8 @@ class ProductPurchaseController extends Controller
             'sites' => LabourSite::query()->forCurrentCompany()->where('is_active', true)->orderBy('name')->get(['id', 'name']),
             'summary' => [
                 'quantity' => $purchases->sum(fn (ProductPurchase $purchase) => (float) $purchase->quantity),
+                'pcs' => $purchases->sum(fn (ProductPurchase $purchase) => (float) $purchase->pcs),
+                'weight_kg' => $purchases->sum(fn (ProductPurchase $purchase) => (float) $purchase->weight_kg),
                 'amount' => $purchases->sum(fn (ProductPurchase $purchase) => (float) $purchase->total_amount),
                 'products' => $purchases->pluck('product_name')->filter()->unique()->count(),
                 'suppliers' => $purchases->pluck('supplier_name')->filter()->unique()->count(),
@@ -114,13 +121,23 @@ class ProductPurchaseController extends Controller
             'supplier_name' => ['nullable', 'string', 'max:255'],
             'invoice_no' => ['nullable', 'string', 'max:100'],
             'product_name' => ['required', 'string', 'max:255'],
+            'size' => ['nullable', 'string', 'max:100'],
+            'pcs' => ['nullable', 'numeric', 'min:0', 'max:999999999.99'],
+            'weight_kg' => ['nullable', 'numeric', 'min:0', 'max:999999999.99'],
             'unit' => ['nullable', 'string', 'max:50'],
-            'quantity' => ['required', 'numeric', 'min:0', 'max:999999999.99'],
+            'quantity' => ['nullable', 'numeric', 'min:0', 'max:999999999.99'],
             'rate' => ['required', 'numeric', 'min:0', 'max:999999999.99'],
             'tax_amount' => ['nullable', 'numeric', 'min:0', 'max:999999999.99'],
             'transport_amount' => ['nullable', 'numeric', 'min:0', 'max:999999999.99'],
             'remarks' => ['nullable', 'string', 'max:2000'],
         ]);
+
+        $data['pcs'] = $data['pcs'] ?? 0;
+        $data['weight_kg'] = $data['weight_kg'] ?? 0;
+        $data['quantity'] = $this->billingQuantity($data);
+        $data['unit'] = $data['unit'] ?: ((float) $data['weight_kg'] > 0 ? 'Kg' : 'Nos');
+
+        return $data;
     }
 
     /**
@@ -129,11 +146,30 @@ class ProductPurchaseController extends Controller
     private function totalAmount(array $data): float
     {
         return round(
-            ((float) $data['quantity'] * (float) $data['rate'])
+            ($this->billingQuantity($data) * (float) $data['rate'])
             + (float) ($data['tax_amount'] ?? 0)
             + (float) ($data['transport_amount'] ?? 0),
             2
         );
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     */
+    private function billingQuantity(array $data): float
+    {
+        $weightKg = (float) ($data['weight_kg'] ?? 0);
+        $pcs = (float) ($data['pcs'] ?? 0);
+
+        if ($weightKg > 0) {
+            return $weightKg;
+        }
+
+        if ($pcs > 0) {
+            return $pcs;
+        }
+
+        return (float) ($data['quantity'] ?? 0);
     }
 
     private function recordPurchaseStock(ProductPurchase $purchase): void

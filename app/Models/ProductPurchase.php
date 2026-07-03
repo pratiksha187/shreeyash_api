@@ -18,6 +18,9 @@ class ProductPurchase extends Model
         'supplier_name',
         'invoice_no',
         'product_name',
+        'size',
+        'pcs',
+        'weight_kg',
         'unit',
         'quantity',
         'rate',
@@ -31,6 +34,8 @@ class ProductPurchase extends Model
     {
         return [
             'purchase_date' => 'date',
+            'pcs' => 'decimal:2',
+            'weight_kg' => 'decimal:2',
             'quantity' => 'decimal:2',
             'rate' => 'decimal:2',
             'tax_amount' => 'decimal:2',

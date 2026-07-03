@@ -99,6 +99,10 @@
             font-weight: 800;
         }
 
+        .purchase-table .sheet-highlight {
+            background: #fff200;
+        }
+
         .purchase-table .purchase-text-input {
             min-width: 140px;
         }
@@ -129,7 +133,7 @@
     <div class="page-header">
         <div>
             <h1>{{ $monthLabel }} Product Purchase</h1>
-            <p>Enter product bills with quantity, rate, tax, transport, stock material, and auto total.</p>
+            <p>Enter site-wise purchase bills with PCS, weight, rate, and auto amount.</p>
         </div>
     </div>
 
@@ -160,6 +164,15 @@
                     @enderror
                 </div>
                 <div class="field">
+                    <label for="stock_labour_site_id">Site</label>
+                    <select id="stock_labour_site_id" name="stock_labour_site_id">
+                        <option value="">All sites</option>
+                        @foreach ($sites as $site)
+                            <option value="{{ $site->id }}" @selected((string) $selectedSiteId === (string) $site->id)>{{ $site->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="field">
                     <label>&nbsp;</label>
                     <button class="btn" type="submit">Show Purchases</button>
                 </div>
@@ -169,8 +182,12 @@
 
     <section class="stats-grid">
         <div class="card stat-card">
-            <span>Total Quantity</span>
-            <strong>{{ number_format($summary['quantity'], 2) }}</strong>
+            <span>Total PCS</span>
+            <strong>{{ number_format($summary['pcs'], 2) }}</strong>
+        </div>
+        <div class="card stat-card">
+            <span>Total Weight KG</span>
+            <strong>{{ number_format($summary['weight_kg'], 2) }}</strong>
         </div>
         <div class="card stat-card">
             <span>Total Amount</span>
@@ -191,7 +208,7 @@
             <div class="purchase-panel-head">
                 <div>
                     <h2>Add Purchase</h2>
-                    <p>Use invoice number and supplier name when available for easier tracking.</p>
+                    <p>Amount uses Weight KG × Rate. If weight is blank, it uses PCS × Rate.</p>
                 </div>
             </div>
 
@@ -203,35 +220,22 @@
                 <table class="purchase-table">
                     <thead>
                         <tr>
-                            <th>Date</th>
-                            <th>Supplier</th>
-                            <th>Invoice</th>
-                            <th>Stock Material</th>
                             <th>Stock Site</th>
-                            <th>Product</th>
-                            <th>Unit</th>
-                            <th>Quantity</th>
+                            <th>Date</th>
+                            <th>Party Name</th>
+                            <th>Challan No</th>
+                            <th>Item Name</th>
+                            <th>Size</th>
+                            <th>PCS</th>
+                            <th>Weight In KG</th>
                             <th>Rate</th>
-                            <th>Tax</th>
-                            <th>Transport</th>
-                            <th>Total</th>
-                            <th>Remarks</th>
+                            <th>Amt</th>
+                            <th>Remark</th>
                             <th>Action</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr data-purchase-row>
-                            <td><input class="purchase-date-input" form="create-purchase-form" name="purchase_date" type="date" value="{{ now()->toDateString() }}" required></td>
-                            <td><input class="purchase-text-input" form="create-purchase-form" name="supplier_name"></td>
-                            <td><input form="create-purchase-form" name="invoice_no"></td>
-                            <td>
-                                <select class="purchase-text-input" form="create-purchase-form" name="material_id">
-                                    <option value="">No stock update</option>
-                                    @foreach ($materials as $material)
-                                        <option value="{{ $material->id }}">{{ $material->name }}{{ $material->unit ? ' ('.$material->unit.')' : '' }}</option>
-                                    @endforeach
-                                </select>
-                            </td>
                             <td>
                                 <select class="purchase-text-input" form="create-purchase-form" name="stock_labour_site_id">
                                     <option value="">Main Store</option>
@@ -240,13 +244,22 @@
                                     @endforeach
                                 </select>
                             </td>
+                            <td><input class="purchase-date-input sheet-highlight" form="create-purchase-form" name="purchase_date" type="date" value="{{ now()->toDateString() }}" required></td>
+                            <td><input class="purchase-text-input" form="create-purchase-form" name="supplier_name"></td>
+                            <td><input form="create-purchase-form" name="invoice_no"></td>
                             <td><input class="purchase-text-input" form="create-purchase-form" name="product_name" required></td>
-                            <td><input form="create-purchase-form" name="unit" placeholder="Nos/Kg/Ltr"></td>
-                            <td><input class="js-quantity" form="create-purchase-form" name="quantity" type="number" min="0" step="0.01" value="0" required></td>
+                            <td><input class="sheet-highlight" form="create-purchase-form" name="size"></td>
+                            <td><input class="js-pcs" form="create-purchase-form" name="pcs" type="number" min="0" step="0.01" value="0"></td>
+                            <td><input class="js-weight" form="create-purchase-form" name="weight_kg" type="number" min="0" step="0.01" value="0"></td>
                             <td><input class="js-rate" form="create-purchase-form" name="rate" type="number" min="0" step="0.01" value="0" required></td>
-                            <td><input class="js-tax" form="create-purchase-form" name="tax_amount" type="number" min="0" step="0.01" value="0"></td>
-                            <td><input class="js-transport" form="create-purchase-form" name="transport_amount" type="number" min="0" step="0.01" value="0"></td>
-                            <td><input class="js-total" type="number" value="0.00" readonly></td>
+                            <td>
+                                <input class="js-total" type="number" value="0.00" readonly>
+                                <input form="create-purchase-form" name="material_id" type="hidden">
+                                <input form="create-purchase-form" name="unit" type="hidden">
+                                <input form="create-purchase-form" name="quantity" type="hidden" value="0">
+                                <input form="create-purchase-form" name="tax_amount" type="hidden" value="0">
+                                <input form="create-purchase-form" name="transport_amount" type="hidden" value="0">
+                            </td>
                             <td><textarea form="create-purchase-form" name="remarks"></textarea></td>
                             <td><button class="btn small" form="create-purchase-form" type="submit">Save</button></td>
                         </tr>
@@ -267,19 +280,17 @@
                 <table class="purchase-table">
                     <thead>
                         <tr>
-                            <th>Date</th>
-                            <th>Supplier</th>
-                            <th>Invoice</th>
-                            <th>Stock Material</th>
                             <th>Stock Site</th>
-                            <th>Product</th>
-                            <th>Unit</th>
-                            <th>Quantity</th>
+                            <th>Date</th>
+                            <th>Party Name</th>
+                            <th>Challan No</th>
+                            <th>Item Name</th>
+                            <th>Size</th>
+                            <th>PCS</th>
+                            <th>Weight In KG</th>
                             <th>Rate</th>
-                            <th>Tax</th>
-                            <th>Transport</th>
-                            <th>Total</th>
-                            <th>Remarks</th>
+                            <th>Amt</th>
+                            <th>Remark</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -290,20 +301,6 @@
                                 $deleteFormId = 'purchase-delete-form-'.$purchase->id;
                             @endphp
                             <tr data-purchase-row>
-                                <td><input class="purchase-date-input" form="{{ $formId }}" name="purchase_date" type="date" value="{{ $purchase->purchase_date->toDateString() }}" required></td>
-                                <td><input class="purchase-text-input" form="{{ $formId }}" name="supplier_name" value="{{ $purchase->supplier_name }}"></td>
-                                <td><input form="{{ $formId }}" name="invoice_no" value="{{ $purchase->invoice_no }}"></td>
-                                <td>
-                                    <select class="purchase-text-input" form="{{ $formId }}" name="material_id">
-                                        <option value="">No stock update</option>
-                                        @foreach ($materials as $material)
-                                            <option value="{{ $material->id }}" @selected((int) $purchase->material_id === (int) $material->id)>{{ $material->name }}{{ $material->unit ? ' ('.$material->unit.')' : '' }}</option>
-                                        @endforeach
-                                    </select>
-                                    @if ($purchase->material_id)
-                                        <div class="table-subtext">Stock added on create</div>
-                                    @endif
-                                </td>
                                 <td>
                                     <select class="purchase-text-input" form="{{ $formId }}" name="stock_labour_site_id">
                                         <option value="">Main Store</option>
@@ -312,13 +309,22 @@
                                         @endforeach
                                     </select>
                                 </td>
+                                <td><input class="purchase-date-input sheet-highlight" form="{{ $formId }}" name="purchase_date" type="date" value="{{ $purchase->purchase_date->toDateString() }}" required></td>
+                                <td><input class="purchase-text-input" form="{{ $formId }}" name="supplier_name" value="{{ $purchase->supplier_name }}"></td>
+                                <td><input form="{{ $formId }}" name="invoice_no" value="{{ $purchase->invoice_no }}"></td>
                                 <td><input class="purchase-text-input" form="{{ $formId }}" name="product_name" value="{{ $purchase->product_name }}" required></td>
-                                <td><input form="{{ $formId }}" name="unit" value="{{ $purchase->unit }}"></td>
-                                <td><input class="js-quantity" form="{{ $formId }}" name="quantity" type="number" min="0" step="0.01" value="{{ number_format($purchase->quantity, 2, '.', '') }}" required></td>
+                                <td><input class="sheet-highlight" form="{{ $formId }}" name="size" value="{{ $purchase->size }}"></td>
+                                <td><input class="js-pcs" form="{{ $formId }}" name="pcs" type="number" min="0" step="0.01" value="{{ number_format($purchase->pcs, 2, '.', '') }}"></td>
+                                <td><input class="js-weight" form="{{ $formId }}" name="weight_kg" type="number" min="0" step="0.01" value="{{ number_format($purchase->weight_kg, 2, '.', '') }}"></td>
                                 <td><input class="js-rate" form="{{ $formId }}" name="rate" type="number" min="0" step="0.01" value="{{ number_format($purchase->rate, 2, '.', '') }}" required></td>
-                                <td><input class="js-tax" form="{{ $formId }}" name="tax_amount" type="number" min="0" step="0.01" value="{{ number_format($purchase->tax_amount, 2, '.', '') }}"></td>
-                                <td><input class="js-transport" form="{{ $formId }}" name="transport_amount" type="number" min="0" step="0.01" value="{{ number_format($purchase->transport_amount, 2, '.', '') }}"></td>
-                                <td><input class="js-total" type="number" value="{{ number_format($purchase->total_amount, 2, '.', '') }}" readonly></td>
+                                <td>
+                                    <input class="js-total" type="number" value="{{ number_format($purchase->total_amount, 2, '.', '') }}" readonly>
+                                    <input form="{{ $formId }}" name="material_id" type="hidden" value="{{ $purchase->material_id }}">
+                                    <input form="{{ $formId }}" name="unit" type="hidden" value="{{ $purchase->unit }}">
+                                    <input form="{{ $formId }}" name="quantity" type="hidden" value="{{ number_format($purchase->quantity, 2, '.', '') }}">
+                                    <input form="{{ $formId }}" name="tax_amount" type="hidden" value="{{ number_format($purchase->tax_amount, 2, '.', '') }}">
+                                    <input form="{{ $formId }}" name="transport_amount" type="hidden" value="{{ number_format($purchase->transport_amount, 2, '.', '') }}">
+                                </td>
                                 <td><textarea form="{{ $formId }}" name="remarks">{{ $purchase->remarks }}</textarea></td>
                                 <td>
                                     <div class="purchase-actions">
@@ -337,7 +343,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="14">No product purchase entries found.</td>
+                                <td colspan="12">No product purchase entries found.</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -349,14 +355,24 @@
     <script>
         document.querySelectorAll('[data-purchase-row]').forEach((row) => {
             const recalculate = () => {
-                const quantity = parseFloat(row.querySelector('.js-quantity')?.value || 0);
+                const pcs = parseFloat(row.querySelector('.js-pcs')?.value || 0);
+                const weight = parseFloat(row.querySelector('.js-weight')?.value || 0);
                 const rate = parseFloat(row.querySelector('.js-rate')?.value || 0);
-                const tax = parseFloat(row.querySelector('.js-tax')?.value || 0);
-                const transport = parseFloat(row.querySelector('.js-transport')?.value || 0);
                 const total = row.querySelector('.js-total');
+                const quantity = row.querySelector('input[name="quantity"]');
+                const unit = row.querySelector('input[name="unit"]');
+                const billingQuantity = weight > 0 ? weight : pcs;
 
                 if (total) {
-                    total.value = (quantity * rate + tax + transport).toFixed(2);
+                    total.value = (billingQuantity * rate).toFixed(2);
+                }
+
+                if (quantity) {
+                    quantity.value = billingQuantity.toFixed(2);
+                }
+
+                if (unit) {
+                    unit.value = weight > 0 ? 'Kg' : 'Nos';
                 }
             };
 
