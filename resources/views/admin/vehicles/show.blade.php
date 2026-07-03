@@ -149,6 +149,7 @@
             <h1>{{ $monthLabel }} Vehicle Sheet</h1>
             <p>Daily duty hours, hourly amount, site, diesel, and bill totals are calculated automatically.</p>
         </div>
+        <button class="btn secondary no-print" type="button" onclick="window.print()">Print Sheet</button>
     </div>
 
     <form id="monthly-entry-form" class="card table-wrap" method="POST" action="{{ route('admin.vehicles.logs.monthly', $vehicle) }}" data-hour-rate="{{ (float) $vehicle->hire_per_hour_rate }}">
@@ -277,6 +278,7 @@
         <div class="sheet-actions">
             <button class="btn" type="submit">Save Daily Entries</button>
             <a class="btn secondary" href="#bill-summary">View Bill</a>
+            <button class="btn secondary" type="button" onclick="window.print()">Print</button>
         </div>
     </form>
 

@@ -1527,6 +1527,94 @@
             background: #eff6ff;
         }
 
+        @media print {
+            body.vehicle-show-page {
+                background: #fff;
+            }
+
+            .vehicle-show-page .sidebar,
+            .vehicle-show-page .topbar,
+            .vehicle-show-page .report-filter,
+            .vehicle-show-page .sheet-actions,
+            .vehicle-show-page .no-print,
+            .vehicle-show-page .alert-success,
+            .vehicle-show-page .alert-error,
+            .vehicle-show-page .page-header .actions,
+            .vehicle-show-page footer {
+                display: none !important;
+            }
+
+            .vehicle-show-page .admin-shell {
+                display: block;
+            }
+
+            .vehicle-show-page .content,
+            .vehicle-show-page .main {
+                margin: 0;
+                padding: 0;
+                max-width: none;
+                width: 100%;
+            }
+
+            .vehicle-show-page .page-header {
+                margin: 0 0 10px;
+                padding: 0;
+                break-after: avoid;
+            }
+
+            .vehicle-show-page .detail-grid,
+            .vehicle-show-page .stats-grid {
+                grid-template-columns: repeat(4, minmax(0, 1fr));
+                gap: 6px;
+                margin-bottom: 10px;
+            }
+
+            .vehicle-show-page .card,
+            .vehicle-show-page .table-wrap {
+                border: 0;
+                box-shadow: none;
+            }
+
+            .vehicle-show-page .vehicle-sheet-table {
+                min-width: 0;
+                width: 100%;
+                font-size: 10px;
+            }
+
+            .vehicle-show-page .vehicle-sheet-table th,
+            .vehicle-show-page .vehicle-sheet-table td {
+                padding: 4px;
+                border: 1px solid #111827;
+            }
+
+            .vehicle-show-page .vehicle-sheet-table th {
+                background: #f3f4f6 !important;
+                color: #111827 !important;
+            }
+
+            .vehicle-show-page input,
+            .vehicle-show-page textarea,
+            .vehicle-show-page select {
+                border: 0 !important;
+                background: transparent !important;
+                box-shadow: none !important;
+                padding: 0 !important;
+                min-width: 0 !important;
+                width: 100% !important;
+                font-size: inherit !important;
+            }
+
+            .vehicle-show-page .admin-time-text-wrap::after {
+                display: none;
+            }
+
+            .vehicle-show-page .sheet-summary-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 18px;
+                page-break-inside: avoid;
+            }
+        }
+
         .fdd-report-title,
         .sheet-report-title {
             padding: 14px 18px;
