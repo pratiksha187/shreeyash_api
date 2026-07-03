@@ -43,6 +43,7 @@ class VehicleController extends Controller
     public function show(Request $request, int $vehicle): View
     {
         $vehicle = $this->findVehicle($vehicle);
+        $isCamper = $this->isCamper($vehicle);
 
         $filters = $request->validate([
             'month' => ['nullable', 'date_format:Y-m'],
@@ -88,6 +89,7 @@ class VehicleController extends Controller
 
         return view('admin.vehicles.show', [
             'vehicle' => $vehicle,
+            'isCamper' => $isCamper,
             'selectedMonth' => $selectedMonth,
             'selectedVehicleLog' => $selectedVehicleLog,
             'monthLabel' => $monthStart->format('F Y'),
@@ -177,13 +179,7 @@ class VehicleController extends Controller
                 $startReading = $startReadingLog ? (float) $startReadingLog->start_reading : 0;
                 $endReading = $endReadingLog ? (float) $endReadingLog->end_reading : 0;
                 $totalKm = $startReading > 0 && $endReading >= $startReading ? $endReading - $startReading : 0;
-                $totalMinutes = (int) $logs->sum(function ($log) {
-                    if (! $log->in_at || ! $log->out_at) {
-                        return 0;
-                    }
-
-                    return $this->minutesForLog($log);
-                });
+                $totalMinutes = (int) $logs->sum(fn ($log) => $this->minutesForVehicleLog($vehicle, $log));
                 $hireHours = round($totalMinutes / 60, 2);
                 $hireAmount = round($hireHours * (float) $vehicle->hire_per_hour_rate, 2);
                 $parsedOtMinutes = (int) $logs->sum(fn ($log) => $this->minutesFromRemarks($log->remarks, 'OT Hrs'));
@@ -212,6 +208,10 @@ class VehicleController extends Controller
                     'out_at' => $lastOutLog?->out_at,
                     'in_time_value' => $inAt?->format('H:i'),
                     'out_time_value' => $lastOutLog?->out_at?->format('H:i'),
+                    'first_half_in_value' => $this->sessionTimeFromRemarks($firstLog?->remarks, 'First Half In') ?? $firstLog?->in_at?->format('H:i'),
+                    'first_half_out_value' => $this->sessionTimeFromRemarks($firstLog?->remarks, 'First Half Out'),
+                    'second_half_in_value' => $this->sessionTimeFromRemarks($firstLog?->remarks, 'Second Half In'),
+                    'second_half_out_value' => $this->sessionTimeFromRemarks($firstLog?->remarks, 'Second Half Out') ?? $lastOutLog?->out_at?->format('H:i'),
                     'total_minutes' => $totalMinutes,
                     'total_hours' => $this->formatMinutes($totalMinutes),
                     'hire_hours' => $hireHours,
@@ -239,6 +239,30 @@ class VehicleController extends Controller
         return $this->minutesFromRemarks($log->remarks, 'Total Hrs');
     }
 
+    private function minutesForVehicleLog(Vehicle $vehicle, $log): int
+    {
+        if ($this->isCamper($vehicle)) {
+            if (! $log->in_at || ! $log->out_at) {
+                return 0;
+            }
+
+            return $this->minutesForLog($log);
+        }
+
+        $firstHalf = $this->sessionMinutesFromRemarks($log->remarks, 'First Half');
+        $secondHalf = $this->sessionMinutesFromRemarks($log->remarks, 'Second Half');
+
+        if ($firstHalf > 0 || $secondHalf > 0) {
+            return $firstHalf + $secondHalf;
+        }
+
+        if ($log->in_at && $log->out_at) {
+            return $this->minutesForLog($log);
+        }
+
+        return 0;
+    }
+
     private function displayInAt($log, int $totalMinutes): ?Carbon
     {
         if (! $log) {
@@ -263,6 +287,41 @@ class VehicleController extends Controller
         }
 
         return ((int) $matches[1] * 60) + (int) $matches[2];
+    }
+
+    private function sessionTimeFromRemarks(?string $remarks, string $label): ?string
+    {
+        if (! $remarks || ! preg_match('/'.preg_quote($label, '/').':\s*(\d{2}:\d{2})/i', $remarks, $matches)) {
+            return null;
+        }
+
+        return $matches[1];
+    }
+
+    private function sessionMinutesFromRemarks(?string $remarks, string $label): int
+    {
+        $start = $this->sessionTimeFromRemarks($remarks, $label.' In');
+        $end = $this->sessionTimeFromRemarks($remarks, $label.' Out');
+
+        if (! $start || ! $end) {
+            return 0;
+        }
+
+        [$startHour, $startMinute] = array_map('intval', explode(':', $start));
+        [$endHour, $endMinute] = array_map('intval', explode(':', $end));
+        $startMinutes = ($startHour * 60) + $startMinute;
+        $endMinutes = ($endHour * 60) + $endMinute;
+
+        if ($endMinutes < $startMinutes) {
+            $endMinutes += 1440;
+        }
+
+        return max(0, $endMinutes - $startMinutes);
+    }
+
+    private function isCamper(Vehicle $vehicle): bool
+    {
+        return str_contains(strtolower((string) $vehicle->vehicle_type), 'camper');
     }
 
     /**

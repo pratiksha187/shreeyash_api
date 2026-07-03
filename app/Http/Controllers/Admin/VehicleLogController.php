@@ -28,6 +28,10 @@ class VehicleLogController extends Controller
             'entries.*.end_reading' => ['nullable', 'numeric', 'min:0', 'max:9999999999.99'],
             'entries.*.in_time' => ['nullable', 'date_format:H:i'],
             'entries.*.out_time' => ['nullable', 'date_format:H:i'],
+            'entries.*.first_half_in' => ['nullable', 'date_format:H:i'],
+            'entries.*.first_half_out' => ['nullable', 'date_format:H:i'],
+            'entries.*.second_half_in' => ['nullable', 'date_format:H:i'],
+            'entries.*.second_half_out' => ['nullable', 'date_format:H:i'],
             'entries.*.remarks' => ['nullable', 'string', 'max:500'],
         ]);
 
@@ -168,8 +172,18 @@ class VehicleLogController extends Controller
             return;
         }
 
-        $inAt = $this->dateTimeFromEntryTime($entryDate, $entry['in_time'] ?? null);
-        $outAt = $this->dateTimeFromEntryTime($entryDate, $entry['out_time'] ?? null);
+        if ($this->isCamper($vehicle)) {
+            $inAt = $this->dateTimeFromEntryTime($entryDate, $entry['in_time'] ?? null);
+            $outAt = $this->dateTimeFromEntryTime($entryDate, $entry['out_time'] ?? null);
+            $remarks = $entry['remarks'] ?? null;
+        } else {
+            $inAt = $this->dateTimeFromEntryTime($entryDate, $entry['first_half_in'] ?? null);
+            $outTime = filled($entry['second_half_out'] ?? null)
+                ? $entry['second_half_out']
+                : ($entry['first_half_out'] ?? null);
+            $outAt = $this->dateTimeFromEntryTime($entryDate, $outTime);
+            $remarks = $this->remarksWithShiftTimes($entry['remarks'] ?? null, $entry);
+        }
 
         if ($inAt && $outAt && $outAt->lessThan($inAt)) {
             $outAt->addDay();
@@ -188,11 +202,11 @@ class VehicleLogController extends Controller
             'challan_no' => $entry['challan_no'] ?? null,
             'site_name' => filled($entry['site_name'] ?? null) ? $entry['site_name'] : $vehicle->default_site,
             'diesel_added' => $entry['diesel_added'] ?? 0,
-            'start_reading' => $entry['start_reading'] ?? 0,
-            'end_reading' => $entry['end_reading'] ?? 0,
+            'start_reading' => $this->isCamper($vehicle) ? ($entry['start_reading'] ?? 0) : 0,
+            'end_reading' => $this->isCamper($vehicle) ? ($entry['end_reading'] ?? 0) : 0,
             'out_at' => $outAt,
             'purpose' => null,
-            'remarks' => $entry['remarks'] ?? null,
+            'remarks' => $remarks,
         ];
 
         if ($inAt) {
@@ -209,7 +223,7 @@ class VehicleLogController extends Controller
      */
     private function monthlyEntryHasData(array $entry): bool
     {
-        foreach (['challan_no', 'site_name', 'in_time', 'out_time', 'remarks'] as $field) {
+        foreach (['challan_no', 'site_name', 'in_time', 'out_time', 'first_half_in', 'first_half_out', 'second_half_in', 'second_half_out', 'remarks'] as $field) {
             if (filled($entry[$field] ?? null)) {
                 return true;
             }
@@ -231,5 +245,32 @@ class VehicleLogController extends Controller
         }
 
         return Carbon::createFromFormat('Y-m-d H:i', $entryDate.' '.$time);
+    }
+
+    private function remarksWithShiftTimes(?string $remarks, array $entry): ?string
+    {
+        $cleanRemarks = trim((string) preg_replace('/\s*\|?\s*(First Half In|First Half Out|Second Half In|Second Half Out):\s*\d{2}:\d{2}/i', '', (string) $remarks));
+
+        $parts = [];
+
+        foreach ([
+            'first_half_in' => 'First Half In',
+            'first_half_out' => 'First Half Out',
+            'second_half_in' => 'Second Half In',
+            'second_half_out' => 'Second Half Out',
+        ] as $key => $label) {
+            if (filled($entry[$key] ?? null)) {
+                $parts[] = $label.': '.$entry[$key];
+            }
+        }
+
+        return collect([$cleanRemarks, ...$parts])
+            ->filter()
+            ->implode(' | ') ?: null;
+    }
+
+    private function isCamper(Vehicle $vehicle): bool
+    {
+        return str_contains(strtolower((string) $vehicle->vehicle_type), 'camper');
     }
 }

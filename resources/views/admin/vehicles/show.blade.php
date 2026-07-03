@@ -163,11 +163,18 @@
                     <th>Day</th>
                     <th>Challan No</th>
                     <th>Diesel Added</th>
-                    <th>Start Reading</th>
-                    <th>End Reading</th>
-                    <th>Total KM</th>
-                    <th>In Time</th>
-                    <th>Out Time</th>
+                    @if ($isCamper)
+                        <th>Start Reading</th>
+                        <th>End Reading</th>
+                        <th>Total KM</th>
+                        <th>In Time</th>
+                        <th>Out Time</th>
+                    @else
+                        <th>First Half In</th>
+                        <th>First Half Out</th>
+                        <th>Second Half In</th>
+                        <th>Second Half Out</th>
+                    @endif
                     <th>Total Hrs</th>
                     <th>Value By Total Hrs</th>
                     <th>OT Hrs</th>
@@ -193,27 +200,54 @@
                         <td>
                             <input class="sheet-number" name="entries[{{ $entryKey }}][diesel_added]" type="number" min="0" step="0.01" value="{{ number_format($row['diesel_added'], 2, '.', '') }}">
                         </td>
-                        <td>
-                            <input class="sheet-number js-start-reading" name="entries[{{ $entryKey }}][start_reading]" type="number" min="0" step="0.01" value="{{ number_format($row['start_reading'], 2, '.', '') }}">
-                        </td>
-                        <td>
-                            <input class="sheet-number js-end-reading" name="entries[{{ $entryKey }}][end_reading]" type="number" min="0" step="0.01" value="{{ number_format($row['end_reading'], 2, '.', '') }}">
-                        </td>
-                        <td>
-                            <input class="sheet-number js-total-km" type="number" value="{{ number_format($row['total_km'], 0, '.', '') }}" readonly>
-                        </td>
-                        <td>
-                            <input class="js-in-time" data-time-value name="entries[{{ $entryKey }}][in_time]" type="hidden" value="{{ $row['in_time_value'] }}">
-                            <span class="admin-time-text-wrap">
-                                <input class="admin-time-text" data-time-display list="vehicle-time-options" type="text" value="{{ $timeLabel($row['in_time_value']) }}" placeholder="hh:mm AM" inputmode="text" aria-label="In time">
-                            </span>
-                        </td>
-                        <td>
-                            <input class="js-out-time" data-time-value name="entries[{{ $entryKey }}][out_time]" type="hidden" value="{{ $row['out_time_value'] }}">
-                            <span class="admin-time-text-wrap">
-                                <input class="admin-time-text" data-time-display list="vehicle-time-options" type="text" value="{{ $timeLabel($row['out_time_value']) }}" placeholder="hh:mm AM" inputmode="text" aria-label="Out time">
-                            </span>
-                        </td>
+                        @if ($isCamper)
+                            <td>
+                                <input class="sheet-number js-start-reading" name="entries[{{ $entryKey }}][start_reading]" type="number" min="0" step="0.01" value="{{ number_format($row['start_reading'], 2, '.', '') }}">
+                            </td>
+                            <td>
+                                <input class="sheet-number js-end-reading" name="entries[{{ $entryKey }}][end_reading]" type="number" min="0" step="0.01" value="{{ number_format($row['end_reading'], 2, '.', '') }}">
+                            </td>
+                            <td>
+                                <input class="sheet-number js-total-km" type="number" value="{{ number_format($row['total_km'], 0, '.', '') }}" readonly>
+                            </td>
+                            <td>
+                                <input class="js-in-time" data-time-value name="entries[{{ $entryKey }}][in_time]" type="hidden" value="{{ $row['in_time_value'] }}">
+                                <span class="admin-time-text-wrap">
+                                    <input class="admin-time-text" data-time-display list="vehicle-time-options" type="text" value="{{ $timeLabel($row['in_time_value']) }}" placeholder="hh:mm AM" inputmode="text" aria-label="In time">
+                                </span>
+                            </td>
+                            <td>
+                                <input class="js-out-time" data-time-value name="entries[{{ $entryKey }}][out_time]" type="hidden" value="{{ $row['out_time_value'] }}">
+                                <span class="admin-time-text-wrap">
+                                    <input class="admin-time-text" data-time-display list="vehicle-time-options" type="text" value="{{ $timeLabel($row['out_time_value']) }}" placeholder="hh:mm AM" inputmode="text" aria-label="Out time">
+                                </span>
+                            </td>
+                        @else
+                            <td>
+                                <input class="js-first-half-in" data-time-value name="entries[{{ $entryKey }}][first_half_in]" type="hidden" value="{{ $row['first_half_in_value'] }}">
+                                <span class="admin-time-text-wrap">
+                                    <input class="admin-time-text" data-time-display list="vehicle-time-options" type="text" value="{{ $timeLabel($row['first_half_in_value']) }}" placeholder="hh:mm AM" inputmode="text" aria-label="First half in">
+                                </span>
+                            </td>
+                            <td>
+                                <input class="js-first-half-out" data-time-value name="entries[{{ $entryKey }}][first_half_out]" type="hidden" value="{{ $row['first_half_out_value'] }}">
+                                <span class="admin-time-text-wrap">
+                                    <input class="admin-time-text" data-time-display list="vehicle-time-options" type="text" value="{{ $timeLabel($row['first_half_out_value']) }}" placeholder="hh:mm AM" inputmode="text" aria-label="First half out">
+                                </span>
+                            </td>
+                            <td>
+                                <input class="js-second-half-in" data-time-value name="entries[{{ $entryKey }}][second_half_in]" type="hidden" value="{{ $row['second_half_in_value'] }}">
+                                <span class="admin-time-text-wrap">
+                                    <input class="admin-time-text" data-time-display list="vehicle-time-options" type="text" value="{{ $timeLabel($row['second_half_in_value']) }}" placeholder="hh:mm AM" inputmode="text" aria-label="Second half in">
+                                </span>
+                            </td>
+                            <td>
+                                <input class="js-second-half-out" data-time-value name="entries[{{ $entryKey }}][second_half_out]" type="hidden" value="{{ $row['second_half_out_value'] }}">
+                                <span class="admin-time-text-wrap">
+                                    <input class="admin-time-text" data-time-display list="vehicle-time-options" type="text" value="{{ $timeLabel($row['second_half_out_value']) }}" placeholder="hh:mm AM" inputmode="text" aria-label="Second half out">
+                                </span>
+                            </td>
+                        @endif
                         <td>
                             <input class="js-total-hrs" type="text" value="{{ $row['total_hours'] }}" readonly>
                         </td>
@@ -426,6 +460,10 @@
             const totalKm = row.querySelector('.js-total-km');
             const inTime = row.querySelector('.js-in-time');
             const outTime = row.querySelector('.js-out-time');
+            const firstHalfIn = row.querySelector('.js-first-half-in');
+            const firstHalfOut = row.querySelector('.js-first-half-out');
+            const secondHalfIn = row.querySelector('.js-second-half-in');
+            const secondHalfOut = row.querySelector('.js-second-half-out');
             const totalHrs = row.querySelector('.js-total-hrs');
             const hireHours = row.querySelector('.js-hire-hours');
             const hourRate = row.querySelector('.js-hour-rate');
@@ -450,26 +488,50 @@
             };
 
             const recalculate = () => {
-                const start = parseFloat(startReading.value || 0);
-                const end = parseFloat(endReading.value || 0);
-                totalKm.value = end >= start ? Math.round(end - start) : 0;
+                if (startReading && endReading && totalKm) {
+                    const start = parseFloat(startReading.value || 0);
+                    const end = parseFloat(endReading.value || 0);
+                    totalKm.value = end >= start ? Math.round(end - start) : 0;
+                }
 
-                const startMinutes = timeToMinutes(inTime.value);
-                let endMinutes = timeToMinutes(outTime.value);
+                const durationBetween = (startValue, endValue) => {
+                    const startMinutes = timeToMinutes(startValue);
+                    let endMinutes = timeToMinutes(endValue);
 
-                if (startMinutes === null || endMinutes === null) {
+                    if (startMinutes === null || endMinutes === null) {
+                        return 0;
+                    }
+
+                    if (endMinutes < startMinutes) {
+                        endMinutes += 1440;
+                    }
+
+                    return Math.max(0, endMinutes - startMinutes);
+                };
+
+                let totalMinutes = 0;
+
+                if (inTime && outTime) {
+                    const startMinutes = timeToMinutes(inTime.value);
+                    const endMinutes = timeToMinutes(outTime.value);
+
+                    if (startMinutes === null || endMinutes === null) {
+                        totalMinutes = 0;
+                    } else {
+                        totalMinutes = durationBetween(inTime.value, outTime.value);
+                    }
+                } else {
+                    totalMinutes = durationBetween(firstHalfIn?.value, firstHalfOut?.value)
+                        + durationBetween(secondHalfIn?.value, secondHalfOut?.value);
+                }
+
+                if (totalMinutes <= 0) {
                     totalHrs.value = '00:00';
                     hireHours.value = '0.00';
                     hireAmount.value = '0.00';
                     otHrs.value = '00:00';
                     return;
                 }
-
-                if (endMinutes < startMinutes) {
-                    endMinutes += 1440;
-                }
-
-                const totalMinutes = Math.max(0, endMinutes - startMinutes);
                 const totalHireHours = totalMinutes / 60;
                 const effectiveHourRate = parseFloat(hourRate.value || defaultHourRate || 0);
                 totalHrs.value = formatMinutes(totalMinutes);
