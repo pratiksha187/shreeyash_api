@@ -145,12 +145,6 @@ return [
                     'active' => 'admin.diesel-purchases.*',
                 ],
                 [
-                    'key' => 'machinery_diesel_logs',
-                    'label' => 'Machinery Diesel',
-                    'route' => 'admin.machinery-diesel-logs.index',
-                    'active' => 'admin.machinery-diesel-logs.*',
-                ],
-                [
                     'key' => 'product_purchases',
                     'label' => 'Product Purchase',
                     'route' => 'admin.product-purchases.index',

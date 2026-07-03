@@ -77,20 +77,21 @@ class AdminPermissionNavigationTest extends TestCase
             ->assertDontSee('Vehicles');
     }
 
-    public function test_engg_access_grants_engineering_modules(): void
+    public function test_engg_access_does_not_grant_unchecked_modules(): void
     {
         $this->app['session']->start();
         session()->put([
             'admin_role' => 'company_admin',
-            'admin_permissions' => ['engg'],
+            'admin_permissions' => ['dashboard', 'engg', 'machinery_diesel_logs'],
         ]);
 
         $navigation = app(AdminNavigation::class);
 
-        $this->assertTrue($navigation->can('labour_attendance'));
-        $this->assertTrue($navigation->can('dpr_reports'));
-        $this->assertTrue($navigation->can('fdd_test_records'));
+        $this->assertTrue($navigation->can('dashboard'));
         $this->assertTrue($navigation->can('machinery_diesel_logs'));
+        $this->assertFalse($navigation->can('labour_attendance'));
+        $this->assertFalse($navigation->can('dpr_reports'));
+        $this->assertFalse($navigation->can('fdd_test_records'));
         $this->assertFalse($navigation->can('employees'));
         $this->assertFalse($navigation->can('product_purchases'));
     }

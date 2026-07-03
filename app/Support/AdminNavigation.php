@@ -143,9 +143,8 @@ class AdminNavigation
     {
         return match ($permission) {
             'employees', 'attendance_reports', 'missed_requests', 'leave_requests', 'payments', 'challans' => ['hr'],
-            'labour_attendance', 'site_master', 'contractor_master', 'labour_master', 'dpr_reports', 'complaints' => ['hr', 'engg'],
-            'fdd_test_records', 'mir_file_reports' => ['engg'],
-            'machinery_diesel_logs' => ['engg', 'purchase'],
+            'labour_attendance', 'site_master', 'contractor_master', 'labour_master', 'dpr_reports', 'complaints' => ['hr'],
+            'machinery_diesel_logs' => ['purchase'],
             'diesel_purchases', 'product_purchases', 'material_stock' => ['purchase'],
             default => [],
         };
