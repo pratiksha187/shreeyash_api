@@ -7,6 +7,7 @@ use App\Models\Company;
 use App\Models\CompanySubscription;
 use App\Models\SubscriptionPlan;
 use App\Models\User;
+use App\Support\AdminNavigation;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
@@ -74,6 +75,24 @@ class AdminPermissionNavigationTest extends TestCase
             ->assertSee('Employees')
             ->assertDontSee('Payments')
             ->assertDontSee('Vehicles');
+    }
+
+    public function test_engg_access_grants_engineering_modules(): void
+    {
+        $this->app['session']->start();
+        session()->put([
+            'admin_role' => 'company_admin',
+            'admin_permissions' => ['engg'],
+        ]);
+
+        $navigation = app(AdminNavigation::class);
+
+        $this->assertTrue($navigation->can('labour_attendance'));
+        $this->assertTrue($navigation->can('dpr_reports'));
+        $this->assertTrue($navigation->can('fdd_test_records'));
+        $this->assertTrue($navigation->can('machinery_diesel_logs'));
+        $this->assertFalse($navigation->can('employees'));
+        $this->assertFalse($navigation->can('product_purchases'));
     }
 
     public function test_admin_cannot_open_route_without_permission(): void

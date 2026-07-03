@@ -67,10 +67,10 @@ class AdminNavigation
             return true;
         }
 
-        $groupPermission = $this->groupPermissionForModule($permission);
+        $groupPermissions = $this->groupPermissionsForModule($permission);
         $fallbackGroupPermissions = config('admin.company_admin_permissions', []);
 
-        if ($groupPermission && (in_array($groupPermission, $permissions, true) || in_array($groupPermission, $fallbackGroupPermissions, true))) {
+        if (array_intersect($groupPermissions, $permissions) !== [] || array_intersect($groupPermissions, $fallbackGroupPermissions) !== []) {
             return true;
         }
 
@@ -136,12 +136,18 @@ class AdminNavigation
         return array_values(array_filter($permissions));
     }
 
-    private function groupPermissionForModule(string $permission): ?string
+    /**
+     * @return array<int, string>
+     */
+    private function groupPermissionsForModule(string $permission): array
     {
         return match ($permission) {
-            'employees', 'attendance_reports', 'missed_requests', 'leave_requests', 'labour_attendance', 'payments', 'site_master', 'contractor_master', 'labour_master', 'dpr_reports', 'challans', 'complaints' => 'hr',
-            'diesel_purchases', 'machinery_diesel_logs', 'product_purchases', 'material_stock' => 'purchase',
-            default => null,
+            'employees', 'attendance_reports', 'missed_requests', 'leave_requests', 'payments', 'challans' => ['hr'],
+            'labour_attendance', 'site_master', 'contractor_master', 'labour_master', 'dpr_reports', 'complaints' => ['hr', 'engg'],
+            'fdd_test_records', 'mir_file_reports' => ['engg'],
+            'machinery_diesel_logs' => ['engg', 'purchase'],
+            'diesel_purchases', 'product_purchases', 'material_stock' => ['purchase'],
+            default => [],
         };
     }
 }

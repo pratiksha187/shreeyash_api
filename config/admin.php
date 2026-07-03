@@ -33,6 +33,7 @@ return [
     'module_permissions' => [
         'dashboard' => 'Dashboard',
         'hr' => 'HR Access',
+        'engg' => 'Engg Access',
         'purchase' => 'Purchase Access',
         'employees' => 'Employees',
         'attendance_reports' => 'Attendance Reports',
