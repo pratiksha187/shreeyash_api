@@ -79,8 +79,13 @@ class VehicleController extends Controller
         $totalHireHours = $calendarRows->sum('hire_hours');
         $hireTotalAmount = $calendarRows->sum('hire_amount');
         $totalOtMinutes = $calendarRows->sum('ot_minutes');
-        $totalOtAmount = round(($totalOtMinutes / 60) * (float) $vehicle->ot_rate, 2);
-        $grossBillingAmount = (float) $vehicle->fixed_monthly_amount + $hireTotalAmount + (float) $vehicle->extra_sunday_paid_amount + $totalOtAmount;
+        $camperKmLimit = $isCamper ? $this->camperBillingValue($vehicle, 'KM Limit', 3500) : 0;
+        $extraKm = $isCamper ? max(0, $totalKm - $camperKmLimit) : 0;
+        $extraKmRate = $isCamper ? $this->camperBillingValue($vehicle, 'Extra KM Rate', 5) : 0;
+        $extraKmAmount = round($extraKm * $extraKmRate, 2);
+        $effectiveOtRate = $isCamper ? $this->camperBillingValue($vehicle, 'Company OT Rate', 55) : (float) $vehicle->ot_rate;
+        $totalOtAmount = round(($totalOtMinutes / 60) * $effectiveOtRate, 2);
+        $grossBillingAmount = (float) $vehicle->fixed_monthly_amount + $hireTotalAmount + (float) $vehicle->extra_sunday_paid_amount + $totalOtAmount + $extraKmAmount;
         $gstAmount = round($grossBillingAmount * ((float) $vehicle->gst_percentage / 100), 2);
         $totalBillingAmount = $grossBillingAmount + $gstAmount;
         $tdsAmount = round($totalBillingAmount * ((float) $vehicle->tds_percentage / 100), 2);
@@ -110,6 +115,10 @@ class VehicleController extends Controller
                 'opening_reading' => $openingReadingRow ? $openingReadingRow['start_reading'] : 0,
                 'closing_reading' => $closingReadingRow ? $closingReadingRow['end_reading'] : 0,
                 'total_km' => $totalKm,
+                'km_limit' => $camperKmLimit,
+                'extra_km' => $extraKm,
+                'extra_km_rate' => $extraKmRate,
+                'extra_km_amount' => $extraKmAmount,
                 'diesel_total' => $dieselTotal,
                 'average' => $dieselTotal > 0 ? $totalKm / $dieselTotal : 0,
                 'fixed_monthly_amount' => (float) $vehicle->fixed_monthly_amount,
@@ -121,7 +130,7 @@ class VehicleController extends Controller
                 'extra_sunday_paid_amount' => (float) $vehicle->extra_sunday_paid_amount,
                 'ot_minutes' => $totalOtMinutes,
                 'ot_hours' => $this->formatMinutes($totalOtMinutes),
-                'ot_rate' => (float) $vehicle->ot_rate,
+                'ot_rate' => $effectiveOtRate,
                 'total_ot_amount' => $totalOtAmount,
                 'gross_billing_amount' => $grossBillingAmount,
                 'gst_percentage' => (float) $vehicle->gst_percentage,
@@ -322,6 +331,18 @@ class VehicleController extends Controller
     private function isCamper(Vehicle $vehicle): bool
     {
         return str_contains(strtolower((string) $vehicle->vehicle_type), 'camper');
+    }
+
+    private function camperBillingValue(Vehicle $vehicle, string $label, float $default): float
+    {
+        if (
+            $vehicle->remarks
+            && preg_match('/'.preg_quote($label, '/').':\s*([0-9]+(?:\.[0-9]+)?)/i', $vehicle->remarks, $matches)
+        ) {
+            return (float) $matches[1];
+        }
+
+        return $default;
     }
 
     /**

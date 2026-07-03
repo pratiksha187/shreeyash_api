@@ -296,6 +296,16 @@
                         <th>Total KM</th>
                         <td>{{ number_format($billingSummary['total_km'], 0) }}</td>
                     </tr>
+                    @if ($isCamper)
+                        <tr>
+                            <th>KM Limit</th>
+                            <td>{{ number_format($billingSummary['km_limit'], 0) }}</td>
+                        </tr>
+                        <tr>
+                            <th>Extra KM</th>
+                            <td>{{ number_format($billingSummary['extra_km'], 0) }}</td>
+                        </tr>
+                    @endif
                     <tr>
                         <th>Diesel Total</th>
                         <td>{{ number_format($billingSummary['diesel_total'], 2) }}</td>
@@ -344,15 +354,25 @@
                         <td>{{ $billingSummary['ot_hours'] }}</td>
                     </tr>
                     <tr>
-                        <th>OT Rate</th>
+                        <th>{{ $isCamper ? 'Company OT Rate' : 'OT Rate' }}</th>
                         <td>{{ number_format($billingSummary['ot_rate'], 2) }}</td>
                     </tr>
                     <tr>
                         <th>Total OT Amount</th>
                         <td>{{ number_format($billingSummary['total_ot_amount'], 2) }}</td>
                     </tr>
+                    @if ($isCamper)
+                        <tr>
+                            <th>Extra KM Rate</th>
+                            <td>{{ number_format($billingSummary['extra_km_rate'], 2) }}</td>
+                        </tr>
+                        <tr>
+                            <th>Extra KM Amount</th>
+                            <td>{{ number_format($billingSummary['extra_km_amount'], 2) }}</td>
+                        </tr>
+                    @endif
                     <tr>
-                        <th>Gross Billing Amount</th>
+                        <th>{{ $isCamper ? 'Total Billing Amount' : 'Gross Billing Amount' }}</th>
                         <td>{{ number_format($billingSummary['gross_billing_amount'], 2) }}</td>
                     </tr>
                     <tr>
