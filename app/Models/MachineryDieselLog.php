@@ -95,6 +95,29 @@ class MachineryDieselLog extends Model
             ? null
             : round($eveningPhysicalBalance - $expectedClosingBalance, 2);
         $this->diesel_to_issue_tomorrow_ltr = round(max(0, $minimumStock + $dailyDiesel - $balanceForTomorrow), 2);
+
+        if (! filled($this->remarks)) {
+            $this->remarks = $this->autoRemarks();
+        }
+    }
+
+    public function autoRemarks(): ?string
+    {
+        if ($this->difference_ltr === null) {
+            return null;
+        }
+
+        $difference = round((float) $this->difference_ltr, 2);
+
+        if ($difference > 0) {
+            return 'Extra Diesel Remaining';
+        }
+
+        if ($difference < 0) {
+            return 'Diesel Missing';
+        }
+
+        return 'Diesel Balance OK';
     }
 
     private function number(mixed $value): float

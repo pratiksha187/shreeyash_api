@@ -20,6 +20,7 @@ class MachineryDieselLogController extends Controller
         $filters = $request->validate([
             'date' => ['nullable', 'date'],
             'month' => ['nullable', 'date_format:Y-m'],
+            'edit_id' => ['nullable', 'integer'],
         ]);
 
         $selectedDate = isset($filters['date'])
@@ -37,9 +38,16 @@ class MachineryDieselLogController extends Controller
             ->orderByDesc('issue_date')
             ->orderBy('machinery')
             ->get();
+        $editLog = isset($filters['edit_id'])
+            ? MachineryDieselLog::query()
+                ->forCurrentCompany()
+                ->whereKey($filters['edit_id'])
+                ->first()
+            : null;
 
         return view('admin.machinery-diesel-logs.index', [
             'logs' => $logs,
+            'editLog' => $editLog,
             'sites' => LabourSite::query()
                 ->forCurrentCompany()
                 ->where('is_active', true)
@@ -63,6 +71,7 @@ class MachineryDieselLogController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $data = $request->validate([
+            'log_id' => ['nullable', 'integer'],
             'issue_date' => ['required', 'date'],
             'labour_site_id' => ['nullable', Rule::exists($this->tenantTable('labour_sites'), 'id')],
             'machinery' => ['required', 'string', 'max:255'],
@@ -73,28 +82,39 @@ class MachineryDieselLogController extends Controller
             'hours_worked' => ['nullable', 'numeric', 'min:0', 'max:24'],
             'evening_physical_balance_ltr' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
             'remarks' => ['nullable', 'string', 'max:2000'],
+            'remarks_auto' => ['nullable', 'boolean'],
         ]);
 
         $issueDate = Carbon::parse($data['issue_date'])->toDateString();
+        $values = [
+            'engineer_user_id' => session('admin_user_id'),
+            'labour_site_id' => $data['labour_site_id'] ?? null,
+            'minimum_stock_ltr' => $data['minimum_stock_ltr'] ?? 0,
+            'daily_diesel_for_8hr_ltr' => $data['daily_diesel_for_8hr_ltr'] ?? 0,
+            'yesterday_balance_ltr' => $data['yesterday_balance_ltr'] ?? 0,
+            'actual_diesel_issued_today_ltr' => $data['actual_diesel_issued_today_ltr'] ?? 0,
+            'hours_worked' => $data['hours_worked'] ?? 8,
+            'evening_physical_balance_ltr' => $data['evening_physical_balance_ltr'] ?? null,
+            'remarks' => ! empty($data['remarks_auto']) ? null : ($data['remarks'] ?? null),
+        ];
 
-        MachineryDieselLog::query()->updateOrCreate(
-            [
+        if (! empty($data['log_id'])) {
+            $log = MachineryDieselLog::query()
+                ->forCurrentCompany()
+                ->whereKey($data['log_id'])
+                ->firstOrFail();
+
+            $log->fill(array_merge($values, [
+                'issue_date' => $issueDate,
+                'machinery' => $data['machinery'],
+            ]))->save();
+        } else {
+            MachineryDieselLog::query()->updateOrCreate([
                 'company_id' => app(Tenant::class)->id(),
                 'issue_date' => $issueDate,
                 'machinery' => $data['machinery'],
-            ],
-            [
-                'engineer_user_id' => session('admin_user_id'),
-                'labour_site_id' => $data['labour_site_id'] ?? null,
-                'minimum_stock_ltr' => $data['minimum_stock_ltr'] ?? 0,
-                'daily_diesel_for_8hr_ltr' => $data['daily_diesel_for_8hr_ltr'] ?? 0,
-                'yesterday_balance_ltr' => $data['yesterday_balance_ltr'] ?? 0,
-                'actual_diesel_issued_today_ltr' => $data['actual_diesel_issued_today_ltr'] ?? 0,
-                'hours_worked' => $data['hours_worked'] ?? 8,
-                'evening_physical_balance_ltr' => $data['evening_physical_balance_ltr'] ?? null,
-                'remarks' => $data['remarks'] ?? null,
-            ]
-        );
+            ], $values);
+        }
 
         return redirect()
             ->route('admin.machinery-diesel-logs.index', ['date' => $issueDate])

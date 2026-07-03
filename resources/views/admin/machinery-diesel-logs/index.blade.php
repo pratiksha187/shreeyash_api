@@ -211,6 +211,17 @@
             font-size: 14px;
         }
 
+        .diesel-action-link {
+            color: #1d4ed8;
+            font-size: 12px;
+            font-weight: 900;
+            text-decoration: none;
+        }
+
+        .diesel-action-link:hover {
+            text-decoration: underline;
+        }
+
         @media (max-width: 1500px) {
             .diesel-sheet-toolbar {
                 grid-template-columns: 1fr;
@@ -288,25 +299,41 @@
         </div>
     </section>
 
-    <form class="card diesel-entry-card" method="POST" action="{{ route('admin.machinery-diesel-logs.store') }}">
+    @php
+        $remarkValue = old('remarks', $editLog?->remarks);
+        $autoRemarkValue = $editLog?->autoRemarks();
+        $shouldAutoRemark = $remarkValue === null
+            || $remarkValue === ''
+            || ($autoRemarkValue && $remarkValue === $autoRemarkValue);
+    @endphp
+
+    <form id="machinery-diesel-entry-form" class="card diesel-entry-card" method="POST" action="{{ route('admin.machinery-diesel-logs.store') }}">
         @csrf
+        <input type="hidden" name="log_id" value="{{ old('log_id', $editLog?->id) }}">
+        <input id="remarks_auto" type="hidden" name="remarks_auto" value="{{ $shouldAutoRemark ? 1 : 0 }}">
         <div class="diesel-section-head">
-            <h2>Add / Update Entry</h2>
+            <h2>{{ $editLog ? 'Edit Entry' : 'Add / Update Entry' }}</h2>
+            @if ($editLog)
+                <a class="diesel-action-link" href="{{ route('admin.machinery-diesel-logs.index', ['date' => $editLog->issue_date?->toDateString()]) }}">Cancel Edit</a>
+            @endif
         </div>
         <div class="diesel-entry-grid">
                 <div class="diesel-field">
                     <label for="issue_date">Date</label>
-                    <input id="issue_date" name="issue_date" type="date" value="{{ old('issue_date', $selectedDate ?? now()->toDateString()) }}" required>
+                    <input id="issue_date" name="issue_date" type="date" value="{{ old('issue_date', $editLog?->issue_date?->toDateString() ?? $selectedDate ?? now()->toDateString()) }}" required>
                 </div>
                 <div class="diesel-field">
                     <label for="machinery">Machinery</label>
                     <select id="machinery" name="machinery" required>
                         <option value="">Select vehicle</option>
+                        @if ($editLog && ! $vehicles->contains(fn ($vehicle) => trim($vehicle->vehicle_number . ($vehicle->vehicle_type ? ' - ' . $vehicle->vehicle_type : '')) === $editLog->machinery))
+                            <option value="{{ $editLog->machinery }}" selected>{{ $editLog->machinery }}</option>
+                        @endif
                         @foreach ($vehicles as $vehicle)
                             @php
                                 $vehicleLabel = trim($vehicle->vehicle_number . ($vehicle->vehicle_type ? ' - ' . $vehicle->vehicle_type : ''));
                             @endphp
-                            <option value="{{ $vehicleLabel }}" @selected(old('machinery') === $vehicleLabel || old('machinery') === $vehicle->vehicle_number)>
+                            <option value="{{ $vehicleLabel }}" @selected(old('machinery', $editLog?->machinery) === $vehicleLabel || old('machinery', $editLog?->machinery) === $vehicle->vehicle_number)>
                                 {{ $vehicleLabel }}
                             </option>
                         @endforeach
@@ -317,40 +344,40 @@
                     <select id="labour_site_id" name="labour_site_id">
                         <option value="">No site</option>
                         @foreach ($sites as $site)
-                            <option value="{{ $site->id }}" @selected((string) old('labour_site_id') === (string) $site->id)>{{ $site->name }}</option>
+                            <option value="{{ $site->id }}" @selected((string) old('labour_site_id', $editLog?->labour_site_id) === (string) $site->id)>{{ $site->name }}</option>
                         @endforeach
                     </select>
                 </div>
                 <div class="diesel-field">
                     <label for="minimum_stock_ltr">Minimum Stock (L)</label>
-                    <input id="minimum_stock_ltr" name="minimum_stock_ltr" type="number" min="0" step="0.01" value="{{ old('minimum_stock_ltr', 0) }}">
+                    <input id="minimum_stock_ltr" name="minimum_stock_ltr" type="number" min="0" step="0.01" value="{{ old('minimum_stock_ltr', $editLog?->minimum_stock_ltr ?? 0) }}">
                 </div>
                 <div class="diesel-field">
                     <label for="daily_diesel_for_8hr_ltr">Daily Diesel for 8 Hr (L)</label>
-                    <input id="daily_diesel_for_8hr_ltr" name="daily_diesel_for_8hr_ltr" type="number" min="0" step="0.01" value="{{ old('daily_diesel_for_8hr_ltr', 0) }}">
+                    <input id="daily_diesel_for_8hr_ltr" name="daily_diesel_for_8hr_ltr" type="number" min="0" step="0.01" value="{{ old('daily_diesel_for_8hr_ltr', $editLog?->daily_diesel_for_8hr_ltr ?? 0) }}">
                 </div>
                 <div class="diesel-field">
                     <label for="yesterday_balance_ltr">Yesterday Balance (L)</label>
-                    <input id="yesterday_balance_ltr" name="yesterday_balance_ltr" type="number" min="0" step="0.01" value="{{ old('yesterday_balance_ltr', 0) }}">
+                    <input id="yesterday_balance_ltr" name="yesterday_balance_ltr" type="number" min="0" step="0.01" value="{{ old('yesterday_balance_ltr', $editLog?->yesterday_balance_ltr ?? 0) }}">
                 </div>
                 <div class="diesel-field">
                     <label for="actual_diesel_issued_today_ltr">Actual Issued Today (L)</label>
-                    <input id="actual_diesel_issued_today_ltr" name="actual_diesel_issued_today_ltr" type="number" min="0" step="0.01" value="{{ old('actual_diesel_issued_today_ltr', 0) }}">
+                    <input id="actual_diesel_issued_today_ltr" name="actual_diesel_issued_today_ltr" type="number" min="0" step="0.01" value="{{ old('actual_diesel_issued_today_ltr', $editLog?->actual_diesel_issued_today_ltr ?? 0) }}">
                 </div>
                 <div class="diesel-field">
                     <label for="hours_worked">Hours Worked</label>
-                    <input id="hours_worked" name="hours_worked" type="number" min="0" max="24" step="0.01" value="{{ old('hours_worked', 8) }}">
+                    <input id="hours_worked" name="hours_worked" type="number" min="0" max="24" step="0.01" value="{{ old('hours_worked', $editLog?->hours_worked ?? 8) }}">
                 </div>
                 <div class="diesel-field">
                     <label for="evening_physical_balance_ltr">Evening Physical Balance (L)</label>
-                    <input id="evening_physical_balance_ltr" name="evening_physical_balance_ltr" type="number" min="0" step="0.01" value="{{ old('evening_physical_balance_ltr') }}">
+                    <input id="evening_physical_balance_ltr" name="evening_physical_balance_ltr" type="number" min="0" step="0.01" value="{{ old('evening_physical_balance_ltr', $editLog?->evening_physical_balance_ltr) }}">
                 </div>
                 <div class="diesel-field">
                     <label for="remarks">Remarks</label>
-                    <textarea id="remarks" name="remarks" rows="2">{{ old('remarks') }}</textarea>
+                    <textarea id="remarks" name="remarks" rows="2" data-auto-remarks="{{ $shouldAutoRemark ? '1' : '0' }}">{{ $remarkValue }}</textarea>
                 </div>
                 <div class="diesel-save-field">
-                <button class="btn" type="submit">Save Entry</button>
+                <button class="btn" type="submit">{{ $editLog ? 'Update Entry' : 'Save Entry' }}</button>
                 </div>
         </div>
     </form>
@@ -376,6 +403,7 @@
                     <th>Difference (L)</th>
                     <th>Diesel to Issue Tomorrow (L)</th>
                     <th>Remarks</th>
+                    <th>Action</th>
                 </tr>
             </thead>
             <tbody>
@@ -397,14 +425,83 @@
                         <td class="number-cell">{{ $log->difference_ltr === null ? '-' : number_format((float) $log->difference_ltr, 2) }}</td>
                         <td class="number-cell">{{ number_format((float) $log->diesel_to_issue_tomorrow_ltr, 2) }}</td>
                         <td class="text-wrap">{{ $log->remarks ?: '-' }}</td>
+                        <td>
+                            <a class="diesel-action-link" href="{{ route('admin.machinery-diesel-logs.index', ['date' => $selectedDate, 'month' => $selectedMonth, 'edit_id' => $log->id]) }}">Edit</a>
+                        </td>
                     </tr>
                 @empty
                     <tr>
-                        <td class="empty" colspan="16">No machinery diesel entries found.</td>
+                        <td class="empty" colspan="17">No machinery diesel entries found.</td>
                     </tr>
                 @endforelse
             </tbody>
         </table>
         </div>
     </section>
+
+    <script>
+        (() => {
+            const form = document.getElementById('machinery-diesel-entry-form');
+            if (!form) {
+                return;
+            }
+
+            const numberValue = (id) => parseFloat(document.getElementById(id)?.value || 0) || 0;
+            const eveningInput = document.getElementById('evening_physical_balance_ltr');
+            const remarks = document.getElementById('remarks');
+            const remarksAuto = document.getElementById('remarks_auto');
+
+            const autoRemark = () => {
+                if (!eveningInput || eveningInput.value === '') {
+                    return '';
+                }
+
+                const dailyDiesel = numberValue('daily_diesel_for_8hr_ltr');
+                const yesterdayBalance = numberValue('yesterday_balance_ltr');
+                const actualIssued = numberValue('actual_diesel_issued_today_ltr');
+                const hoursWorked = numberValue('hours_worked');
+                const expectedConsumption = dailyDiesel > 0 ? (dailyDiesel / 8) * hoursWorked : 0;
+                const expectedClosing = yesterdayBalance + actualIssued - expectedConsumption;
+                const difference = Math.round((numberValue('evening_physical_balance_ltr') - expectedClosing) * 100) / 100;
+
+                if (difference > 0) {
+                    return 'Extra Diesel Remaining';
+                }
+
+                if (difference < 0) {
+                    return 'Diesel Missing';
+                }
+
+                return 'Diesel Balance OK';
+            };
+
+            const refreshRemark = () => {
+                if (!remarks || remarks.dataset.autoRemarks !== '1') {
+                    return;
+                }
+
+                remarks.value = autoRemark();
+                if (remarksAuto) {
+                    remarksAuto.value = '1';
+                }
+            };
+
+            remarks?.addEventListener('input', () => {
+                remarks.dataset.autoRemarks = remarks.value.trim() === '' ? '1' : '0';
+                if (remarksAuto) {
+                    remarksAuto.value = remarks.dataset.autoRemarks === '1' ? '1' : '0';
+                }
+            });
+
+            [
+                'daily_diesel_for_8hr_ltr',
+                'yesterday_balance_ltr',
+                'actual_diesel_issued_today_ltr',
+                'hours_worked',
+                'evening_physical_balance_ltr',
+            ].forEach((id) => document.getElementById(id)?.addEventListener('input', refreshRemark));
+
+            refreshRemark();
+        })();
+    </script>
 @endsection
