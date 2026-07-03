@@ -12,6 +12,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class VehicleDriverAttendanceController extends Controller
 {
@@ -142,6 +143,61 @@ class VehicleDriverAttendanceController extends Controller
         );
 
         return redirect()->route('admin.driver-attendance.index')->with('success', 'Driver attendance saved successfully.');
+    }
+
+    public function export(Request $request): StreamedResponse
+    {
+        $filters = $request->validate([
+            'from_date' => ['nullable', 'date'],
+            'to_date' => ['nullable', 'date', 'after_or_equal:from_date'],
+            'vehicle_id' => ['nullable', Rule::exists($this->tenantTable('vehicles'), 'id')->where('company_id', app(Tenant::class)->id())],
+            'vehicle_driver_id' => ['nullable', Rule::exists($this->tenantTable('vehicle_drivers'), 'id')->where('company_id', app(Tenant::class)->id())],
+            'status' => ['nullable', Rule::in(VehicleDriverAttendance::STATUSES)],
+        ]);
+
+        $fromDate = isset($filters['from_date'])
+            ? Carbon::parse($filters['from_date'])->toDateString()
+            : now()->startOfMonth()->toDateString();
+        $toDate = isset($filters['to_date'])
+            ? Carbon::parse($filters['to_date'])->toDateString()
+            : today()->toDateString();
+
+        $attendances = VehicleDriverAttendance::query()
+            ->forCurrentCompany()
+            ->with(['vehicle:id,vehicle_number,vehicle_type', 'driver:id,name,mobile,vehicle_id'])
+            ->whereBetween('attendance_date', [$fromDate, $toDate])
+            ->when(isset($filters['vehicle_id']), fn ($query) => $query->where('vehicle_id', $filters['vehicle_id']))
+            ->when(isset($filters['vehicle_driver_id']), fn ($query) => $query->where('vehicle_driver_id', $filters['vehicle_driver_id']))
+            ->when(isset($filters['status']), fn ($query) => $query->where('status', $filters['status']))
+            ->orderByDesc('attendance_date')
+            ->orderByDesc('id')
+            ->get();
+
+        $filename = 'driver-attendance-' . now()->format('Y-m-d-His') . '.csv';
+
+        return response()->streamDownload(function () use ($attendances) {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, ['Sr. No.', 'Date', 'Vehicle', 'Vehicle Type', 'Driver', 'Mobile', 'Status', 'In Time', 'Out Time', 'Remarks']);
+
+            foreach ($attendances as $index => $attendance) {
+                fputcsv($handle, [
+                    $index + 1,
+                    $attendance->attendance_date?->format('d-m-Y') ?? '',
+                    $attendance->vehicle?->vehicle_number ?? '',
+                    $attendance->vehicle?->vehicle_type ?? '',
+                    $attendance->driver?->name ?? '',
+                    $attendance->driver?->mobile ?? '',
+                    str_replace('_', ' ', ucfirst($attendance->status)),
+                    $attendance->in_time ?? '',
+                    $attendance->out_time ?? '',
+                    $attendance->remarks ?? '',
+                ]);
+            }
+
+            fclose($handle);
+        }, $filename, [
+            'Content-Type' => 'text/csv',
+        ]);
     }
 
     public function edit(int $vehicleDriverAttendance): View

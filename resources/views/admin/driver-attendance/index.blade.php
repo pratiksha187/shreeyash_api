@@ -10,7 +10,10 @@
             <h1>Driver Attendance</h1>
             <p>Mark attendance for the driver assigned to a particular vehicle.</p>
         </div>
-        <a class="btn secondary" href="{{ route('admin.vehicle-drivers.index') }}">Vehicle Drivers</a>
+        <div class="actions">
+            <a class="btn secondary" href="{{ route('admin.vehicle-drivers.index') }}">Vehicle Drivers</a>
+            <a class="btn" href="{{ route('admin.driver-attendance.export', request()->query()) }}">Download Excel</a>
+        </div>
     </div>
 
     @if (session('success'))

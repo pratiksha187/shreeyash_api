@@ -94,6 +94,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('/vehicle-drivers', [VehicleDriverAttendanceController::class, 'storeDriver'])->name('vehicle-drivers.store');
         Route::get('/driver-attendance', [VehicleDriverAttendanceController::class, 'index'])->name('driver-attendance.index');
         Route::post('/driver-attendance', [VehicleDriverAttendanceController::class, 'store'])->name('driver-attendance.store');
+        Route::get('/driver-attendance/export', [VehicleDriverAttendanceController::class, 'export'])->name('driver-attendance.export');
         Route::get('/driver-attendance/{vehicleDriverAttendance}/edit', [VehicleDriverAttendanceController::class, 'edit'])->name('driver-attendance.edit');
         Route::put('/driver-attendance/{vehicleDriverAttendance}', [VehicleDriverAttendanceController::class, 'update'])->name('driver-attendance.update');
         Route::get('/payments', [PaymentController::class, 'index'])->name('payments.index');
