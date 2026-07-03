@@ -19,6 +19,7 @@ use App\Http\Controllers\Admin\MirFileReportController;
 use App\Http\Controllers\Admin\PaymentController;
 use App\Http\Controllers\Admin\ProductPurchaseController;
 use App\Http\Controllers\Admin\VehicleController;
+use App\Http\Controllers\Admin\VehicleDriverAttendanceController;
 use App\Http\Controllers\Admin\VehicleLogController;
 use App\Http\Middleware\EnsureAdminLoggedIn;
 use Illuminate\Support\Facades\Route;
@@ -89,6 +90,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::delete('/labours/{labour}', [LabourAttendanceController::class, 'destroyLabour'])->name('labours.destroy');
         Route::get('/labour-attendance/{labourAttendance}/photo', [LabourAttendanceController::class, 'photo'])->name('labour-attendance.photo');
         Route::patch('/labour-attendance/{labourAttendance}', [LabourAttendanceController::class, 'update'])->name('labour-attendance.update');
+        Route::get('/vehicle-drivers', [VehicleDriverAttendanceController::class, 'drivers'])->name('vehicle-drivers.index');
+        Route::post('/vehicle-drivers', [VehicleDriverAttendanceController::class, 'storeDriver'])->name('vehicle-drivers.store');
+        Route::get('/driver-attendance', [VehicleDriverAttendanceController::class, 'index'])->name('driver-attendance.index');
+        Route::post('/driver-attendance', [VehicleDriverAttendanceController::class, 'store'])->name('driver-attendance.store');
         Route::get('/payments', [PaymentController::class, 'index'])->name('payments.index');
         Route::post('/payments/generate', [PaymentController::class, 'generate'])->name('payments.generate');
         Route::get('/payments/{payment}/slip', [PaymentController::class, 'slip'])->name('payments.slip');

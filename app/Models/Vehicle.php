@@ -46,4 +46,14 @@ class Vehicle extends Model
     {
         return $this->hasMany(VehicleLog::class);
     }
+
+    public function drivers(): HasMany
+    {
+        return $this->hasMany(VehicleDriver::class);
+    }
+
+    public function driverAttendances(): HasMany
+    {
+        return $this->hasMany(VehicleDriverAttendance::class);
+    }
 }
