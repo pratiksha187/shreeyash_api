@@ -26,18 +26,20 @@ class ProductPurchaseController extends Controller
             'month' => ['nullable', 'date_format:Y-m'],
             'search' => ['nullable', 'string', 'max:100'],
             'stock_labour_site_id' => ['nullable', 'integer'],
+            'show_all' => ['nullable', 'boolean'],
         ]);
 
+        $showAll = (bool) ($filters['show_all'] ?? false);
         $selectedMonth = $filters['month'] ?? now()->format('Y-m');
-        $monthStart = Carbon::createFromFormat('Y-m', $selectedMonth)->startOfMonth();
-        $monthEnd = $monthStart->copy()->endOfMonth();
+        $monthStart = $showAll ? null : Carbon::createFromFormat('Y-m', $selectedMonth)->startOfMonth();
+        $monthEnd = $monthStart?->copy()->endOfMonth();
         $search = $filters['search'] ?? null;
         $selectedSiteId = $filters['stock_labour_site_id'] ?? null;
 
         $purchases = ProductPurchase::query()
             ->forCurrentCompany()
             ->with(['material', 'stockSite'])
-            ->whereBetween('purchase_date', [$monthStart->toDateString(), $monthEnd->toDateString()])
+            ->when(! $showAll, fn ($query) => $query->whereBetween('purchase_date', [$monthStart->toDateString(), $monthEnd->toDateString()]))
             ->when($selectedSiteId, fn ($query) => $query->where('stock_labour_site_id', $selectedSiteId))
             ->when($search, function ($query, string $search) {
                 $query->where(function ($query) use ($search) {
@@ -54,7 +56,8 @@ class ProductPurchaseController extends Controller
 
         return view('admin.product-purchases.index', [
             'selectedMonth' => $selectedMonth,
-            'monthLabel' => $monthStart->format('M Y'),
+            'monthLabel' => $showAll ? 'All' : $monthStart->format('M Y'),
+            'showAll' => $showAll,
             'search' => $search,
             'selectedSiteId' => $selectedSiteId,
             'purchases' => $purchases,

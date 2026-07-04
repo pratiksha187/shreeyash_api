@@ -123,6 +123,22 @@
             margin: 0;
         }
 
+        .purchase-filter-toggle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-height: 52px;
+            padding: 0 2px;
+            color: #0f172a;
+            font-weight: 800;
+        }
+
+        .purchase-filter-toggle input {
+            width: 18px;
+            height: 18px;
+            accent-color: #2563eb;
+        }
+
         @media (max-width: 640px) {
             .purchase-panel-head {
                 flex-direction: column;
@@ -132,7 +148,7 @@
 
     <div class="page-header">
         <div>
-            <h1>{{ $monthLabel }} Product Purchase</h1>
+            <h1>{{ $showAll ? 'All Product Purchase' : $monthLabel.' Product Purchase' }}</h1>
             <p>Enter site-wise purchase bills with PCS, weight, rate, and auto amount.</p>
         </div>
     </div>
@@ -151,7 +167,7 @@
             <div class="form-grid three">
                 <div class="field">
                     <label for="month">Month</label>
-                    <input id="month" name="month" type="month" value="{{ old('month', $selectedMonth) }}">
+                    <input id="month" name="month" type="month" value="{{ old('month', $selectedMonth) }}" @disabled($showAll)>
                     @error('month')
                         <div class="error">{{ $message }}</div>
                     @enderror
@@ -171,6 +187,13 @@
                             <option value="{{ $site->id }}" @selected((string) $selectedSiteId === (string) $site->id)>{{ $site->name }}</option>
                         @endforeach
                     </select>
+                </div>
+                <div class="field">
+                    <label>&nbsp;</label>
+                    <label class="purchase-filter-toggle" for="show_all">
+                        <input id="show_all" name="show_all" type="checkbox" value="1" @checked($showAll)>
+                        <span>Show all data</span>
+                    </label>
                 </div>
                 <div class="field">
                     <label>&nbsp;</label>
@@ -272,7 +295,7 @@
             <div class="purchase-panel-head">
                 <div>
                     <h2>Purchase List</h2>
-                    <p>{{ $purchases->count() }} entries found for {{ $monthLabel }}.</p>
+                    <p>{{ $purchases->count() }} entries found {{ $showAll ? 'in all records' : 'for '.$monthLabel }}.</p>
                 </div>
             </div>
 
@@ -353,6 +376,15 @@
     </div>
 
     <script>
+        const showAllFilter = document.getElementById('show_all');
+        const monthFilter = document.getElementById('month');
+
+        if (showAllFilter && monthFilter) {
+            showAllFilter.addEventListener('change', () => {
+                monthFilter.disabled = showAllFilter.checked;
+            });
+        }
+
         document.querySelectorAll('[data-purchase-row]').forEach((row) => {
             const recalculate = () => {
                 const pcs = parseFloat(row.querySelector('.js-pcs')?.value || 0);
