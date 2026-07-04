@@ -317,7 +317,7 @@ return [
         'admin.payments.*' => 'payments',
         'admin.diesel-purchases.*' => 'diesel_purchases',
         'admin.machinery-diesel-logs.*' => 'machinery_diesel_logs',
-        'admin.product-purchases.*' => 'diesel_purchases',
+        'admin.product-purchases.*' => 'product_purchases',
         'admin.materials.*' => 'material_stock',
         'admin.material-stock.*' => 'material_stock',
         'admin.material-requests.*' => 'material_stock',

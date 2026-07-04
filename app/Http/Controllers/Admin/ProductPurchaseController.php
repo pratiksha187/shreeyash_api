@@ -89,8 +89,9 @@ class ProductPurchaseController extends Controller
             ->with('success', 'Product purchase saved successfully.');
     }
 
-    public function update(Request $request, ProductPurchase $productPurchase): RedirectResponse
+    public function update(Request $request, int $productPurchase): RedirectResponse
     {
+        $productPurchase = $this->findCurrentCompanyPurchase($productPurchase);
         $data = $this->validatedData($request);
         $data['total_amount'] = $this->totalAmount($data);
 
@@ -101,14 +102,13 @@ class ProductPurchaseController extends Controller
             ->with('success', 'Product purchase updated successfully.');
     }
 
-    public function destroy(ProductPurchase $productPurchase): RedirectResponse
+    public function destroy(int $productPurchase): RedirectResponse
     {
-        $month = $productPurchase->purchase_date->format('Y-m');
+        $productPurchase = $this->findCurrentCompanyPurchase($productPurchase);
 
         $productPurchase->delete();
 
-        return redirect()
-            ->route('admin.product-purchases.index', ['month' => $month])
+        return back()
             ->with('success', 'Product purchase deleted successfully.');
     }
 
@@ -194,6 +194,13 @@ class ProductPurchaseController extends Controller
             $purchase->id,
             'Stock added from product purchase '.$purchase->invoice_no
         );
+    }
+
+    private function findCurrentCompanyPurchase(int $productPurchase): ProductPurchase
+    {
+        return ProductPurchase::query()
+            ->forCurrentCompany()
+            ->findOrFail($productPurchase);
     }
 
     private function hasTable(string $table): bool
