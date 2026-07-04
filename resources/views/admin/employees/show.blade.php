@@ -127,6 +127,10 @@
             <span>Half Day</span>
             <strong>{{ $summary['half_day'] }}</strong>
         </div>
+        <div class="card stat-card">
+            <span>Paid Holidays</span>
+            <strong>{{ $summary['paid_holidays'] }}</strong>
+        </div>
     </section>
 
     <!-- Attendance Calendar -->
@@ -138,6 +142,7 @@
                 <span><i class="legend-dot leave"></i>Leave</span>
                 <span><i class="legend-dot absent"></i>Absent</span>
                 <span><i class="legend-dot half-day"></i>Half Day</span>
+                <span><i class="legend-dot holiday"></i>Paid Holiday</span>
                 <span><i class="legend-dot sunday"></i>Sunday</span>
             </div>
         </div>
@@ -154,19 +159,23 @@
             @foreach ($calendarDays as $day)
                 @php
                     $attendance = $day['attendance'];
+                    $holiday = $day['holiday'];
                     $status = $attendance?->status ?? '';
                     $statusClass = $status ? 'status-' . $status : 'status-empty';
                     $isSunday = $day['date']->isSunday();
-                    $statusLabel = $status ? str_replace('_', ' ', $status) : ($isSunday ? 'Sunday' : 'No record');
+                    $statusLabel = $status ? str_replace('_', ' ', $status) : ($holiday ? 'Paid holiday' : ($isSunday ? 'Sunday' : 'No record'));
                 @endphp
-                <div class="calendar-day @if($isSunday) calendar-sunday @endif">
+                <div class="calendar-day @if($isSunday) calendar-sunday @endif @if($holiday) calendar-holiday @endif">
                     <div class="calendar-date">
                         <span>{{ $day['date']->format('d') }}</span>
                         <small>{{ $day['date']->format('D') }}</small>
                     </div>
-                    <span class="status-pill {{ $isSunday && ! $status ? 'status-sunday' : $statusClass }}">
+                    <span class="status-pill {{ $holiday && ! $status ? 'status-holiday' : ($isSunday && ! $status ? 'status-sunday' : $statusClass) }}">
                         {{ $statusLabel }}
                     </span>
+                    @if ($holiday)
+                        <div class="calendar-note">{{ $holiday['name'] }}</div>
+                    @endif
                 </div>
             @endforeach
 

@@ -1764,6 +1764,10 @@
             background: #2563eb;
         }
 
+        .legend-dot.holiday {
+            background: #7c3aed;
+        }
+
         .legend-dot.sunday {
             background: #e11d48;
         }
@@ -1805,6 +1809,10 @@
             background: #fff7f7;
         }
 
+        .calendar-holiday {
+            background: #f5f3ff;
+        }
+
         .calendar-date {
             display: flex;
             align-items: center;
@@ -1826,6 +1834,22 @@
 
         .calendar-sunday .calendar-date small {
             color: #e11d48;
+        }
+
+        .calendar-holiday .calendar-date {
+            color: #5b21b6;
+        }
+
+        .calendar-holiday .calendar-date small {
+            color: #7c3aed;
+        }
+
+        .calendar-note {
+            margin-top: 8px;
+            color: #4c1d95;
+            font-size: 12px;
+            font-weight: 800;
+            line-height: 1.35;
         }
 
         .status-pill {
@@ -1867,6 +1891,11 @@
         .status-sunday {
             background: #ffe4e6;
             color: #be123c;
+        }
+
+        .status-holiday {
+            background: #ede9fe;
+            color: #5b21b6;
         }
 
         .status-open {

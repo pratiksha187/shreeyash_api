@@ -7,6 +7,7 @@ use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use App\Models\User;
 use App\Models\DailyProgressReport;
+use App\Support\PaidHolidayCalendar;
 use App\Support\Tenant;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -89,13 +90,16 @@ class EmployeeController extends Controller
             ->get()
             ->keyBy(fn ($attendance) => $attendance->attendance_date->toDateString());
 
+        $paidHolidays = PaidHolidayCalendar::holidaysBetween($monthStart, $monthEnd);
+
         $calendarDays = collect(CarbonPeriod::create($monthStart, $monthEnd))
-            ->map(function (Carbon $date) use ($attendances) {
+            ->map(function (Carbon $date) use ($attendances, $paidHolidays) {
                 $dateString = $date->toDateString();
 
                 return [
                     'date' => $date->copy(),
                     'attendance' => $attendances->get($dateString),
+                    'holiday' => $paidHolidays->get($dateString),
                 ];
             });
 
@@ -194,6 +198,7 @@ class EmployeeController extends Controller
                 'absent' => $attendances->where('status', 'absent')->count(),
                 'leave' => $attendances->where('status', 'leave')->count(),
                 'half_day' => $attendances->where('status', 'half_day')->count(),
+                'paid_holidays' => $paidHolidays->count(),
             ],
             'dprs' => $dprs,
         ]);

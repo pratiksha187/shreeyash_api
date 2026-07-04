@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Payment;
 use App\Models\User;
 use App\Services\PaymentSlipPdfService;
+use App\Support\PaidHolidayCalendar;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Illuminate\Http\JsonResponse;
@@ -108,6 +109,8 @@ class PaymentController extends Controller
         $presentDates = [];
         $halfDayDates = [];
         $leaveDates = [];
+        $attendanceDates = [];
+        $cOffDates = [];
         $leaveDatesByType = [
             'casual' => [],
             'sick' => [],
@@ -117,10 +120,11 @@ class PaymentController extends Controller
 
         foreach ($attendances as $attendance) {
             $date = $attendance->attendance_date->toDateString();
+            $attendanceDates[$date] = true;
 
             if ($attendance->status === 'present') {
                 if ($attendance->attendance_date->isSunday()) {
-                    $cOffCount++;
+                    $cOffDates[$date] = true;
                 } else {
                     $presentDates[$date] = true;
                 }
@@ -136,11 +140,24 @@ class PaymentController extends Controller
             }
         }
 
+        $paidHolidays = PaidHolidayCalendar::holidaysBetween($from, $to);
+        $holidayDates = [];
+        foreach ($paidHolidays as $dateString => $holiday) {
+            if (
+                ! isset($presentDates[$dateString])
+                && ! isset($halfDayDates[$dateString])
+                && ! isset($leaveDates[$dateString])
+                && ! isset($cOffDates[$dateString])
+            ) {
+                $holidayDates[$dateString] = true;
+            }
+        }
+
         $weekoffCount = 0;
         foreach (CarbonPeriod::create($from, '1 day', $to) as $date) {
             $dateString = $date->toDateString();
 
-            if ($date->isSunday() && ! isset($presentDates[$dateString]) && ! isset($halfDayDates[$dateString])) {
+            if ($date->isSunday() && ! isset($attendanceDates[$dateString]) && ! isset($holidayDates[$dateString])) {
                 $weekoffCount++;
             }
         }
@@ -148,7 +165,8 @@ class PaymentController extends Controller
         $presentDays = count($presentDates);
         $halfDayCount = count($halfDayDates);
         $leaveTotal = count($leaveDates);
-        $holidayCount = 0;
+        $holidayCount = count($holidayDates);
+        $cOffCount = count($cOffDates);
         $paidDays = $presentDays + $weekoffCount + $holidayCount + $leaveTotal + $cOffCount + ($halfDayCount * 0.5);
 
         $grossPayable = round($perDayRate * $paidDays, 2);

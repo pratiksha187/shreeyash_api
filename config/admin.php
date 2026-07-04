@@ -61,6 +61,23 @@ return [
         '9309886247',
     ],
 
+    'paid_holidays' => [
+        2026 => [
+            '2026-01-26' => 'Republic Day',
+            '2026-02-19' => 'Chhatrapati Shivaji Maharaj Jayanti',
+            '2026-03-03' => 'Holi',
+            '2026-03-19' => 'Gudhipadwa',
+            '2026-05-01' => 'Maharashtra Day',
+            '2026-08-15' => 'Independence Day',
+            '2026-09-05' => 'Gokul Ashtami',
+            '2026-09-14' => 'Ganesh Chaturthi',
+            '2026-09-19' => 'Gauri Visarjan',
+            '2026-10-20' => 'Vijayadashami/Dasra',
+            '2026-11-08' => 'Laxmipujan',
+            '2026-11-11' => 'Bhaubeej',
+        ],
+    ],
+
     'navigation' => [
         [
             'label' => 'ConstructKaro',
