@@ -185,6 +185,9 @@ class EmployeeController extends Controller
             'blankDays' => $monthStart->dayOfWeek > 0
                 ? range(1, $monthStart->dayOfWeek)
                 : [],
+            'trailingBlankDays' => $monthEnd->dayOfWeek < 6
+                ? range(1, 6 - $monthEnd->dayOfWeek)
+                : [],
             'summary' => [
                 'total_days' => $attendances->count(),
                 'present' => $attendances->where('status', 'present')->count(),

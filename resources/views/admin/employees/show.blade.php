@@ -129,30 +129,50 @@
         </div>
     </section>
 
-    <!-- Compact Calendar -->
-    <div style="display:flex; gap:12px; margin-bottom:16px;">
-        <div class="card" style="flex:1;">
-            <h3 style="margin-top:0; margin-bottom:12px; font-size:14px;">{{ $monthLabel }} Calendar</h3>
-            <div class="calendar-grid" style="grid-template-columns:repeat(7, 1fr); gap:4px;">
-                @foreach (['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as $dayName)
-                    <div style="text-align:center; font-weight:600; font-size:11px; padding:4px;">{{ substr($dayName, 0, 1) }}</div>
-                @endforeach
-
-                @foreach ($blankDays as $blankDay)
-                    <div></div>
-                @endforeach
-
-                @foreach ($calendarDays as $day)
-                    @php
-                        $attendance = $day['attendance'];
-                        $status = $attendance?->status ?? '';
-                        $statusClass = $status ? 'status-' . $status : 'status-empty';
-                    @endphp
-                    <div style="padding:6px; text-align:center; border-radius:4px; background:#f9f9f9; font-size:11px; @if($status) border-left:3px solid currentColor; @endif" class="{{ $statusClass }}">
-                        {{ $day['date']->format('d') }}
-                    </div>
-                @endforeach
+    <!-- Attendance Calendar -->
+    <div class="card calendar-card employee-calendar-card" style="margin-bottom:16px;">
+        <div class="employee-calendar-title">
+            <h3>{{ $monthLabel }} Calendar</h3>
+            <div class="employee-calendar-legend">
+                <span><i class="legend-dot present"></i>Present</span>
+                <span><i class="legend-dot leave"></i>Leave</span>
+                <span><i class="legend-dot absent"></i>Absent</span>
+                <span><i class="legend-dot half-day"></i>Half Day</span>
+                <span><i class="legend-dot sunday"></i>Sunday</span>
             </div>
+        </div>
+
+        <div class="calendar-grid employee-calendar-grid">
+            @foreach (['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] as $dayName)
+                <div class="calendar-head @if($loop->first) calendar-sunday-head @endif">{{ $dayName }}</div>
+            @endforeach
+
+            @foreach ($blankDays as $blankDay)
+                <div class="calendar-empty"></div>
+            @endforeach
+
+            @foreach ($calendarDays as $day)
+                @php
+                    $attendance = $day['attendance'];
+                    $status = $attendance?->status ?? '';
+                    $statusClass = $status ? 'status-' . $status : 'status-empty';
+                    $isSunday = $day['date']->isSunday();
+                    $statusLabel = $status ? str_replace('_', ' ', $status) : ($isSunday ? 'Sunday' : 'No record');
+                @endphp
+                <div class="calendar-day @if($isSunday) calendar-sunday @endif">
+                    <div class="calendar-date">
+                        <span>{{ $day['date']->format('d') }}</span>
+                        <small>{{ $day['date']->format('D') }}</small>
+                    </div>
+                    <span class="status-pill {{ $isSunday && ! $status ? 'status-sunday' : $statusClass }}">
+                        {{ $statusLabel }}
+                    </span>
+                </div>
+            @endforeach
+
+            @foreach ($trailingBlankDays as $blankDay)
+                <div class="calendar-empty"></div>
+            @endforeach
         </div>
     </div>
 

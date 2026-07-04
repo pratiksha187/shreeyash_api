@@ -1709,6 +1709,65 @@
             overflow: hidden;
         }
 
+        .employee-calendar-title {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 16px;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .employee-calendar-title h3 {
+            margin: 0;
+            font-size: 18px;
+        }
+
+        .employee-calendar-legend {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            gap: 8px 14px;
+            color: var(--muted);
+            font-size: 12px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .employee-calendar-legend span {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+        }
+
+        .legend-dot {
+            width: 9px;
+            height: 9px;
+            border-radius: 999px;
+            background: #94a3b8;
+        }
+
+        .legend-dot.present {
+            background: #16a34a;
+        }
+
+        .legend-dot.leave {
+            background: #d97706;
+        }
+
+        .legend-dot.absent {
+            background: #dc2626;
+        }
+
+        .legend-dot.half-day {
+            background: #2563eb;
+        }
+
+        .legend-dot.sunday {
+            background: #e11d48;
+        }
+
         .calendar-grid {
             display: grid;
             grid-template-columns: repeat(7, minmax(120px, 1fr));
@@ -1733,8 +1792,17 @@
             text-transform: uppercase;
         }
 
+        .calendar-sunday-head {
+            color: #be123c;
+            background: #fff1f2;
+        }
+
         .calendar-empty {
             background: #f8fafc;
+        }
+
+        .calendar-sunday {
+            background: #fff7f7;
         }
 
         .calendar-date {
@@ -1743,6 +1811,21 @@
             justify-content: space-between;
             gap: 8px;
             font-weight: 800;
+        }
+
+        .calendar-date small {
+            color: var(--muted);
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .calendar-sunday .calendar-date {
+            color: #be123c;
+        }
+
+        .calendar-sunday .calendar-date small {
+            color: #e11d48;
         }
 
         .status-pill {
@@ -1779,6 +1862,11 @@
         .status-empty {
             background: #e2e8f0;
             color: #475569;
+        }
+
+        .status-sunday {
+            background: #ffe4e6;
+            color: #be123c;
         }
 
         .status-open {
