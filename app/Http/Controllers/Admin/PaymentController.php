@@ -84,9 +84,13 @@ class PaymentController extends Controller
             ->with('payment_id', $payment->id);
     }
 
-    public function slip(Payment $payment): Response
+    public function slip(int $payment): Response
     {
-        $payment->load('user');
+        $payment = Payment::query()
+            ->forCurrentCompany()
+            ->with('user')
+            ->findOrFail($payment);
+
         $pdf = app(PaymentSlipPdfService::class)->build($payment);
         $fileName = 'payment-slip-' . $payment->user_id . '-' . $payment->from_date->format('Ymd') . '-' . $payment->to_date->format('Ymd') . '.pdf';
 
