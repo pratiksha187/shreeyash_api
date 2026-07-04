@@ -55,13 +55,18 @@ class PaymentSlipPdfService
             ['HRA 5%', 'Rs. ' . number_format((float) $payment->hra_5, 2)],
             ['Conveyance 20%', 'Rs. ' . number_format((float) $payment->conveyance_20, 2)],
             ['Other Allowance', 'Rs. ' . number_format((float) $payment->other_allowance, 2)],
+            ['OT/Arrears/Penalty', 'Rs. ' . number_format((float) ($payment->ot_arrears_penalty ?? 0), 2)],
             ['Gross Payable', 'Rs. ' . number_format((float) $payment->gross_payable, 2)],
         ], 24, 10, [0]);
         $deductionsY = $this->pdfTable($content, 315, $tableY, [130, 100], [
             ['PF', 'Rs. ' . number_format((float) $payment->pf_12, 2)],
             ['Insurance', 'Rs. ' . number_format((float) $payment->insurance, 2)],
             ['PT', 'Rs. ' . number_format((float) $payment->pt, 2)],
+            ['Late Mark', 'Rs. ' . number_format((float) ($payment->late_mark ?? 0), 2)],
             ['Advance', 'Rs. ' . number_format((float) $payment->advance, 2)],
+            ['Loan Opening', 'Rs. ' . number_format((float) ($payment->loan_opening ?? 0), 2)],
+            ['Loan Deduction', 'Rs. ' . number_format((float) ($payment->loan_deduction ?? 0), 2)],
+            ['Loan Closing', 'Rs. ' . number_format((float) ($payment->loan_closing ?? 0), 2)],
             ['Total Deduction', 'Rs. ' . number_format((float) $payment->total_deduction, 2)],
         ], 24, 10, [0]);
         $y = min($earningsY, $deductionsY) - 38;

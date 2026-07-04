@@ -62,6 +62,38 @@
                 </div>
 
                 <div class="field">
+                    <label for="ot_arrears_penalty">OT / Arrears / Penalty</label>
+                    <input id="ot_arrears_penalty" name="ot_arrears_penalty" type="number" step="0.01" value="{{ old('ot_arrears_penalty', 0) }}">
+                    @error('ot_arrears_penalty')
+                        <div class="error">{{ $message }}</div>
+                    @enderror
+                </div>
+
+                <div class="field">
+                    <label for="late_mark">Late Mark</label>
+                    <input id="late_mark" name="late_mark" type="number" min="0" step="0.01" value="{{ old('late_mark', 0) }}">
+                    @error('late_mark')
+                        <div class="error">{{ $message }}</div>
+                    @enderror
+                </div>
+
+                <div class="field">
+                    <label for="loan_opening">Loan Opening</label>
+                    <input id="loan_opening" name="loan_opening" type="number" min="0" step="0.01" value="{{ old('loan_opening', 0) }}">
+                    @error('loan_opening')
+                        <div class="error">{{ $message }}</div>
+                    @enderror
+                </div>
+
+                <div class="field">
+                    <label for="loan_deduction">Loan Deduction</label>
+                    <input id="loan_deduction" name="loan_deduction" type="number" min="0" step="0.01" value="{{ old('loan_deduction', 0) }}">
+                    @error('loan_deduction')
+                        <div class="error">{{ $message }}</div>
+                    @enderror
+                </div>
+
+                <div class="field">
                     <label>&nbsp;</label>
                     <button class="btn" type="submit">Calculate Payment</button>
                 </div>
@@ -86,6 +118,7 @@
                     <th>Gross Payable</th>
                     <th>Deductions</th>
                     <th>Net Payable</th>
+                    <th>Loan Closing</th>
                     <th>PDF</th>
                 </tr>
             </thead>
@@ -98,13 +131,14 @@
                         <td>{{ number_format((float) $payment->gross_payable, 2) }}</td>
                         <td>{{ number_format((float) $payment->total_deduction, 2) }}</td>
                         <td>{{ number_format((float) $payment->net_payable, 2) }}</td>
+                        <td>{{ number_format((float) ($payment->loan_closing ?? 0), 2) }}</td>
                         <td>
                             <a class="table-link" href="{{ route('admin.payments.slip', $payment) }}" target="_blank">Open Slip</a>
                         </td>
                     </tr>
                 @empty
                     <tr>
-                        <td class="empty" colspan="7">No payments generated yet.</td>
+                        <td class="empty" colspan="8">No payments generated yet.</td>
                     </tr>
                 @endforelse
             </tbody>

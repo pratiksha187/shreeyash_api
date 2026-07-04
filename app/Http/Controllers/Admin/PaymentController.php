@@ -39,6 +39,10 @@ class PaymentController extends Controller
             'user_id' => ['required', 'exists:users,id'],
             'from_date' => ['required', 'date'],
             'to_date' => ['required', 'date', 'after_or_equal:from_date'],
+            'ot_arrears_penalty' => ['nullable', 'numeric', 'min:-9999999999.99', 'max:9999999999.99'],
+            'late_mark' => ['nullable', 'numeric', 'min:0', 'max:9999999999.99'],
+            'loan_opening' => ['nullable', 'numeric', 'min:0', 'max:9999999999.99'],
+            'loan_deduction' => ['nullable', 'numeric', 'min:0', 'max:9999999999.99'],
         ]);
 
         $from = Carbon::parse($data['from_date'])->startOfDay();
@@ -56,7 +60,7 @@ class PaymentController extends Controller
         }
 
         $user = User::query()->forCurrentCompany()->employees()->findOrFail($data['user_id']);
-        $payment = Payment::query()->create($this->calculatePayment($user, $from, $to));
+        $payment = Payment::query()->create($this->calculatePayment($user, $from, $to, $data));
 
         $payment->load('user');
         $pdf = app(PaymentSlipPdfService::class)->build($payment);
@@ -84,7 +88,7 @@ class PaymentController extends Controller
         ]);
     }
 
-    private function calculatePayment(User $user, Carbon $from, Carbon $to): array
+    private function calculatePayment(User $user, Carbon $from, Carbon $to, array $adjustments = []): array
     {
         $grossSalary = (float) ($user->salary ?? 0);
         $daysInMonth = max(1, $from->daysInMonth);
@@ -160,7 +164,9 @@ class PaymentController extends Controller
         $cOffCount = count($cOffDates);
         $paidDays = $presentDays + $weekoffCount + $holidayCount + $leaveTotal + $cOffCount + ($halfDayCount * 0.5);
 
-        $grossPayable = round($perDayRate * $paidDays, 2);
+        $attendancePayable = round($perDayRate * $paidDays, 2);
+        $otArrearsPenalty = round((float) ($adjustments['ot_arrears_penalty'] ?? 0), 2);
+        $grossPayable = round($attendancePayable + $otArrearsPenalty, 2);
         $basic60 = round($grossPayable * 0.6, 2);
         $hra5 = round($grossPayable * 0.05, 2);
         $conveyance20 = round($grossPayable * 0.2, 2);
@@ -170,7 +176,11 @@ class PaymentController extends Controller
         $insurance = (float) ($user->insurance ?? 0);
         $pt = (float) ($user->pt ?? 0);
         $advance = (float) ($user->advance ?? 0);
-        $totalDeduction = round($pf + $insurance + $pt + $advance, 2);
+        $lateMark = round((float) ($adjustments['late_mark'] ?? 0), 2);
+        $loanOpening = round((float) ($adjustments['loan_opening'] ?? 0), 2);
+        $loanDeduction = round((float) ($adjustments['loan_deduction'] ?? 0), 2);
+        $loanClosing = max(0, round($loanOpening - $loanDeduction, 2));
+        $totalDeduction = round($pf + $insurance + $pt + $lateMark + $advance + $loanDeduction, 2);
         $netPayable = round($grossPayable - $totalDeduction, 2);
 
         return [
@@ -194,11 +204,16 @@ class PaymentController extends Controller
             'hra_5' => $hra5,
             'conveyance_20' => $conveyance20,
             'other_allowance' => $otherAllowance,
+            'ot_arrears_penalty' => $otArrearsPenalty,
             'gross_payable' => $grossPayable,
             'pf_12' => $pf,
             'insurance' => $insurance,
             'pt' => $pt,
+            'late_mark' => $lateMark,
             'advance' => $advance,
+            'loan_opening' => $loanOpening,
+            'loan_deduction' => $loanDeduction,
+            'loan_closing' => $loanClosing,
             'total_deduction' => $totalDeduction,
             'net_payable' => $netPayable,
         ];
