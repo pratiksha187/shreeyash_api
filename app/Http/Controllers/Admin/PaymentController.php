@@ -14,6 +14,7 @@ use Carbon\CarbonPeriod;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
@@ -35,8 +36,15 @@ class PaymentController extends Controller
 
     public function generate(Request $request): RedirectResponse
     {
+        $usersTable = app(Tenant::class)->connectionName()
+            ? app(Tenant::class)->connectionName().'.users'
+            : 'users';
+
         $data = $request->validate([
-            'user_id' => ['required', 'exists:users,id'],
+            'user_id' => [
+                'required',
+                Rule::exists($usersTable, 'id')->where(fn ($query) => $query->where('role', 'employee')),
+            ],
             'from_date' => ['required', 'date'],
             'to_date' => ['required', 'date', 'after_or_equal:from_date'],
             'ot_arrears_penalty' => ['nullable', 'numeric', 'min:-9999999999.99', 'max:9999999999.99'],
