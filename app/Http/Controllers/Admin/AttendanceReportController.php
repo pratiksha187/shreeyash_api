@@ -79,7 +79,7 @@ class AttendanceReportController extends Controller
         ]);
     }
 
-    public function index(Request $request): View
+    public function index(Request $request): View|StreamedResponse
     {
         $filters = $request->validate([
             'from_date' => ['nullable', 'date'],
@@ -92,6 +92,10 @@ class AttendanceReportController extends Controller
         $toDate = isset($filters['to_date'])
             ? Carbon::parse($filters['to_date'])->toDateString()
             : now()->endOfMonth()->toDateString();
+
+        if ($request->boolean('export')) {
+            return $this->downloadAttendanceReport($fromDate, $toDate);
+        }
 
         $attendances = Attendance::query()
             ->forCurrentCompany()
@@ -151,6 +155,18 @@ class AttendanceReportController extends Controller
             ? Carbon::parse($filters['to_date'])->toDateString()
             : now()->endOfMonth()->toDateString();
 
+        return $this->downloadAttendanceReport($fromDate, $toDate);
+    }
+
+    private function withTodayAttendance(User $employee, Collection $attendances): User
+    {
+        $employee->setRelation('todayAttendance', $attendances->get($employee->id));
+
+        return $employee;
+    }
+
+    private function downloadAttendanceReport(string $fromDate, string $toDate): StreamedResponse
+    {
         $attendances = Attendance::query()
             ->forCurrentCompany()
             ->with('user:id,name,email,mobile,designation')
@@ -188,13 +204,6 @@ class AttendanceReportController extends Controller
         }, $filename, [
             'Content-Type' => 'text/csv',
         ]);
-    }
-
-    private function withTodayAttendance(User $employee, Collection $attendances): User
-    {
-        $employee->setRelation('todayAttendance', $attendances->get($employee->id));
-
-        return $employee;
     }
 
     private function totalHours(?Carbon $checkIn, ?Carbon $checkOut): string
