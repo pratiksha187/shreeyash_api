@@ -145,6 +145,11 @@ class User extends Authenticatable
         return $this->hasMany(MissedAttendanceRequest::class);
     }
 
+    public function leaveEntitlements()
+    {
+        return $this->hasMany(LeaveEntitlement::class);
+    }
+
     public function submittedLabourAttendances()
     {
         return $this->hasMany(LabourAttendance::class, 'engineer_user_id');

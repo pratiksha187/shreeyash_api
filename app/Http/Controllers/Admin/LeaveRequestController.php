@@ -47,15 +47,15 @@ class LeaveRequestController extends Controller
                     return [];
                 }
 
-                $period = Attendance::leaveYearPeriodFor($leave->attendance_date, $leave->user);
+                $entitlement = Attendance::leaveEntitlementFor($leave->attendance_date, $leave->user);
                 $approvedLeaves = Attendance::query()
                     ->forCurrentCompany()
                     ->where('user_id', $leave->user_id)
                     ->where('status', 'leave')
                     ->where('leave_approval_status', 'approved')
                     ->whereBetween('attendance_date', [
-                        $period['start']->toDateString(),
-                        $period['end']->toDateString(),
+                        $entitlement['start']->toDateString(),
+                        $entitlement['end']->toDateString(),
                     ])
                     ->get();
                 $approvedLeavesByType = collect(array_keys(Attendance::LEAVE_TYPES))
@@ -67,10 +67,13 @@ class LeaveRequestController extends Controller
 
                 return [
                     $leave->id => [
-                        'start' => $period['start'],
-                        'end' => $period['end'],
+                        'start' => $entitlement['start'],
+                        'end' => $entitlement['end'],
                         'used' => $approvedLeaves->count(),
-                        'remaining' => max(0, Attendance::YEARLY_LEAVE_LIMIT - $approvedLeaves->count()),
+                        'remaining' => max(0, $entitlement['total'] - $approvedLeaves->count()),
+                        'total_limit' => $entitlement['total'],
+                        'limits' => $entitlement['limits'],
+                        'source' => $entitlement['source'],
                         'by_type' => $approvedLeavesByType,
                     ],
                 ];
@@ -79,8 +82,6 @@ class LeaveRequestController extends Controller
         return view('admin.leave-requests.index', [
             'leaves' => $leaves,
             'leaveUsage' => $leaveUsage,
-            'yearlyLeaveLimit' => Attendance::YEARLY_LEAVE_LIMIT,
-            'leaveTypeLimit' => Attendance::LEAVE_TYPE_LIMIT,
             'leaveTypes' => Attendance::LEAVE_TYPES,
             'employees' => \App\Models\User::query()->forCurrentCompany()->employees()->orderBy('name')->get(),
             'selectedEmployeeId' => $request->input('employee_id'),
@@ -111,8 +112,9 @@ class LeaveRequestController extends Controller
             ->findOrFail($leave);
 
         if ($data['status'] === 'approved') {
-            $period = Attendance::leaveYearPeriodFor($leaveRequest->attendance_date, $leaveRequest->user);
+            $entitlement = Attendance::leaveEntitlementFor($leaveRequest->attendance_date, $leaveRequest->user);
             $leaveType = $data['leave_type'];
+            $leaveTypeLimit = $entitlement['limits'][$leaveType] ?? 0;
             $approvedLeavesForType = Attendance::query()
                 ->forCurrentCompany()
                 ->where('user_id', $leaveRequest->user_id)
@@ -126,16 +128,16 @@ class LeaveRequestController extends Controller
                     }
                 })
                 ->whereBetween('attendance_date', [
-                    $period['start']->toDateString(),
-                    $period['end']->toDateString(),
+                    $entitlement['start']->toDateString(),
+                    $entitlement['end']->toDateString(),
                 ])
                 ->whereKeyNot($leaveRequest->getKey())
                 ->count();
 
-            if ($approvedLeavesForType >= Attendance::LEAVE_TYPE_LIMIT) {
+            if ($approvedLeavesForType >= $leaveTypeLimit) {
                 return redirect()
                     ->route('admin.leave-requests.index')
-                    ->with('error', 'This employee already has '.Attendance::LEAVE_TYPE_LIMIT.' '.Attendance::LEAVE_TYPES[$leaveType].' days from '.$period['start']->format('d M Y').' to '.$period['end']->format('d M Y').'.');
+                    ->with('error', 'This employee already has '.$leaveTypeLimit.' '.Attendance::LEAVE_TYPES[$leaveType].' days from '.$entitlement['start']->format('d M Y').' to '.$entitlement['end']->format('d M Y').'.');
             }
         }
 

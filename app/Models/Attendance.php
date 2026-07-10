@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Concerns\BelongsToCompany;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -19,6 +20,11 @@ class Attendance extends Model
         'casual' => 'Casual Leave',
         'sick' => 'Sick Leave',
         'paid' => 'Paid Leave',
+    ];
+    public const DEFAULT_LEAVE_LIMITS = [
+        'casual' => self::LEAVE_TYPE_LIMIT,
+        'sick' => self::LEAVE_TYPE_LIMIT,
+        'paid' => self::LEAVE_TYPE_LIMIT,
     ];
 
     public static function leaveYearPeriodFor(Carbon|string $date, ?User $user): array
@@ -45,6 +51,65 @@ class Attendance extends Model
             'start' => $start,
             'end' => $end,
         ];
+    }
+
+    /**
+     * @return array{
+     *     start: Carbon,
+     *     end: Carbon,
+     *     limits: array{casual: int, sick: int, paid: int},
+     *     total: int,
+     *     source: string,
+     *     entitlement: LeaveEntitlement|null
+     * }
+     */
+    public static function leaveEntitlementFor(Carbon|string $date, ?User $user): array
+    {
+        $date = Carbon::parse($date)->startOfDay();
+        $period = self::leaveYearPeriodFor($date, $user);
+        $entitlement = self::matchingLeaveEntitlement($date, $user);
+
+        if ($entitlement) {
+            $period = [
+                'start' => $entitlement->leave_year_start->copy()->startOfDay(),
+                'end' => $entitlement->leave_year_end->copy()->startOfDay(),
+            ];
+        }
+
+        $limits = $entitlement?->limits() ?? self::DEFAULT_LEAVE_LIMITS;
+
+        return [
+            'start' => $period['start'],
+            'end' => $period['end'],
+            'limits' => $limits,
+            'total' => array_sum($limits),
+            'source' => $entitlement ? 'database' : 'default',
+            'entitlement' => $entitlement,
+        ];
+    }
+
+    private static function matchingLeaveEntitlement(Carbon $date, ?User $user): ?LeaveEntitlement
+    {
+        if (! $user?->id) {
+            return null;
+        }
+
+        $matching = LeaveEntitlement::query()
+            ->forCurrentCompany()
+            ->whereDate('leave_year_start', '<=', $date->toDateString())
+            ->whereDate('leave_year_end', '>=', $date->toDateString())
+            ->where(function ($query) use ($user) {
+                $query->where('user_id', $user->id)
+                    ->orWhereNull('user_id');
+            })
+            ->orderByDesc('user_id')
+            ->get();
+
+        if (! $matching instanceof EloquentCollection || $matching->isEmpty()) {
+            return null;
+        }
+
+        return $matching->firstWhere('user_id', $user->id) ?? $matching->firstWhere('user_id', null);
     }
 
     private static function anniversaryDateForYear(Carbon $joinDate, int $year): Carbon

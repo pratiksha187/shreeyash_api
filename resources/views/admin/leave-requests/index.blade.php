@@ -9,7 +9,7 @@
     <div class="page-header">
         <div>
             <h1>Leave Requests</h1>
-            <p>Review recorded leave entries and approve or reject pending requests. Limit: {{ $leaveTypeLimit }} casual, {{ $leaveTypeLimit }} sick, {{ $leaveTypeLimit }} paid leaves from each employee joining-date year.</p>
+            <p>Review recorded leave entries and approve or reject pending requests. Leave limits are checked from employee leave entitlement records, with 4 casual, 4 sick, and 4 paid leaves used as the default.</p>
         </div>
     </div>
 
@@ -128,15 +128,17 @@
                         <td data-label="Leave Year">
                             @php($usage = $leaveUsage[$leave->id] ?? null)
                             @if ($usage)
-                                <strong>{{ $usage['used'] }}/{{ $yearlyLeaveLimit }}</strong>
+                                <strong>{{ $usage['used'] }}/{{ $usage['total_limit'] }}</strong>
                                 <div class="table-subtext">
                                     {{ $usage['remaining'] }} remaining
                                     <br>
                                     {{ $usage['start']->format('d M Y') }} - {{ $usage['end']->format('d M Y') }}
                                     <br>
-                                    CL {{ $usage['by_type']['casual'] ?? 0 }}/{{ $leaveTypeLimit }},
-                                    SL {{ $usage['by_type']['sick'] ?? 0 }}/{{ $leaveTypeLimit }},
-                                    PL {{ $usage['by_type']['paid'] ?? 0 }}/{{ $leaveTypeLimit }}
+                                    CL {{ $usage['by_type']['casual'] ?? 0 }}/{{ $usage['limits']['casual'] ?? 0 }},
+                                    SL {{ $usage['by_type']['sick'] ?? 0 }}/{{ $usage['limits']['sick'] ?? 0 }},
+                                    PL {{ $usage['by_type']['paid'] ?? 0 }}/{{ $usage['limits']['paid'] ?? 0 }}
+                                    <br>
+                                    {{ $usage['source'] === 'database' ? 'DB entitlement' : 'Default entitlement' }}
                                 </div>
                             @else
                                 -

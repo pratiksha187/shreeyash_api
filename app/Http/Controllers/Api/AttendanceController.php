@@ -386,7 +386,7 @@ class AttendanceController extends Controller
 
         $requestedLeaveCountsByPeriod = $dates
             ->groupBy(function (string $date) use ($request) {
-                $period = Attendance::leaveYearPeriodFor($date, $request->user());
+                $period = Attendance::leaveEntitlementFor($date, $request->user());
 
                 return $period['start']->toDateString().'|'.$period['end']->toDateString();
             })
@@ -394,6 +394,8 @@ class AttendanceController extends Controller
 
         foreach ($requestedLeaveCountsByPeriod as $periodKey => $requestedLeaveCount) {
             [$periodStart, $periodEnd] = explode('|', $periodKey);
+            $entitlement = Attendance::leaveEntitlementFor($periodStart, $request->user());
+            $leaveTypeLimit = $entitlement['limits'][$leaveType] ?? 0;
 
             $usedLeaveCount = Attendance::query()
                 ->forCurrentCompany()
@@ -411,18 +413,20 @@ class AttendanceController extends Controller
                 ->whereNotIn('attendance_date', $dates->all())
                 ->count();
 
-            if (($usedLeaveCount + $requestedLeaveCount) > Attendance::LEAVE_TYPE_LIMIT) {
+            if (($usedLeaveCount + $requestedLeaveCount) > $leaveTypeLimit) {
                 return response()->json([
-                    'message' => 'You can apply only '.Attendance::LEAVE_TYPE_LIMIT.' '.Attendance::LEAVE_TYPES[$leaveType].' days in your leave year.',
+                    'message' => 'You can apply only '.$leaveTypeLimit.' '.Attendance::LEAVE_TYPES[$leaveType].' days in your leave year.',
                     'leave_type' => $leaveType,
                     'leave_type_label' => Attendance::LEAVE_TYPES[$leaveType],
                     'leave_year_start' => $periodStart,
                     'leave_year_end' => $periodEnd,
-                    'yearly_leave_limit' => Attendance::YEARLY_LEAVE_LIMIT,
-                    'leave_type_limit' => Attendance::LEAVE_TYPE_LIMIT,
+                    'yearly_leave_limit' => $entitlement['total'],
+                    'leave_type_limit' => $leaveTypeLimit,
+                    'leave_limits' => $entitlement['limits'],
+                    'leave_entitlement_source' => $entitlement['source'],
                     'used_leaves' => $usedLeaveCount,
                     'requested_leaves' => $requestedLeaveCount,
-                    'remaining_leaves' => max(0, Attendance::LEAVE_TYPE_LIMIT - $usedLeaveCount),
+                    'remaining_leaves' => max(0, $leaveTypeLimit - $usedLeaveCount),
                 ], 422);
             }
         }
@@ -465,12 +469,22 @@ class AttendanceController extends Controller
             );
         });
 
+        $entitlement = Attendance::leaveEntitlementFor($fromDate, $request->user());
+
         return response()->json([
             'message' => 'Leave applied successfully.',
             'from_date' => $fromDate,
             'to_date' => $toDate,
             'leave_type' => $leaveType,
             'leave_type_label' => Attendance::LEAVE_TYPES[$leaveType],
+            'leave_entitlement' => [
+                'leave_year_start' => $entitlement['start']->toDateString(),
+                'leave_year_end' => $entitlement['end']->toDateString(),
+                'yearly_leave_limit' => $entitlement['total'],
+                'leave_type_limit' => $entitlement['limits'][$leaveType] ?? 0,
+                'leave_limits' => $entitlement['limits'],
+                'source' => $entitlement['source'],
+            ],
             'attendances' => $attendances,
         ], 201);
     }
