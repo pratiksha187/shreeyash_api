@@ -54,6 +54,58 @@
 
     <div class="page-header">
         <div>
+            <h1>Pending Leave Requests</h1>
+            <p>Latest employee leave requests waiting for approval.</p>
+        </div>
+        <a class="btn" href="{{ route('admin.leave-requests.index', ['status' => 'pending']) }}">Review All</a>
+    </div>
+
+    <div class="card table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Employee</th>
+                    <th>Date</th>
+                    <th>Type</th>
+                    <th>Reason</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse ($recentPendingLeaves as $leave)
+                    @php($leaveType = $leave->leave_type ?? 'casual')
+                    <tr>
+                        <td>
+                            @if ($leave->user)
+                                <a class="table-link" href="{{ route('admin.employees.show', $leave->user) }}">
+                                    {{ $leave->user->name }}
+                                </a>
+                                <div class="table-subtext">{{ $leave->user->designation ?? 'Employee' }}{{ $leave->user->mobile ? ' | '.$leave->user->mobile : '' }}</div>
+                            @else
+                                -
+                            @endif
+                        </td>
+                        <td>
+                            <strong>{{ $leave->attendance_date?->format('d M Y') }}</strong>
+                            <div class="table-subtext">{{ $leave->attendance_date?->format('l') }}</div>
+                        </td>
+                        <td>{{ \App\Models\Attendance::LEAVE_TYPES[$leaveType] ?? ucfirst($leaveType) }}</td>
+                        <td class="text-wrap">{{ $leave->remarks ?: '-' }}</td>
+                        <td>
+                            <a class="btn small" href="{{ route('admin.leave-requests.index', ['status' => 'pending', 'employee_id' => $leave->user_id]) }}">Review</a>
+                        </td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td class="empty" colspan="5">No pending leave requests.</td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+
+    <div class="page-header">
+        <div>
             <h1>Today Present Employees</h1>
             <p>Employees marked present today with in and out time.</p>
         </div>

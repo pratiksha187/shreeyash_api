@@ -74,6 +74,8 @@ class LeaveRequestController extends Controller
                         'total_limit' => $entitlement['total'],
                         'limits' => $entitlement['limits'],
                         'source' => $entitlement['source'],
+                        'is_eligible' => $entitlement['is_eligible'],
+                        'eligibility_date' => $entitlement['eligibility_date'],
                         'by_type' => $approvedLeavesByType,
                     ],
                 ];
@@ -115,6 +117,13 @@ class LeaveRequestController extends Controller
             $entitlement = Attendance::leaveEntitlementFor($leaveRequest->attendance_date, $leaveRequest->user);
             $leaveType = $data['leave_type'];
             $leaveTypeLimit = $entitlement['limits'][$leaveType] ?? 0;
+
+            if (! $entitlement['is_eligible']) {
+                return redirect()
+                    ->route('admin.leave-requests.index')
+                    ->with('error', 'This employee can get leave only after completing '.Attendance::LEAVE_ELIGIBILITY_MONTHS.' months from joining date. Eligible from '.$entitlement['eligibility_date']?->format('d M Y').'.');
+            }
+
             $approvedLeavesForType = Attendance::query()
                 ->forCurrentCompany()
                 ->where('user_id', $leaveRequest->user_id)

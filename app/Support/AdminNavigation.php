@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Models\Attendance;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
@@ -22,6 +23,7 @@ class AdminNavigation
                     ->map(function (array $item) use ($request) {
                         $item['url'] = route($item['route']);
                         $item['active'] = $request->routeIs($item['active']);
+                        $item['badge'] = $this->badgeForItem((string) $item['key']);
 
                         return $item;
                     })
@@ -148,5 +150,20 @@ class AdminNavigation
             'diesel_purchases', 'product_purchases', 'material_stock' => ['purchase'],
             default => [],
         };
+    }
+
+    private function badgeForItem(string $key): ?int
+    {
+        if ($key !== 'leave_requests') {
+            return null;
+        }
+
+        $count = Attendance::query()
+            ->forCurrentCompany()
+            ->where('status', 'leave')
+            ->where('leave_approval_status', 'pending')
+            ->count();
+
+        return $count > 0 ? $count : null;
     }
 }

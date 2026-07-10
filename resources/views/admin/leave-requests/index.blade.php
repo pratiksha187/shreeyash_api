@@ -138,7 +138,11 @@
                                     SL {{ $usage['by_type']['sick'] ?? 0 }}/{{ $usage['limits']['sick'] ?? 0 }},
                                     PL {{ $usage['by_type']['paid'] ?? 0 }}/{{ $usage['limits']['paid'] ?? 0 }}
                                     <br>
-                                    {{ $usage['source'] === 'database' ? 'DB entitlement' : 'Default entitlement' }}
+                                    @if (! $usage['is_eligible'])
+                                        Eligible after {{ $usage['eligibility_date']?->format('d M Y') }}
+                                    @else
+                                        {{ $usage['source'] === 'database' ? 'DB entitlement' : 'Default entitlement' }}
+                                    @endif
                                 </div>
                             @else
                                 -

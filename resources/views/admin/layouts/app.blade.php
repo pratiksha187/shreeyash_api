@@ -205,6 +205,7 @@
         .nav a {
             display: flex;
             align-items: center;
+            justify-content: space-between;
             gap: 10px;
             min-height: 42px;
             padding: 10px 12px;
@@ -213,6 +214,28 @@
             text-decoration: none;
             font-size: 14px;
             font-weight: 700;
+        }
+
+        .nav-item-label {
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .nav-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 22px;
+            height: 22px;
+            padding: 0 7px;
+            border-radius: 999px;
+            background: #f97316;
+            color: #fff;
+            font-size: 12px;
+            font-weight: 900;
+            line-height: 1;
         }
 
         .nav a.active,
@@ -2170,7 +2193,10 @@
                         <div class="nav-group-links">
                             @foreach ($group['items'] as $item)
                                 <a class="{{ $item['active'] ? 'active' : '' }}" href="{{ $item['url'] }}">
-                                    {{ $item['label'] }}
+                                    <span class="nav-item-label">{{ $item['label'] }}</span>
+                                    @if (! empty($item['badge']))
+                                        <span class="nav-badge">{{ $item['badge'] }}</span>
+                                    @endif
                                 </a>
                             @endforeach
                         </div>

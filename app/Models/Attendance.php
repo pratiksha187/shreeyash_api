@@ -16,6 +16,7 @@ class Attendance extends Model
     public const LOCAL_TIMEZONE = 'Asia/Kolkata';
     public const YEARLY_LEAVE_LIMIT = 12;
     public const LEAVE_TYPE_LIMIT = 4;
+    public const LEAVE_ELIGIBILITY_MONTHS = 6;
     public const LEAVE_TYPES = [
         'casual' => 'Casual Leave',
         'sick' => 'Sick Leave',
@@ -25,6 +26,11 @@ class Attendance extends Model
         'casual' => self::LEAVE_TYPE_LIMIT,
         'sick' => self::LEAVE_TYPE_LIMIT,
         'paid' => self::LEAVE_TYPE_LIMIT,
+    ];
+    public const ZERO_LEAVE_LIMITS = [
+        'casual' => 0,
+        'sick' => 0,
+        'paid' => 0,
     ];
 
     public static function leaveYearPeriodFor(Carbon|string $date, ?User $user): array
@@ -60,6 +66,8 @@ class Attendance extends Model
      *     limits: array{casual: int, sick: int, paid: int},
      *     total: int,
      *     source: string,
+     *     is_eligible: bool,
+     *     eligibility_date: Carbon|null,
      *     entitlement: LeaveEntitlement|null
      * }
      */
@@ -67,6 +75,21 @@ class Attendance extends Model
     {
         $date = Carbon::parse($date)->startOfDay();
         $period = self::leaveYearPeriodFor($date, $user);
+        $eligibilityDate = self::leaveEligibilityDateFor($user);
+
+        if ($eligibilityDate && $date->lt($eligibilityDate)) {
+            return [
+                'start' => $period['start'],
+                'end' => $period['end'],
+                'limits' => self::ZERO_LEAVE_LIMITS,
+                'total' => 0,
+                'source' => 'ineligible',
+                'is_eligible' => false,
+                'eligibility_date' => $eligibilityDate,
+                'entitlement' => null,
+            ];
+        }
+
         $entitlement = self::matchingLeaveEntitlement($date, $user);
 
         if ($entitlement) {
@@ -84,8 +107,22 @@ class Attendance extends Model
             'limits' => $limits,
             'total' => array_sum($limits),
             'source' => $entitlement ? 'database' : 'default',
+            'is_eligible' => true,
+            'eligibility_date' => $eligibilityDate,
             'entitlement' => $entitlement,
         ];
+    }
+
+    public static function leaveEligibilityDateFor(?User $user): ?Carbon
+    {
+        if (! $user?->join_date) {
+            return null;
+        }
+
+        return $user->join_date
+            ->copy()
+            ->startOfDay()
+            ->addMonthsNoOverflow(self::LEAVE_ELIGIBILITY_MONTHS);
     }
 
     private static function matchingLeaveEntitlement(Carbon $date, ?User $user): ?LeaveEntitlement
