@@ -12,8 +12,11 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
+use Throwable;
 
 class AttendanceController extends Controller
 {
@@ -66,6 +69,8 @@ class AttendanceController extends Controller
                 'check_out_at' => null,
             ])
         );
+
+        $this->sendForgotLogoutReminderIfNeeded($request, $today);
 
         return response()->json([
             'message' => 'Clock in successful.',
@@ -538,6 +543,69 @@ class AttendanceController extends Controller
     private function localNow(): Carbon
     {
         return Carbon::now(Attendance::LOCAL_TIMEZONE);
+    }
+
+    private function sendForgotLogoutReminderIfNeeded(Request $request, string $today): void
+    {
+        $user = $request->user();
+
+        if (! $user?->email) {
+            return;
+        }
+
+        $missedLogout = Attendance::query()
+            ->forCurrentCompany()
+            ->where('user_id', $user->id)
+            ->whereDate('attendance_date', '<', $today)
+            ->whereNotNull('check_in_at')
+            ->whereNull('check_out_at')
+            ->whereNull('logout_reminder_sent_at')
+            ->orderByDesc('attendance_date')
+            ->first();
+
+        if (! $missedLogout) {
+            return;
+        }
+
+        $missedDate = $missedLogout->attendance_date?->format('d M Y') ?? $missedLogout->attendance_date;
+        $checkInTime = $missedLogout->localCheckInAt()?->format('h:i A') ?? 'not available';
+
+        try {
+            Mail::raw(
+                "Dear {$user->name},\n\n"
+                ."Our attendance system shows that you logged in on {$missedDate} at {$checkInTime}, but your logout was not marked.\n\n"
+                ."Please submit a missed logout request for {$missedDate} and attach/send proper proof for your going time on that day.\n\n"
+                ."This reminder was sent automatically when you logged in today.\n\n"
+                ."Regards,\nAttendance Admin",
+                function ($message) use ($user, $missedDate) {
+                    $message->to($user->email, $user->name)
+                        ->cc($this->logoutReminderCcEmails())
+                        ->subject('Logout not marked for '.$missedDate);
+                }
+            );
+
+            $missedLogout->forceFill([
+                'logout_reminder_sent_at' => $this->localNow(),
+            ])->save();
+        } catch (Throwable $exception) {
+            Log::warning('Failed to send forgot logout reminder email.', [
+                'user_id' => $user->id,
+                'attendance_id' => $missedLogout->id,
+                'error' => $exception->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function logoutReminderCcEmails(): array
+    {
+        return collect(explode(',', (string) env('LOGOUT_REMINDER_CC')))
+            ->map(fn (string $email) => trim($email))
+            ->filter()
+            ->values()
+            ->all();
     }
 
     private function leaveReportEntry(Attendance $attendance): array

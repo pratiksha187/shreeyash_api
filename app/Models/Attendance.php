@@ -173,6 +173,7 @@ class Attendance extends Model
         'leave_type',
         'leave_approved_at',
         'leave_admin_note',
+        'logout_reminder_sent_at',
     ];
 
     protected function casts(): array
@@ -182,6 +183,7 @@ class Attendance extends Model
             'check_in_at' => 'datetime',
             'check_out_at' => 'datetime',
             'leave_approved_at' => 'datetime',
+            'logout_reminder_sent_at' => 'datetime',
             'latitude' => 'decimal:7',
             'longitude' => 'decimal:7',
         ];
