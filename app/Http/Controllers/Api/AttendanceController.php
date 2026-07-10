@@ -48,6 +48,8 @@ class AttendanceController extends Controller
             ->first();
 
         if ($attendance && $attendance->check_in_at) {
+            $this->sendForgotLogoutReminderIfNeeded($request, $today);
+
             return response()->json([
                 'message' => 'You have already clocked in today.',
                 'attendance' => $attendance,
@@ -571,6 +573,18 @@ class AttendanceController extends Controller
         $checkInTime = $missedLogout->localCheckInAt()?->format('h:i A') ?? 'not available';
 
         try {
+            if (in_array(config('mail.default'), ['log', 'array'], true)) {
+                Log::warning('Forgot logout reminder email was not sent because mail driver is not configured for real delivery.', [
+                    'mail_driver' => config('mail.default'),
+                    'user_id' => $user->id,
+                    'attendance_id' => $missedLogout->id,
+                    'to' => $user->email,
+                    'cc' => $this->logoutReminderCcEmails(),
+                ]);
+
+                return;
+            }
+
             Mail::raw(
                 "Dear {$user->name},\n\n"
                 ."Our attendance system shows that you logged in on {$missedDate} at {$checkInTime}, but your logout was not marked.\n\n"
