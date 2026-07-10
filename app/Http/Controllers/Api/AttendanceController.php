@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Attendance;
 use App\Models\Location;
+use App\Models\User;
 use App\Support\Tenant;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
@@ -48,7 +49,7 @@ class AttendanceController extends Controller
             ->first();
 
         if ($attendance && $attendance->check_in_at) {
-            $this->sendForgotLogoutReminderIfNeeded($request, $today);
+            $this->sendForgotLogoutReminderAfterResponse($request->user(), $today);
 
             return response()->json([
                 'message' => 'You have already clocked in today.',
@@ -72,7 +73,7 @@ class AttendanceController extends Controller
             ])
         );
 
-        $this->sendForgotLogoutReminderIfNeeded($request, $today);
+        $this->sendForgotLogoutReminderAfterResponse($request->user(), $today);
 
         return response()->json([
             'message' => 'Clock in successful.',
@@ -547,10 +548,19 @@ class AttendanceController extends Controller
         return Carbon::now(Attendance::LOCAL_TIMEZONE);
     }
 
-    private function sendForgotLogoutReminderIfNeeded(Request $request, string $today): void
+    private function sendForgotLogoutReminderAfterResponse(?User $user, string $today): void
     {
-        $user = $request->user();
+        if (! $user) {
+            return;
+        }
 
+        app()->terminating(function () use ($user, $today) {
+            $this->sendForgotLogoutReminderIfNeeded($user, $today);
+        });
+    }
+
+    private function sendForgotLogoutReminderIfNeeded(User $user, string $today): void
+    {
         if (! $user?->email) {
             return;
         }
