@@ -53,7 +53,7 @@ class AttendanceController extends Controller
             return response()->json([
                 'message' => 'You have already clocked in today.',
                 'attendance' => $attendance,
-            ], 409);
+            ]);
         }
 
         if ($locationError = $this->locationErrorResponse((float) $data['latitude'], (float) $data['longitude'])) {
