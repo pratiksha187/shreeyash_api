@@ -50,9 +50,9 @@ class AttendanceController extends Controller
 
         if ($attendance && $attendance->check_in_at) {
             return response()->json([
-                'message' => 'You have already clocked in today.',
+                'message' => 'Clock in successful.',
                 'attendance' => $attendance,
-            ], 409);
+            ]);
         }
 
         if ($locationError = $this->locationErrorResponse((float) $data['latitude'], (float) $data['longitude'])) {
@@ -563,14 +563,17 @@ class AttendanceController extends Controller
             return;
         }
 
+        $previousDate = Carbon::parse($today, Attendance::LOCAL_TIMEZONE)
+            ->subDay()
+            ->toDateString();
+
         $missedLogout = Attendance::query()
             ->forCurrentCompany()
             ->where('user_id', $user->id)
-            ->whereDate('attendance_date', '<', $today)
+            ->whereDate('attendance_date', $previousDate)
             ->whereNotNull('check_in_at')
             ->whereNull('check_out_at')
             ->whereNull('logout_reminder_sent_at')
-            ->orderByDesc('attendance_date')
             ->first();
 
         if (! $missedLogout) {
