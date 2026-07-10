@@ -45,6 +45,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::patch('/companies/{company}/users/{user}/permissions', [CompanyController::class, 'updateUserPermissions'])->name('companies.users.permissions');
         Route::get('/today-attendance', [AttendanceReportController::class, 'today'])->name('today-attendance.index');
         Route::get('/attendance-reports', [AttendanceReportController::class, 'index'])->name('attendance-reports.index');
+        Route::get('/attendance-reports/export', [AttendanceReportController::class, 'export'])->name('attendance-reports.export');
         Route::get('/dpr-reports', [DailyProgressReportController::class, 'index'])->name('dpr-reports.index');
         Route::get('/dpr-reports/photos/{photo}', [DailyProgressReportController::class, 'photo'])->name('dpr-reports.photo');
         Route::get('/dpr-reports/{dailyProgressReport}', [DailyProgressReportController::class, 'show'])->name('dpr-reports.show');

@@ -9,6 +9,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AttendanceReportController extends Controller
 {
@@ -136,10 +137,74 @@ class AttendanceReportController extends Controller
         ]);
     }
 
+    public function export(Request $request): StreamedResponse
+    {
+        $filters = $request->validate([
+            'from_date' => ['nullable', 'date'],
+            'to_date' => ['nullable', 'date', 'after_or_equal:from_date'],
+        ]);
+
+        $fromDate = isset($filters['from_date'])
+            ? Carbon::parse($filters['from_date'])->toDateString()
+            : now()->startOfMonth()->toDateString();
+        $toDate = isset($filters['to_date'])
+            ? Carbon::parse($filters['to_date'])->toDateString()
+            : now()->endOfMonth()->toDateString();
+
+        $attendances = Attendance::query()
+            ->forCurrentCompany()
+            ->with('user:id,name,email,mobile,designation')
+            ->whereBetween('attendance_date', [$fromDate, $toDate])
+            ->orderBy('attendance_date')
+            ->orderBy('id')
+            ->get();
+
+        $filename = 'attendance-report-' . $fromDate . '-to-' . $toDate . '.csv';
+
+        return response()->streamDownload(function () use ($attendances) {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, ['Sr. No.', 'Date', 'Employee', 'Email', 'Mobile', 'Designation', 'Status', 'Login', 'Logout', 'Total Hours', 'Remarks']);
+
+            foreach ($attendances as $index => $attendance) {
+                $checkIn = $attendance->localCheckInAt();
+                $checkOut = $attendance->localCheckOutAt();
+
+                fputcsv($handle, [
+                    $index + 1,
+                    $attendance->attendance_date?->format('d-m-Y') ?? '',
+                    $attendance->user?->name ?? '',
+                    $attendance->user?->email ?? '',
+                    $attendance->user?->mobile ?? '',
+                    $attendance->user?->designation ?? '',
+                    str_replace('_', ' ', ucfirst($attendance->status)),
+                    $checkIn?->format('h:i A') ?? '',
+                    $checkOut?->format('h:i A') ?? '',
+                    $this->totalHours($checkIn, $checkOut),
+                    $attendance->remarks ?? '',
+                ]);
+            }
+
+            fclose($handle);
+        }, $filename, [
+            'Content-Type' => 'text/csv',
+        ]);
+    }
+
     private function withTodayAttendance(User $employee, Collection $attendances): User
     {
         $employee->setRelation('todayAttendance', $attendances->get($employee->id));
 
         return $employee;
+    }
+
+    private function totalHours(?Carbon $checkIn, ?Carbon $checkOut): string
+    {
+        if (! $checkIn || ! $checkOut || $checkOut->lessThan($checkIn)) {
+            return '';
+        }
+
+        $minutes = (int) $checkIn->diffInMinutes($checkOut);
+
+        return sprintf('%02d:%02d', intdiv($minutes, 60), $minutes % 60);
     }
 }

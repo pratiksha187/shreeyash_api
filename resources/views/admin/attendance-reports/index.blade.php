@@ -10,6 +10,7 @@
             <h1>Attendance Reports</h1>
             <p>Review employee attendance and leave entries between selected dates.</p>
         </div>
+        <a class="btn" href="{{ route('admin.attendance-reports.export', request()->query()) }}">Download Excel</a>
     </div>
 
     <form class="card form-card report-filter" method="GET" action="{{ route('admin.attendance-reports.index') }}">
