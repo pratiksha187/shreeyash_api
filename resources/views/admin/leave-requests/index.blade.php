@@ -157,30 +157,39 @@
                             @endif
                         </td>
                         <td class="leave-action-cell" data-label="Action">
-                            <form method="POST" action="{{ route('admin.leave-requests.update', $leave) }}" class="leave-action-form">
-                                @csrf
-                                @method('PATCH')
-                                <label for="leave_type_{{ $leave->id }}">Leave Type</label>
-                                <select id="leave_type_{{ $leave->id }}" name="leave_type" required>
-                                    @foreach ($leaveTypes as $type => $label)
-                                        <option value="{{ $type }}" @selected(old('leave_type', $leaveType) === $type)>
-                                            {{ $label }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                                <label for="admin_note_{{ $leave->id }}">Admin Note</label>
-                                <input
-                                    id="admin_note_{{ $leave->id }}"
-                                    type="text"
-                                    name="admin_note"
-                                    placeholder="Add note"
-                                    value="{{ old('admin_note', $leave->leave_admin_note) }}"
-                                >
-                                <div class="leave-action-buttons">
-                                    <button type="submit" name="status" value="approved" class="btn small leave-approve-button">Approve</button>
-                                    <button type="submit" name="status" value="rejected" class="btn small danger">Reject</button>
-                                </div>
-                            </form>
+                            @if ($approvalStatus === 'pending')
+                                <form method="POST" action="{{ route('admin.leave-requests.update', $leave) }}" class="leave-action-form">
+                                    @csrf
+                                    @method('PATCH')
+                                    <label for="leave_type_{{ $leave->id }}">Leave Type</label>
+                                    <select id="leave_type_{{ $leave->id }}" name="leave_type" required>
+                                        @foreach ($leaveTypes as $type => $label)
+                                            <option value="{{ $type }}" @selected(old('leave_type', $leaveType) === $type)>
+                                                {{ $label }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    <label for="admin_note_{{ $leave->id }}">Admin Note</label>
+                                    <input
+                                        id="admin_note_{{ $leave->id }}"
+                                        type="text"
+                                        name="admin_note"
+                                        placeholder="Add note"
+                                        value="{{ old('admin_note', $leave->leave_admin_note) }}"
+                                    >
+                                    <div class="leave-action-buttons">
+                                        <button type="submit" name="status" value="approved" class="btn small leave-approve-button">Approve</button>
+                                        <button type="submit" name="status" value="rejected" class="btn small danger">Reject</button>
+                                    </div>
+                                </form>
+                            @else
+                                <span class="status-pill status-{{ $approvalStatus }}">
+                                    {{ ucfirst($approvalStatus) }}
+                                </span>
+                                @if ($leave->leave_approved_at)
+                                    <div class="table-subtext">{{ $leave->leave_approved_at->format('d M Y h:i A') }}</div>
+                                @endif
+                            @endif
                         </td>
                     </tr>
                 @empty

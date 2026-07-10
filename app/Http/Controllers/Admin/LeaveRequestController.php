@@ -114,6 +114,12 @@ class LeaveRequestController extends Controller
             ->where('status', 'leave')
             ->findOrFail($leave);
 
+        if (($leaveRequest->leave_approval_status ?? 'pending') !== 'pending') {
+            return redirect()
+                ->route('admin.leave-requests.index')
+                ->with('error', 'This leave request is already '.$leaveRequest->leave_approval_status.' and cannot be changed.');
+        }
+
         if ($data['status'] === 'approved') {
             $entitlement = Attendance::leaveEntitlementFor($leaveRequest->attendance_date, $leaveRequest->user);
             $leaveType = $data['leave_type'];
