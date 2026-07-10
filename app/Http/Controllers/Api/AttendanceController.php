@@ -49,12 +49,10 @@ class AttendanceController extends Controller
             ->first();
 
         if ($attendance && $attendance->check_in_at) {
-            $this->sendForgotLogoutReminderAfterResponse($request->user(), $today);
-
             return response()->json([
-                'message' => 'Clock in successful.',
+                'message' => 'You have already clocked in today.',
                 'attendance' => $attendance,
-            ]);
+            ], 409);
         }
 
         if ($locationError = $this->locationErrorResponse((float) $data['latitude'], (float) $data['longitude'])) {
