@@ -292,12 +292,22 @@ class LabourAttendanceController extends Controller
         }
 
         if (! $request->has('labour_ids')) {
-            foreach (['labor_ids', 'labours', 'labors'] as $key) {
+            foreach (['labor_ids', 'labourIds', 'laborIds', 'labours', 'labors', 'selected_labours', 'selectedLabours'] as $key) {
                 if ($request->has($key)) {
                     $data['labour_ids'] = $request->input($key);
                     break;
                 }
             }
+        }
+
+        $labourId = $data['labour_id'] ?? $request->input('labour_id');
+        if ($labourId !== null) {
+            $data['labour_id'] = $this->normalizeIdValue($labourId);
+        }
+
+        $labourIds = $data['labour_ids'] ?? $request->input('labour_ids');
+        if ($labourIds !== null) {
+            $data['labour_ids'] = $this->normalizeIdList($labourIds);
         }
 
         if (! $request->has('attendance_date')) {
@@ -313,6 +323,20 @@ class LabourAttendanceController extends Controller
             foreach (['remark', 'note', 'notes'] as $key) {
                 if ($request->has($key)) {
                     $data['remarks'] = $request->input($key);
+                    break;
+                }
+            }
+        }
+
+        $status = $data['status'] ?? $request->input('status');
+        if ($status !== null) {
+            $data['status'] = $this->normalizeStatusValue($status);
+        }
+
+        if (! $request->has('work_hours')) {
+            foreach (['workHours', 'working_hours', 'workingHours', 'hours'] as $key) {
+                if ($request->has($key)) {
+                    $data['work_hours'] = $request->input($key);
                     break;
                 }
             }
@@ -380,6 +404,55 @@ class LabourAttendanceController extends Controller
             ->unique()
             ->values()
             ->all();
+    }
+
+    private function normalizeIdValue(mixed $value): mixed
+    {
+        if (is_array($value)) {
+            return $value['id'] ?? $value['labour_id'] ?? $value['labor_id'] ?? $value['value'] ?? $value;
+        }
+
+        return $value;
+    }
+
+    private function normalizeIdList(mixed $value): array
+    {
+        if (is_string($value)) {
+            $decoded = json_decode($value, true);
+
+            if (json_last_error() === JSON_ERROR_NONE) {
+                $value = $decoded;
+            } else {
+                $value = preg_split('/[\s,]+/', $value, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+            }
+        }
+
+        if (! is_array($value)) {
+            $value = [$value];
+        }
+
+        return collect($value)
+            ->map(fn ($labourId) => $this->normalizeIdValue($labourId))
+            ->filter(fn ($labourId) => filled($labourId))
+            ->values()
+            ->all();
+    }
+
+    private function normalizeStatusValue(mixed $status): mixed
+    {
+        if (! is_string($status)) {
+            return $status;
+        }
+
+        $normalized = strtolower(trim($status));
+        $normalized = preg_replace('/[\s-]+/', '_', $normalized) ?? $normalized;
+
+        return match ($normalized) {
+            'present', 'p' => 'present',
+            'absent', 'a' => 'absent',
+            'half_day', 'halfday', 'half' => 'half_day',
+            default => $normalized,
+        };
     }
 
     private function normalizeTimeValue(mixed $time): mixed

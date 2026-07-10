@@ -37,50 +37,113 @@
         }
 
         .purchase-table-scroll {
-            overflow-x: auto;
+            overflow-x: visible;
+            width: 100%;
         }
 
         .purchase-table {
             width: 100%;
-            min-width: 1220px;
+            min-width: 0;
             border-collapse: collapse;
+            table-layout: fixed;
         }
 
         .purchase-table th,
         .purchase-table td {
-            padding: 9px 10px;
+            padding: 6px 7px;
             border: 1px solid #cbd5e1;
             color: #0f172a;
-            font-size: 13px;
+            font-size: 12px;
             text-align: center;
             vertical-align: top;
+            overflow-wrap: anywhere;
         }
 
         .purchase-table th {
             background: #f1f5f9;
             color: #334155;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 900;
             text-transform: none;
+        }
+
+        .purchase-table th:nth-child(1),
+        .purchase-table td:nth-child(1) {
+            width: 9%;
+        }
+
+        .purchase-table th:nth-child(2),
+        .purchase-table td:nth-child(2) {
+            width: 9%;
+        }
+
+        .purchase-table th:nth-child(3),
+        .purchase-table td:nth-child(3) {
+            width: 12%;
+        }
+
+        .purchase-table th:nth-child(4),
+        .purchase-table td:nth-child(4) {
+            width: 7%;
+        }
+
+        .purchase-table th:nth-child(5),
+        .purchase-table td:nth-child(5) {
+            width: 11%;
+        }
+
+        .purchase-table th:nth-child(6),
+        .purchase-table td:nth-child(6) {
+            width: 8%;
+        }
+
+        .purchase-table th:nth-child(7),
+        .purchase-table td:nth-child(7) {
+            width: 6%;
+        }
+
+        .purchase-table th:nth-child(8),
+        .purchase-table td:nth-child(8) {
+            width: 8%;
+        }
+
+        .purchase-table th:nth-child(9),
+        .purchase-table td:nth-child(9) {
+            width: 7%;
+        }
+
+        .purchase-table th:nth-child(10),
+        .purchase-table td:nth-child(10) {
+            width: 8%;
+        }
+
+        .purchase-table th:nth-child(11),
+        .purchase-table td:nth-child(11) {
+            width: 8%;
+        }
+
+        .purchase-table th:nth-child(12),
+        .purchase-table td:nth-child(12) {
+            width: 7%;
         }
 
         .purchase-table input,
         .purchase-table select,
         .purchase-table textarea {
             width: 100%;
-            min-width: 92px;
-            min-height: 32px;
-            padding: 5px 7px;
+            min-width: 0;
+            min-height: 30px;
+            padding: 4px 5px;
             border: 1px solid #e2e8f0;
             border-radius: 6px;
             background: #fff;
-            font-size: 13px;
+            font-size: 12px;
             text-align: center;
         }
 
         .purchase-table textarea {
-            min-width: 150px;
-            min-height: 36px;
+            min-width: 0;
+            min-height: 34px;
             resize: vertical;
             text-align: left;
         }
@@ -104,23 +167,30 @@
         }
 
         .purchase-table .purchase-text-input {
-            min-width: 140px;
+            min-width: 0;
         }
 
         .purchase-table .purchase-date-input {
-            min-width: 136px;
+            min-width: 0;
         }
 
         .purchase-actions {
             display: flex;
             flex-wrap: wrap;
-            gap: 8px;
+            gap: 6px;
             justify-content: center;
-            min-width: 150px;
+            min-width: 0;
         }
 
         .purchase-actions form {
             margin: 0;
+        }
+
+        .purchase-actions .btn.small {
+            width: 100%;
+            min-height: 30px;
+            padding: 5px 7px;
+            font-size: 12px;
         }
 
         .purchase-filter-toggle {

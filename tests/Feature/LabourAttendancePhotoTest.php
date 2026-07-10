@@ -213,4 +213,61 @@ class LabourAttendancePhotoTest extends TestCase
             'work_hours' => 9.00,
         ]);
     }
+
+    public function test_labour_attendance_accepts_mobile_label_status_and_selected_labour_objects(): void
+    {
+        $engineer = User::factory()->create([
+            'api_token' => hash('sha256', 'mobile-token'),
+        ]);
+        $this->actingAs($engineer);
+        $this->withoutMiddleware(AuthenticateApiToken::class);
+
+        $site = LabourSite::query()->create(['name' => 'Khanav']);
+        $contractor = Contractor::query()->create([
+            'labour_site_id' => $site->id,
+            'name' => 'Irfan Ali',
+        ]);
+        $firstLabour = Labour::query()->create([
+            'contractor_id' => $contractor->id,
+            'name' => 'Nitesh Kumar',
+            'trade' => 'Carpenter',
+        ]);
+        $secondLabour = Labour::query()->create([
+            'contractor_id' => $contractor->id,
+            'name' => 'Munjiram',
+            'trade' => 'Qledpet',
+        ]);
+
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer mobile-token',
+        ])->postJson('/api/labour/attendances', [
+            'site_id' => $site->id,
+            'contractor_id' => $contractor->id,
+            'selectedLabours' => [
+                ['id' => $firstLabour->id, 'name' => 'Nitesh Kumar'],
+                ['id' => $secondLabour->id, 'name' => 'Munjiram'],
+            ],
+            'date' => '2026-07-10',
+            'status' => 'Present',
+            'inTime' => '09:00',
+            'outTime' => '18:00',
+            'workHours' => '9',
+            'note' => '10+1',
+        ]);
+
+        $response->assertCreated()
+            ->assertJsonCount(2, 'labour_attendances')
+            ->assertJsonPath('labour_attendances.0.status', 'present')
+            ->assertJsonPath('labour_attendances.0.remarks', '10+1')
+            ->assertJsonPath('labour_attendances.0.work_hours', '9.00');
+
+        $this->assertDatabaseHas('labour_attendances', [
+            'labour_id' => $firstLabour->id,
+            'status' => 'present',
+            'in_time' => '09:00',
+            'out_time' => '18:00',
+            'work_hours' => 9.00,
+            'remarks' => '10+1',
+        ]);
+    }
 }
