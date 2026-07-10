@@ -76,6 +76,7 @@ class LeaveRequestController extends Controller
                         'source' => $entitlement['source'],
                         'is_eligible' => $entitlement['is_eligible'],
                         'eligibility_date' => $entitlement['eligibility_date'],
+                        'default_reason' => $entitlement['default_reason'],
                         'by_type' => $approvedLeavesByType,
                     ],
                 ];

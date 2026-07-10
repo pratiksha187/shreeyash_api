@@ -68,6 +68,7 @@ class Attendance extends Model
      *     source: string,
      *     is_eligible: bool,
      *     eligibility_date: Carbon|null,
+     *     default_reason: string|null,
      *     entitlement: LeaveEntitlement|null
      * }
      */
@@ -86,6 +87,7 @@ class Attendance extends Model
                 'source' => 'ineligible',
                 'is_eligible' => false,
                 'eligibility_date' => $eligibilityDate,
+                'default_reason' => null,
                 'entitlement' => null,
             ];
         }
@@ -109,6 +111,7 @@ class Attendance extends Model
             'source' => $entitlement ? 'database' : 'default',
             'is_eligible' => true,
             'eligibility_date' => $eligibilityDate,
+            'default_reason' => $entitlement ? null : 'No DB entitlement found for this leave date.',
             'entitlement' => $entitlement,
         ];
     }

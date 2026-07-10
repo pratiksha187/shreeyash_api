@@ -140,8 +140,10 @@
                                     <br>
                                     @if (! $usage['is_eligible'])
                                         Eligible after {{ $usage['eligibility_date']?->format('d M Y') }}
+                                    @elseif ($usage['source'] === 'database')
+                                        DB entitlement
                                     @else
-                                        {{ $usage['source'] === 'database' ? 'DB entitlement' : 'Default entitlement' }}
+                                        Default entitlement - {{ $usage['default_reason'] }}
                                     @endif
                                 </div>
                             @else
