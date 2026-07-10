@@ -588,6 +588,7 @@ class AttendanceController extends Controller
             Mail::raw(
                 "Dear {$user->name},\n\n"
                 ."Our attendance system shows that you logged in on {$missedDate} at {$checkInTime}, but your logout was not marked.\n\n"
+                ."Because logout is not marked, this attendance has been added as Half Day. If this is incorrect, please submit a missed logout request with proof.\n\n"
                 ."Please submit a missed logout request for {$missedDate} and attach/send proper proof for your going time on that day.\n\n"
                 ."This reminder was sent automatically when you logged in today.\n\n"
                 ."Regards,\nAttendance Admin",
@@ -599,6 +600,7 @@ class AttendanceController extends Controller
             );
 
             $missedLogout->forceFill([
+                'status' => 'half_day',
                 'logout_reminder_sent_at' => $this->localNow(),
             ])->save();
         } catch (Throwable $exception) {
