@@ -516,7 +516,7 @@ class EmployeeController extends Controller
 
     private function halfDayWorkMinutes(User $employee): int
     {
-        return (int) ceil($this->expectedWorkMinutes($employee) / 2);
+        return 4 * 60;
     }
 
     private function formatWorkedMinutes(int $minutes): string
