@@ -1907,6 +1907,14 @@
             white-space: nowrap;
         }
 
+        .calendar-time-grid .calendar-ot-row {
+            color: #0f766e;
+        }
+
+        .calendar-time-grid .calendar-ot-row strong {
+            color: #0f766e;
+        }
+
         .calendar-time-note {
             margin-top: 6px;
             color: #9a3412;
@@ -1954,6 +1962,11 @@
         .status-half_day {
             background: #dbeafe;
             color: #1e3a8a;
+        }
+
+        .status-late_half_day {
+            background: #e0f2fe;
+            color: #075985;
         }
 
         .status-empty {

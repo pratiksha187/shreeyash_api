@@ -133,6 +133,10 @@
             <span>Paid Holidays</span>
             <strong>{{ $summary['paid_holidays'] }}</strong>
         </div>
+        <div class="card stat-card">
+            <span>Total OT</span>
+            <strong>{{ $summary['overtime'] }}</strong>
+        </div>
     </section>
 
     <!-- Attendance Calendar -->
@@ -183,6 +187,7 @@
                             <span>In <strong>{{ $attendanceMeta['check_in'] ?? '-' }}</strong></span>
                             <span>Out <strong>{{ $attendanceMeta['check_out'] ?? '-' }}</strong></span>
                             <span>Hours <strong>{{ $attendanceMeta['worked'] ?? '-' }}</strong></span>
+                            <span class="calendar-ot-row">OT <strong>{{ $attendanceMeta['ot'] ?? '-' }}</strong></span>
                         </div>
                         @if ($attendanceMeta['note'])
                             <div class="calendar-time-note">{{ $attendanceMeta['note'] }}</div>

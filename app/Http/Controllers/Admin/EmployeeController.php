@@ -106,6 +106,11 @@ class EmployeeController extends Controller
                     'holiday' => $paidHolidays->get($dateString),
                 ];
             });
+        $totalOtMinutes = $calendarDays->sum(fn (array $day) => $day['attendanceMeta']['ot_minutes'] ?? 0);
+        $attendanceSummaryCounts = $calendarDays
+            ->pluck('attendanceMeta.summary_status')
+            ->filter()
+            ->countBy();
 
         // Aggregate DPRs by date and build consolidated messages
         $dprGroups = DailyProgressReport::query()
@@ -210,11 +215,12 @@ class EmployeeController extends Controller
                 : [],
             'summary' => [
                 'total_days' => $attendances->count(),
-                'present' => $attendances->where('status', 'present')->count(),
-                'absent' => $attendances->where('status', 'absent')->count(),
-                'leave' => $attendances->where('status', 'leave')->count(),
-                'half_day' => $attendances->where('status', 'half_day')->count(),
+                'present' => $attendanceSummaryCounts->get('present', 0),
+                'absent' => $attendanceSummaryCounts->get('absent', 0),
+                'leave' => $attendanceSummaryCounts->get('leave', 0),
+                'half_day' => $attendanceSummaryCounts->get('half_day', 0),
                 'paid_holidays' => $paidHolidays->count(),
+                'overtime' => $this->formatWorkedMinutes($totalOtMinutes),
             ],
             'dprs' => $dprs,
         ]);
@@ -402,6 +408,9 @@ class EmployeeController extends Controller
                 'check_in' => null,
                 'check_out' => null,
                 'worked' => null,
+                'ot' => null,
+                'ot_minutes' => 0,
+                'summary_status' => null,
                 'note' => null,
             ];
         }
@@ -410,7 +419,8 @@ class EmployeeController extends Controller
         $checkIn = $attendance->localCheckInAt();
         $checkOut = $attendance->localCheckOutAt();
         $workedMinutes = $this->workedMinutes($checkIn, $checkOut);
-        $expectedMinutes = max(1, (int) round(((float) ($employee->hours_per_day ?: 9)) * 60));
+        $expectedMinutes = $this->expectedWorkMinutes($employee);
+        $otMinutes = $workedMinutes !== null ? max(0, $workedMinutes - $expectedMinutes) : 0;
 
         $meta = [
             'label' => str_replace('_', ' ', $status),
@@ -418,6 +428,9 @@ class EmployeeController extends Controller
             'check_in' => $checkIn?->format('h:i A'),
             'check_out' => $checkOut?->format('h:i A'),
             'worked' => $workedMinutes !== null ? $this->formatWorkedMinutes($workedMinutes) : null,
+            'ot' => $otMinutes > 0 ? $this->formatWorkedMinutes($otMinutes) : null,
+            'ot_minutes' => $otMinutes,
+            'summary_status' => $status,
             'note' => null,
         ];
 
@@ -434,18 +447,38 @@ class EmployeeController extends Controller
                 ...$meta,
                 'label' => 'In progress',
                 'class' => 'status-in_progress',
+                'summary_status' => 'present',
             ];
         }
 
         $graceTime = $checkIn->copy()->setTime(9, 20);
         $isLate = $checkIn->greaterThan($graceTime);
         $hasCompletedHours = $workedMinutes !== null && $workedMinutes >= $expectedMinutes;
+        $hasHalfDayHours = $workedMinutes !== null && $workedMinutes >= $this->halfDayWorkMinutes($employee);
 
         if ($isLate && $hasCompletedHours) {
             return [
                 ...$meta,
                 'label' => 'Completed hours',
                 'class' => 'status-completed_hours',
+                'summary_status' => 'present',
+            ];
+        }
+
+        if ($hasCompletedHours) {
+            return [
+                ...$meta,
+                'summary_status' => 'present',
+            ];
+        }
+
+        if ($hasHalfDayHours) {
+            return [
+                ...$meta,
+                'label' => $isLate ? 'Late / half day' : 'Half day',
+                'class' => $isLate ? 'status-late_half_day' : 'status-half_day',
+                'summary_status' => 'half_day',
+                'note' => $isLate ? 'After 09:20' : null,
             ];
         }
 
@@ -454,19 +487,17 @@ class EmployeeController extends Controller
                 ...$meta,
                 'label' => 'Late / short hours',
                 'class' => 'status-late_short',
+                'summary_status' => 'short_hours',
                 'note' => 'After 09:20',
             ];
         }
 
-        if (! $hasCompletedHours) {
-            return [
-                ...$meta,
-                'label' => 'Short hours',
-                'class' => 'status-short_hours',
-            ];
-        }
-
-        return $meta;
+        return [
+            ...$meta,
+            'label' => 'Short hours',
+            'class' => 'status-short_hours',
+            'summary_status' => 'short_hours',
+        ];
     }
 
     private function workedMinutes(?Carbon $checkIn, ?Carbon $checkOut): ?int
@@ -476,6 +507,16 @@ class EmployeeController extends Controller
         }
 
         return (int) $checkIn->diffInMinutes($checkOut);
+    }
+
+    private function expectedWorkMinutes(User $employee): int
+    {
+        return max(1, (int) round(((float) ($employee->hours_per_day ?: 9)) * 60));
+    }
+
+    private function halfDayWorkMinutes(User $employee): int
+    {
+        return (int) ceil($this->expectedWorkMinutes($employee) / 2);
     }
 
     private function formatWorkedMinutes(int $minutes): string
