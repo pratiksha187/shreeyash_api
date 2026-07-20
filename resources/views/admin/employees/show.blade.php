@@ -103,6 +103,8 @@
                 @endforelse
             </tbody>
         </table>
+
+        {{ $dprs->links('admin.pagination') }}
     </div>
 
     <!-- Attendance Stats -->

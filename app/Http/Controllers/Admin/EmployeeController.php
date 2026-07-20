@@ -11,6 +11,7 @@ use App\Support\PaidHolidayCalendar;
 use App\Support\Tenant;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -104,7 +105,7 @@ class EmployeeController extends Controller
             });
 
         // Aggregate DPRs by date and build consolidated messages
-        $dprs = DailyProgressReport::query()
+        $dprGroups = DailyProgressReport::query()
             ->forCurrentCompany()
             ->where('user_id', $employee->id)
             ->whereBetween('dpr_date', [
@@ -180,6 +181,18 @@ class EmployeeController extends Controller
                     'whatsapp_url' => $whatsappUrl,
                 ];
             })->values();
+
+        $dprPage = LengthAwarePaginator::resolveCurrentPage();
+        $dprs = new LengthAwarePaginator(
+            $dprGroups->forPage($dprPage, 10)->values(),
+            $dprGroups->count(),
+            10,
+            $dprPage,
+            [
+                'path' => $request->url(),
+                'query' => $request->query(),
+            ]
+        );
 
         return view('admin.employees.show', [
             'employee' => $employee,
