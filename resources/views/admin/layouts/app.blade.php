@@ -1775,6 +1775,14 @@
             background: #16a34a;
         }
 
+        .legend-dot.completed-hours {
+            background: #0f766e;
+        }
+
+        .legend-dot.late-short {
+            background: #f97316;
+        }
+
         .legend-dot.leave {
             background: #d97706;
         }
@@ -1804,7 +1812,7 @@
         .calendar-head,
         .calendar-day,
         .calendar-empty {
-            min-height: 112px;
+            min-height: 142px;
             padding: 12px;
             border-right: 1px solid var(--line);
             border-bottom: 1px solid var(--line);
@@ -1875,6 +1883,37 @@
             line-height: 1.35;
         }
 
+        .calendar-time-grid {
+            display: grid;
+            gap: 4px;
+            margin-top: 8px;
+            color: var(--muted);
+            font-size: 11px;
+            font-weight: 800;
+            line-height: 1.25;
+        }
+
+        .calendar-time-grid span {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .calendar-time-grid strong {
+            color: #0f172a;
+            font-size: 11px;
+            font-weight: 900;
+            white-space: nowrap;
+        }
+
+        .calendar-time-note {
+            margin-top: 6px;
+            color: #9a3412;
+            font-size: 11px;
+            font-weight: 900;
+        }
+
         .status-pill {
             display: inline-flex;
             align-items: center;
@@ -1889,6 +1928,17 @@
         .status-present {
             background: #dcfce7;
             color: #166534;
+        }
+
+        .status-completed_hours {
+            background: #ccfbf1;
+            color: #115e59;
+        }
+
+        .status-late_short,
+        .status-short_hours {
+            background: #ffedd5;
+            color: #9a3412;
         }
 
         .status-leave {

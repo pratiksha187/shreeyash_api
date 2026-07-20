@@ -141,6 +141,8 @@
             <h3>{{ $monthLabel }} Calendar</h3>
             <div class="employee-calendar-legend">
                 <span><i class="legend-dot present"></i>Present</span>
+                <span><i class="legend-dot completed-hours"></i>Completed Hours</span>
+                <span><i class="legend-dot late-short"></i>Late / Short</span>
                 <span><i class="legend-dot leave"></i>Leave</span>
                 <span><i class="legend-dot absent"></i>Absent</span>
                 <span><i class="legend-dot half-day"></i>Half Day</span>
@@ -161,20 +163,31 @@
             @foreach ($calendarDays as $day)
                 @php
                     $attendance = $day['attendance'];
+                    $attendanceMeta = $day['attendanceMeta'];
                     $holiday = $day['holiday'];
                     $status = $attendance?->status ?? '';
-                    $statusClass = $status ? 'status-' . $status : 'status-empty';
                     $isSunday = $day['date']->isSunday();
-                    $statusLabel = $status ? str_replace('_', ' ', $status) : ($holiday ? 'Paid holiday' : ($isSunday ? 'Sunday' : 'No record'));
+                    $statusLabel = $attendanceMeta['label'] ?? ($holiday ? 'Paid holiday' : ($isSunday ? 'Sunday' : 'No record'));
+                    $statusClass = $attendance ? $attendanceMeta['class'] : ($holiday ? 'status-holiday' : ($isSunday ? 'status-sunday' : 'status-empty'));
                 @endphp
                 <div class="calendar-day @if($isSunday) calendar-sunday @endif @if($holiday) calendar-holiday @endif">
                     <div class="calendar-date">
                         <span>{{ $day['date']->format('d') }}</span>
                         <small>{{ $day['date']->format('D') }}</small>
                     </div>
-                    <span class="status-pill {{ $holiday && ! $status ? 'status-holiday' : ($isSunday && ! $status ? 'status-sunday' : $statusClass) }}">
+                    <span class="status-pill {{ $statusClass }}">
                         {{ $statusLabel }}
                     </span>
+                    @if ($attendance)
+                        <div class="calendar-time-grid">
+                            <span>In <strong>{{ $attendanceMeta['check_in'] ?? '-' }}</strong></span>
+                            <span>Out <strong>{{ $attendanceMeta['check_out'] ?? '-' }}</strong></span>
+                            <span>Hours <strong>{{ $attendanceMeta['worked'] ?? '-' }}</strong></span>
+                        </div>
+                        @if ($attendanceMeta['note'])
+                            <div class="calendar-time-note">{{ $attendanceMeta['note'] }}</div>
+                        @endif
+                    @endif
                     @if ($holiday)
                         <div class="calendar-note">{{ $holiday['name'] }}</div>
                     @endif

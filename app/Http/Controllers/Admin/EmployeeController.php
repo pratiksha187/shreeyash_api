@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Attendance;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use App\Models\User;
@@ -94,12 +95,14 @@ class EmployeeController extends Controller
         $paidHolidays = PaidHolidayCalendar::holidaysBetween($monthStart, $monthEnd);
 
         $calendarDays = collect(CarbonPeriod::create($monthStart, $monthEnd))
-            ->map(function (Carbon $date) use ($attendances, $paidHolidays) {
+            ->map(function (Carbon $date) use ($attendances, $paidHolidays, $employee) {
                 $dateString = $date->toDateString();
+                $attendance = $attendances->get($dateString);
 
                 return [
                     'date' => $date->copy(),
-                    'attendance' => $attendances->get($dateString),
+                    'attendance' => $attendance,
+                    'attendanceMeta' => $this->attendanceCalendarMeta($attendance, $employee),
                     'holiday' => $paidHolidays->get($dateString),
                 ];
             });
@@ -388,6 +391,96 @@ class EmployeeController extends Controller
             .'&text='
             .rawurlencode($this->credentialMessage($employee, $plainPassword))
         );
+    }
+
+    private function attendanceCalendarMeta(?Attendance $attendance, User $employee): array
+    {
+        if (! $attendance) {
+            return [
+                'label' => null,
+                'class' => 'status-empty',
+                'check_in' => null,
+                'check_out' => null,
+                'worked' => null,
+                'note' => null,
+            ];
+        }
+
+        $status = $attendance->status;
+        $checkIn = $attendance->localCheckInAt();
+        $checkOut = $attendance->localCheckOutAt();
+        $workedMinutes = $this->workedMinutes($checkIn, $checkOut);
+        $expectedMinutes = max(1, (int) round(((float) ($employee->hours_per_day ?: 9)) * 60));
+
+        $meta = [
+            'label' => str_replace('_', ' ', $status),
+            'class' => 'status-' . $status,
+            'check_in' => $checkIn?->format('h:i A'),
+            'check_out' => $checkOut?->format('h:i A'),
+            'worked' => $workedMinutes !== null ? $this->formatWorkedMinutes($workedMinutes) : null,
+            'note' => null,
+        ];
+
+        if ($status !== 'present') {
+            return $meta;
+        }
+
+        if (! $checkIn) {
+            return $meta;
+        }
+
+        if (! $checkOut) {
+            return [
+                ...$meta,
+                'label' => 'In progress',
+                'class' => 'status-in_progress',
+            ];
+        }
+
+        $graceTime = $checkIn->copy()->setTime(9, 20);
+        $isLate = $checkIn->greaterThan($graceTime);
+        $hasCompletedHours = $workedMinutes !== null && $workedMinutes >= $expectedMinutes;
+
+        if ($isLate && $hasCompletedHours) {
+            return [
+                ...$meta,
+                'label' => 'Completed hours',
+                'class' => 'status-completed_hours',
+            ];
+        }
+
+        if ($isLate) {
+            return [
+                ...$meta,
+                'label' => 'Late / short hours',
+                'class' => 'status-late_short',
+                'note' => 'After 09:20',
+            ];
+        }
+
+        if (! $hasCompletedHours) {
+            return [
+                ...$meta,
+                'label' => 'Short hours',
+                'class' => 'status-short_hours',
+            ];
+        }
+
+        return $meta;
+    }
+
+    private function workedMinutes(?Carbon $checkIn, ?Carbon $checkOut): ?int
+    {
+        if (! $checkIn || ! $checkOut || $checkOut->lessThan($checkIn)) {
+            return null;
+        }
+
+        return (int) $checkIn->diffInMinutes($checkOut);
+    }
+
+    private function formatWorkedMinutes(int $minutes): string
+    {
+        return sprintf('%02d:%02d hrs', intdiv($minutes, 60), $minutes % 60);
     }
 
     private function ensureCompanyAdmin(): void
