@@ -454,7 +454,9 @@ class EmployeeController extends Controller
         $graceTime = $checkIn->copy()->setTime(9, 20);
         $isLate = $checkIn->greaterThan($graceTime);
         $hasCompletedHours = $workedMinutes !== null && $workedMinutes >= $expectedMinutes;
-        $hasHalfDayHours = $workedMinutes !== null && $workedMinutes >= $this->halfDayWorkMinutes($employee);
+        $hasHalfDayHours = $workedMinutes !== null
+            && $workedMinutes >= $this->halfDayMinimumMinutes()
+            && $workedMinutes <= $this->halfDayMaximumMinutes($employee);
 
         if ($isLate && $hasCompletedHours) {
             return [
@@ -514,9 +516,14 @@ class EmployeeController extends Controller
         return max(1, (int) round(((float) ($employee->hours_per_day ?: 9)) * 60));
     }
 
-    private function halfDayWorkMinutes(User $employee): int
+    private function halfDayMinimumMinutes(): int
     {
         return 4 * 60;
+    }
+
+    private function halfDayMaximumMinutes(User $employee): int
+    {
+        return (int) ceil($this->expectedWorkMinutes($employee) / 2);
     }
 
     private function formatWorkedMinutes(int $minutes): string
