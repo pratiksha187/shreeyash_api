@@ -418,7 +418,7 @@ class EmployeeController extends Controller
         $status = $attendance->status;
         $checkIn = $attendance->localCheckInAt();
         $checkOut = $attendance->localCheckOutAt();
-        $workedMinutes = $this->workedMinutes($checkIn, $checkOut);
+        $workedMinutes = $this->workedMinutes($attendance, $checkIn, $checkOut);
         $expectedMinutes = $this->expectedWorkMinutes($employee);
         $otMinutes = $workedMinutes !== null ? max(0, $workedMinutes - $expectedMinutes) : 0;
 
@@ -502,13 +502,21 @@ class EmployeeController extends Controller
         ];
     }
 
-    private function workedMinutes(?Carbon $checkIn, ?Carbon $checkOut): ?int
+    private function workedMinutes(Attendance $attendance, ?Carbon $checkIn, ?Carbon $checkOut): ?int
     {
-        if (! $checkIn || ! $checkOut || $checkOut->lessThan($checkIn)) {
+        if (! $checkIn || ! $checkOut || ! $attendance->attendance_date) {
             return null;
         }
 
-        return (int) $checkIn->diffInMinutes($checkOut);
+        $workDate = $attendance->attendance_date->copy();
+        $start = $workDate->copy()->setTimeFrom($checkIn);
+        $end = $workDate->copy()->setTimeFrom($checkOut);
+
+        if ($end->lessThan($start)) {
+            $end->addDay();
+        }
+
+        return (int) $start->diffInMinutes($end);
     }
 
     private function expectedWorkMinutes(User $employee): int
