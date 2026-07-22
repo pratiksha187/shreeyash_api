@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\MachineryDieselLogController;
 use App\Http\Controllers\Api\MaterialRequestController;
 use App\Http\Controllers\Api\MissedAttendanceRequestController;
 use App\Http\Controllers\Api\PaymentController;
+use App\Http\Controllers\Api\ProjectTaskController;
 use App\Http\Middleware\AuthenticateApiToken;
 use App\Http\Middleware\EnsureCompanySubscriptionActive;
 use Illuminate\Support\Facades\Route;
@@ -61,6 +62,11 @@ Route::middleware([AuthenticateApiToken::class, EnsureCompanySubscriptionActive:
     Route::get('/material-request', [MaterialRequestController::class, 'index'])->name('api.material-request.index');
     Route::post('/material-request', [MaterialRequestController::class, 'store'])->name('api.material-request.store');
     Route::get('/material-request/{materialRequest}', [MaterialRequestController::class, 'show'])->name('api.material-request.show');
+    Route::get('/project-tasks', [ProjectTaskController::class, 'index'])->name('api.project-tasks.index');
+    Route::get('/project-tasks/{projectTask}', [ProjectTaskController::class, 'show'])->name('api.project-tasks.show');
+    Route::patch('/project-tasks/{projectTask}', [ProjectTaskController::class, 'update'])->name('api.project-tasks.update');
+    Route::put('/project-tasks/{projectTask}', [ProjectTaskController::class, 'update'])->name('api.project-tasks.put');
+    Route::get('/projects/tasks', [ProjectTaskController::class, 'index'])->name('api.projects.tasks.index');
     
     Route::get('/labour-sites/{labourSite}/contractors', [LabourAttendanceController::class, 'contractors'])->name('api.labour-sites.contractors');
     Route::get('/labour-contractors/{contractor}/labours', [LabourAttendanceController::class, 'labours'])->name('api.labour-contractors.labours');
