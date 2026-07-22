@@ -78,11 +78,11 @@ class ProjectManagementController extends Controller
             ->with('success', 'Project added successfully. You can now assign tasks to engineers and supervisors.');
     }
 
-    public function show(Project $project): View
+    public function show(int $project): View
     {
         $this->ensureCompanyAdmin();
-        $this->ensureCurrentCompany($project);
 
+        $project = $this->findProject($project);
         $project->load(['planningManager:id,name,designation']);
 
         $tasks = $project->tasks()
@@ -103,10 +103,11 @@ class ProjectManagementController extends Controller
         ]);
     }
 
-    public function edit(Project $project): View
+    public function edit(int $project): View
     {
         $this->ensureCompanyAdmin();
-        $this->ensureCurrentCompany($project);
+
+        $project = $this->findProject($project);
 
         return view('admin.projects.edit', [
             ...$this->formData(),
@@ -114,10 +115,11 @@ class ProjectManagementController extends Controller
         ]);
     }
 
-    public function update(Request $request, Project $project): RedirectResponse
+    public function update(Request $request, int $project): RedirectResponse
     {
         $this->ensureCompanyAdmin();
-        $this->ensureCurrentCompany($project);
+
+        $project = $this->findProject($project);
 
         $data = $this->projectData($request);
         $data['completed_at'] = $data['status'] === 'completed'
@@ -131,10 +133,11 @@ class ProjectManagementController extends Controller
             ->with('success', 'Project updated successfully.');
     }
 
-    public function storeTask(Request $request, Project $project): RedirectResponse
+    public function storeTask(Request $request, int $project): RedirectResponse
     {
         $this->ensureCompanyAdmin();
-        $this->ensureCurrentCompany($project);
+
+        $project = $this->findProject($project);
 
         $project->tasks()->create([
             ...$this->taskData($request),
@@ -146,11 +149,15 @@ class ProjectManagementController extends Controller
         return back()->with('success', 'Task assigned successfully.');
     }
 
-    public function updateTask(Request $request, Project $project, ProjectTask $task): RedirectResponse
+    public function updateTask(Request $request, int $project, int $task): RedirectResponse
     {
         $this->ensureCompanyAdmin();
-        $this->ensureCurrentCompany($project);
-        $this->ensureCurrentCompany($task);
+
+        $project = $this->findProject($project);
+        $task = ProjectTask::query()
+            ->forCurrentCompany()
+            ->where('project_id', $project->id)
+            ->findOrFail($task);
 
         if ((int) $task->project_id !== (int) $project->id) {
             abort(404);
@@ -327,6 +334,13 @@ class ProjectManagementController extends Controller
         throw ValidationException::withMessages([
             $field => 'Selected employee was not found.',
         ]);
+    }
+
+    private function findProject(int $project): Project
+    {
+        return Project::query()
+            ->forCurrentCompany()
+            ->findOrFail($project);
     }
 
     private function ensureCurrentCompany(Project|ProjectTask $record): void
