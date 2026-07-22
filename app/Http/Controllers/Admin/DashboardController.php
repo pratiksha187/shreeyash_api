@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Attendance;
 use App\Models\Challan;
+use App\Models\Project;
+use App\Models\ProjectTask;
 use App\Models\User;
 use App\Models\Vehicle;
 use App\Models\VehicleLog;
@@ -33,6 +35,19 @@ class DashboardController extends Controller
                 ->forCurrentCompany()
                 ->where('status', 'leave')
                 ->where('leave_approval_status', 'pending')
+                ->count(),
+            'activeProjects' => Project::query()
+                ->forCurrentCompany()
+                ->where('status', 'active')
+                ->count(),
+            'pendingProjectTasks' => ProjectTask::query()
+                ->forCurrentCompany()
+                ->whereIn('status', ['pending', 'in_progress', 'blocked'])
+                ->count(),
+            'overdueProjectTasks' => ProjectTask::query()
+                ->forCurrentCompany()
+                ->whereNotIn('status', ['completed', 'cancelled'])
+                ->whereDate('due_date', '<', today())
                 ->count(),
             'recentPendingLeaves' => Attendance::query()
                 ->forCurrentCompany()

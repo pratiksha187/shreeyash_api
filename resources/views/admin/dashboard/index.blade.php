@@ -31,6 +31,18 @@
             <strong>{{ $pendingLeaveRequests }}</strong>
         </div>
         <div class="card stat-card">
+            <span>Active Projects</span>
+            <strong>{{ $activeProjects }}</strong>
+        </div>
+        <div class="card stat-card">
+            <span>Project Tasks</span>
+            <strong>{{ $pendingProjectTasks }}</strong>
+        </div>
+        <div class="card stat-card">
+            <span>Overdue Tasks</span>
+            <strong>{{ $overdueProjectTasks }}</strong>
+        </div>
+        <div class="card stat-card">
             <span>Today Absent</span>
             <strong>{{ $todayAbsent }}</strong>
         </div>
