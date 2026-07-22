@@ -31,6 +31,7 @@ return [
         'product_purchases',
         'material_stock',
         'project_management',
+        'site_reports',
     ],
     'module_permissions' => [
         'dashboard' => 'Dashboard',
@@ -38,6 +39,7 @@ return [
         'engg' => 'Engg Access',
         'purchase' => 'Purchase Access',
         'project_management' => 'Project Management',
+        'site_reports' => 'Site Reports',
         'employees' => 'Employees',
         'attendance_reports' => 'Attendance Reports',
         'missed_requests' => 'Missed Requests',
@@ -258,6 +260,12 @@ return [
                     'active' => 'admin.dpr-reports.*',
                 ],
                 [
+                    'key' => 'site_reports',
+                    'label' => 'Site Reports',
+                    'route' => 'admin.site-reports.index',
+                    'active' => 'admin.site-reports.*',
+                ],
+                [
                     'key' => 'challans',
                     'label' => 'Challans',
                     'route' => 'admin.challans.index',
@@ -332,6 +340,7 @@ return [
         'admin.machinery-diesel-logs.*' => 'machinery_diesel_logs',
         'admin.product-purchases.*' => 'product_purchases',
         'admin.projects.*' => 'project_management',
+        'admin.site-reports.*' => 'site_reports',
         'admin.materials.*' => 'material_stock',
         'admin.material-stock.*' => 'material_stock',
         'admin.material-requests.*' => 'material_stock',

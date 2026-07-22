@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\Concerns\BelongsToCompany;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ProjectTask extends Model
 {
@@ -63,6 +64,11 @@ class ProjectTask extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function updates(): HasMany
+    {
+        return $this->hasMany(ProjectTaskUpdate::class);
     }
 
     protected function casts(): array

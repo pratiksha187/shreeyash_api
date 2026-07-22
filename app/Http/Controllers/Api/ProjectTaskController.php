@@ -5,10 +5,13 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Project;
 use App\Models\ProjectTask;
+use App\Models\ProjectTaskUpdate;
 use App\Support\Tenant;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
 class ProjectTaskController extends Controller
@@ -29,7 +32,7 @@ class ProjectTaskController extends Controller
         ]);
 
         $tasks = $this->allocatedTaskQuery($request)
-            ->with(['project:id,name,code,client_name,site_location,status,progress_percent,target_date', 'engineer:id,name,mobile,designation', 'supervisor:id,name,mobile,designation'])
+            ->with($this->taskRelations(limitUpdates: true))
             ->when(isset($filters['status']), fn ($query) => $query->where('status', $filters['status']))
             ->when(isset($filters['project_id']), fn ($query) => $query->where('project_id', $filters['project_id']))
             ->orderByRaw("FIELD(status, 'blocked', 'in_progress', 'pending', 'completed', 'cancelled')")
@@ -55,7 +58,7 @@ class ProjectTaskController extends Controller
         }
 
         $task = $this->allocatedTaskQuery($request)
-            ->with(['project:id,name,code,client_name,site_location,status,progress_percent,target_date,description', 'engineer:id,name,mobile,designation', 'supervisor:id,name,mobile,designation'])
+            ->with($this->taskRelations(includeProjectDescription: true))
             ->findOrFail($projectTask);
 
         return response()->json([
@@ -73,6 +76,12 @@ class ProjectTaskController extends Controller
             ], 503);
         }
 
+        if (! $this->hasTable('project_task_updates')) {
+            return response()->json([
+                'message' => 'Project task update table is not available yet. Please create project_task_updates table first.',
+            ], 503);
+        }
+
         $task = $this->allocatedTaskQuery($request)->findOrFail($projectTask);
 
         $data = $request->validate([
@@ -80,7 +89,13 @@ class ProjectTaskController extends Controller
             'progress_percent' => ['nullable', 'integer', 'min:0', 'max:100'],
             'actual_hours' => ['nullable', 'numeric', 'min:0', 'max:99999.99'],
             'completion_note' => ['nullable', 'string', 'max:5000'],
+            'remark' => ['nullable', 'string', 'max:5000'],
+            'photo' => ['nullable', 'image', 'max:10240'],
         ]);
+
+        $photoPath = $request->hasFile('photo')
+            ? $this->storeTaskPhoto($request, $task)
+            : null;
 
         if (($data['status'] ?? null) === 'completed') {
             $data['progress_percent'] = 100;
@@ -89,14 +104,21 @@ class ProjectTaskController extends Controller
             $data['completed_at'] = null;
         }
 
-        $task->update($data);
+        $taskData = collect($data)
+            ->only(['status', 'progress_percent', 'actual_hours', 'completion_note', 'completed_at'])
+            ->all();
+
+        $task->update($taskData);
+        $update = $this->storeTaskUpdate($request, $task, $data, $photoPath);
+
         $this->refreshProjectProgress($task->project);
-        $task->load(['project:id,name,code,client_name,site_location,status,progress_percent,target_date', 'engineer:id,name,mobile,designation', 'supervisor:id,name,mobile,designation']);
+        $task->load($this->taskRelations());
 
         return response()->json([
             'message' => 'Project task tracking updated successfully.',
             'project_task' => $this->taskPayload($task, $request->user()->id),
             'task' => $this->taskPayload($task, $request->user()->id),
+            'task_update' => $this->updatePayload($update),
         ]);
     }
 
@@ -114,7 +136,7 @@ class ProjectTaskController extends Controller
 
     private function taskPayload(ProjectTask $task, int $userId): array
     {
-        $task->loadMissing(['project', 'engineer:id,name,mobile,designation', 'supervisor:id,name,mobile,designation']);
+        $task->loadMissing($this->taskRelations());
 
         return [
             'id' => $task->id,
@@ -143,6 +165,15 @@ class ProjectTaskController extends Controller
             'progress_percent' => $task->progress_percent,
             'description' => $task->description,
             'completion_note' => $task->completion_note,
+            'latest_update' => $this->hasTable('project_task_updates') && $task->updates->sortByDesc('created_at')->first()
+                ? $this->updatePayload($task->updates->sortByDesc('created_at')->first())
+                : null,
+            'updates' => $this->hasTable('project_task_updates')
+                ? $task->updates
+                    ->sortByDesc('created_at')
+                    ->values()
+                    ->map(fn (ProjectTaskUpdate $update) => $this->updatePayload($update))
+                : [],
             'my_role' => $this->allocatedRole($task, $userId),
             'engineer' => $task->engineer ? [
                 'id' => $task->engineer->id,
@@ -162,6 +193,95 @@ class ProjectTaskController extends Controller
             'assigned_at' => $task->created_at,
             'updated_at' => $task->updated_at,
         ];
+    }
+
+    private function taskRelations(bool $includeProjectDescription = false, bool $limitUpdates = false): array
+    {
+        $projectColumns = 'project:id,name,code,client_name,site_location,status,progress_percent,target_date'
+            .($includeProjectDescription ? ',description' : '');
+
+        $relations = [
+            $projectColumns,
+            'engineer:id,name,mobile,designation',
+            'supervisor:id,name,mobile,designation',
+        ];
+
+        if ($this->hasTable('project_task_updates')) {
+            $relations['updates'] = $limitUpdates
+                ? fn ($query) => $query->latest()->limit(3)
+                : fn ($query) => $query->latest();
+            $relations[] = 'updates.user:id,name,mobile,designation';
+        }
+
+        return $relations;
+    }
+
+    private function storeTaskUpdate(Request $request, ProjectTask $task, array $data, ?string $photoPath): ProjectTaskUpdate
+    {
+        return $task->updates()->create([
+            'user_id' => $request->user()->id,
+            'status' => $data['status'] ?? $task->status,
+            'progress_percent' => $data['progress_percent'] ?? $task->progress_percent,
+            'actual_hours' => $data['actual_hours'] ?? $task->actual_hours,
+            'remark' => $data['remark'] ?? ($data['completion_note'] ?? null),
+            'photo_path' => $photoPath,
+        ])->load('user:id,name,mobile,designation');
+    }
+
+    private function updatePayload(ProjectTaskUpdate $update): array
+    {
+        $update->loadMissing('user:id,name,mobile,designation');
+
+        return [
+            'id' => $update->id,
+            'status' => $update->status,
+            'progress_percent' => $update->progress_percent,
+            'actual_hours' => $update->actual_hours,
+            'remark' => $update->remark,
+            'photo_path' => $update->photo_path,
+            'photo_url' => $update->photoUrl(),
+            'user' => $update->user ? [
+                'id' => $update->user->id,
+                'name' => $update->user->name,
+                'mobile' => $update->user->mobile,
+                'designation' => $update->user->designation,
+            ] : null,
+            'created_at' => $update->created_at,
+            'updated_at' => $update->updated_at,
+        ];
+    }
+
+    private function storeTaskPhoto(Request $request, ProjectTask $task): ?string
+    {
+        $photo = $request->file('photo');
+
+        if (! $photo || ! $photo->isValid()) {
+            return null;
+        }
+
+        Storage::disk('public')->makeDirectory('project_task_updates');
+
+        $path = $photo->store(
+            'project_task_updates/'.$request->user()->id.'/'.$task->id,
+            'public'
+        );
+
+        $this->mirrorPhotoToPublicStorage($path);
+
+        return $path;
+    }
+
+    private function mirrorPhotoToPublicStorage(string $path): void
+    {
+        $sourcePath = Storage::disk('public')->path($path);
+        $targetPath = public_path('storage/'.str_replace('\\', '/', $path));
+
+        if (! is_file($sourcePath)) {
+            return;
+        }
+
+        File::ensureDirectoryExists(dirname($targetPath));
+        File::copy($sourcePath, $targetPath);
     }
 
     private function allocatedRole(ProjectTask $task, int $userId): string

@@ -19,6 +19,7 @@ use App\Http\Controllers\Admin\MirFileReportController;
 use App\Http\Controllers\Admin\PaymentController;
 use App\Http\Controllers\Admin\ProjectManagementController;
 use App\Http\Controllers\Admin\ProductPurchaseController;
+use App\Http\Controllers\Admin\SiteReportController;
 use App\Http\Controllers\Admin\VehicleController;
 use App\Http\Controllers\Admin\VehicleDriverAttendanceController;
 use App\Http\Controllers\Admin\VehicleLogController;
@@ -118,6 +119,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::put('/projects/{project}', [ProjectManagementController::class, 'update'])->name('projects.update');
         Route::post('/projects/{project}/tasks', [ProjectManagementController::class, 'storeTask'])->name('projects.tasks.store');
         Route::put('/projects/{project}/tasks/{task}', [ProjectManagementController::class, 'updateTask'])->name('projects.tasks.update');
+        Route::get('/site-reports', [SiteReportController::class, 'index'])->name('site-reports.index');
+        Route::get('/site-reports/pdf', [SiteReportController::class, 'pdf'])->name('site-reports.pdf');
+        Route::get('/site-reports/word', [SiteReportController::class, 'word'])->name('site-reports.word');
         Route::get('/materials', [MaterialStockController::class, 'materials'])->name('materials.index');
         Route::post('/materials', [MaterialStockController::class, 'storeMaterial'])->name('materials.store');
         Route::put('/materials/{material}', [MaterialStockController::class, 'updateMaterial'])->name('materials.update');
