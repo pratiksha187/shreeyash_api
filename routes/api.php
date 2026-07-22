@@ -66,6 +66,9 @@ Route::middleware([AuthenticateApiToken::class, EnsureCompanySubscriptionActive:
     Route::get('/project-tasks/{projectTask}', [ProjectTaskController::class, 'show'])->name('api.project-tasks.show');
     Route::patch('/project-tasks/{projectTask}', [ProjectTaskController::class, 'update'])->name('api.project-tasks.update');
     Route::put('/project-tasks/{projectTask}', [ProjectTaskController::class, 'update'])->name('api.project-tasks.put');
+    Route::get('/my-project-tasks', [ProjectTaskController::class, 'index'])->name('api.my-project-tasks.index');
+    Route::get('/my-project-tasks/{projectTask}', [ProjectTaskController::class, 'show'])->name('api.my-project-tasks.show');
+    Route::patch('/my-project-tasks/{projectTask}', [ProjectTaskController::class, 'update'])->name('api.my-project-tasks.update');
     Route::get('/projects/tasks', [ProjectTaskController::class, 'index'])->name('api.projects.tasks.index');
     
     Route::get('/labour-sites/{labourSite}/contractors', [LabourAttendanceController::class, 'contractors'])->name('api.labour-sites.contractors');
