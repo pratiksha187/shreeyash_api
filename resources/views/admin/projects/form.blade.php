@@ -21,7 +21,18 @@
 
         <div class="field">
             <label for="site_location">Site / Location</label>
-            <input id="site_location" name="site_location" type="text" value="{{ old('site_location', $project->site_location ?? '') }}">
+            @if ($sites->isNotEmpty())
+                <select id="site_location" name="site_location">
+                    <option value="">Select site</option>
+                    @foreach ($sites as $site)
+                        <option value="{{ $site->name }}" @selected(old('site_location', $project->site_location ?? '') === $site->name)>
+                            {{ $site->name }}{{ $site->address ? ' - '.$site->address : '' }}
+                        </option>
+                    @endforeach
+                </select>
+            @else
+                <input id="site_location" name="site_location" type="text" value="{{ old('site_location', $project->site_location ?? '') }}" placeholder="Add sites in Site Master to show dropdown">
+            @endif
             @error('site_location') <div class="error">{{ $message }}</div> @enderror
         </div>
 

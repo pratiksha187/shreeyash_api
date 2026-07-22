@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\LabourSite;
 use App\Models\Project;
 use App\Models\ProjectTask;
 use App\Models\User;
@@ -290,6 +291,7 @@ class ProjectManagementController extends Controller
     {
         return [
             'employees' => $this->employees(),
+            'sites' => $this->sites(),
             'statuses' => Project::STATUSES,
         ];
     }
@@ -301,6 +303,15 @@ class ProjectManagementController extends Controller
             ->employees()
             ->orderBy('name')
             ->get(['id', 'name', 'designation', 'mobile']);
+    }
+
+    private function sites()
+    {
+        return LabourSite::query()
+            ->forCurrentCompany()
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get(['id', 'name', 'address']);
     }
 
     private function ensureEmployeeId(mixed $employeeId, string $field): void
