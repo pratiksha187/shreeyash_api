@@ -14,7 +14,6 @@ use App\Models\ProjectTask;
 use App\Models\ProjectTaskUpdate;
 use App\Models\VehicleLog;
 use App\Support\Tenant;
-use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -47,7 +46,7 @@ class SiteReportController extends Controller
         $report = $this->buildReport($site, $filters);
         $fileName = $this->fileName($site, $filters, 'pdf');
 
-        return Pdf::loadView('admin.site-reports.document', [
+        return app('dompdf.wrapper')->loadView('admin.site-reports.document', [
             'site' => $site,
             'filters' => $filters,
             'report' => $report,
