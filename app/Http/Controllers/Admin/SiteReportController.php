@@ -46,12 +46,9 @@ class SiteReportController extends Controller
         $report = $this->buildReport($site, $filters);
         $fileName = $this->fileName($site, $filters, 'pdf');
 
-        return app('dompdf.wrapper')->loadView('admin.site-reports.document', [
-            'site' => $site,
-            'filters' => $filters,
-            'report' => $report,
-            'format' => 'pdf',
-        ])->setPaper('a4', 'landscape')->download($fileName);
+        return response($this->buildPdf($site, $filters, $report))
+            ->header('Content-Type', 'application/pdf')
+            ->header('Content-Disposition', 'attachment; filename="'.$fileName.'"');
     }
 
     public function word(Request $request): Response
@@ -196,6 +193,201 @@ class SiteReportController extends Controller
             'challans' => $challans,
             'vehicle_logs' => $vehicleLogs,
         ];
+    }
+
+    private function buildPdf(LabourSite $site, array $filters, array $report): string
+    {
+        $lines = $this->reportLines($site, $filters, $report);
+        $pages = array_chunk($lines, 42);
+        $objects = [
+            "1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n",
+        ];
+
+        $pageObjectNumbers = [];
+        $fontObjectNumber = 3 + (count($pages) * 2);
+
+        foreach ($pages as $index => $pageLines) {
+            $pageObjectNumber = 3 + ($index * 2);
+            $contentObjectNumber = $pageObjectNumber + 1;
+            $pageObjectNumbers[] = $pageObjectNumber.' 0 R';
+
+            $objects[] = "{$pageObjectNumber} 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 842 595] /Resources << /Font << /F1 {$fontObjectNumber} 0 R >> >> /Contents {$contentObjectNumber} 0 R >>\nendobj\n";
+
+            $content = "BT\n/F1 9 Tf\n0 0 0 rg\n";
+            $y = 560;
+            foreach ($pageLines as $line) {
+                $content .= "36 {$y} Td\n(".$this->escapePdfText($line).") Tj\n-36 0 Td\n";
+                $y -= 12;
+            }
+            $content .= "ET\n";
+
+            $objects[] = "{$contentObjectNumber} 0 obj\n<< /Length ".strlen($content)." >>\nstream\n{$content}endstream\nendobj\n";
+        }
+
+        $kids = implode(' ', $pageObjectNumbers);
+        array_splice($objects, 1, 0, "2 0 obj\n<< /Type /Pages /Kids [{$kids}] /Count ".count($pages)." >>\nendobj\n");
+        $objects[] = "{$fontObjectNumber} 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n";
+
+        $pdf = "%PDF-1.4\n";
+        $offsets = [0];
+
+        foreach ($objects as $object) {
+            $offsets[] = strlen($pdf);
+            $pdf .= $object;
+        }
+
+        $xrefOffset = strlen($pdf);
+        $pdf .= "xref\n0 ".(count($objects) + 1)."\n";
+        $pdf .= "0000000000 65535 f \n";
+
+        for ($i = 1; $i <= count($objects); $i++) {
+            $pdf .= sprintf("%010d 00000 n \n", $offsets[$i]);
+        }
+
+        $pdf .= "trailer\n<< /Size ".(count($objects) + 1)." /Root 1 0 R >>\n";
+        $pdf .= "startxref\n{$xrefOffset}\n%%EOF";
+
+        return $pdf;
+    }
+
+    private function reportLines(LabourSite $site, array $filters, array $report): array
+    {
+        $lines = [
+            'SITE COMPLETE DATA REPORT',
+            'Site: '.$site->name,
+            'Address: '.($site->address ?: '-'),
+            'Period: '.Carbon::parse($filters['from_date'])->format('d M Y').' to '.Carbon::parse($filters['to_date'])->format('d M Y'),
+            'Generated: '.now()->format('d M Y h:i A'),
+            '',
+            'SUMMARY',
+        ];
+
+        foreach ($report['summary'] as $label => $value) {
+            $lines[] = $this->label($label).': '.$value;
+        }
+
+        $this->appendSection($lines, 'PROJECTS', $report['projects'], function ($project) {
+            return [
+                $project->name.' | Client: '.($project->client_name ?: '-').' | Manager: '.($project->planningManager?->name ?? '-'),
+                'Status: '.$project->status.' | Progress: '.$project->progress_percent.'% | Target: '.($project->target_date?->format('d M Y') ?? '-'),
+            ];
+        });
+
+        $this->appendSection($lines, 'ASSIGNED TASKS', $report['tasks'], function ($task) {
+            return [
+                $task->title.' | Engineer: '.($task->engineer?->name ?? '-').' | Supervisor: '.($task->supervisor?->name ?? '-'),
+                'Area: '.($task->work_area ?: '-').' | Status: '.$task->status.' | Progress: '.$task->progress_percent.'% | Due: '.($task->due_date?->format('d M Y') ?? '-'),
+            ];
+        });
+
+        $this->appendSection($lines, 'TASK UPDATES / REMARKS', $report['task_updates'], function ($update) {
+            return [
+                ($update->created_at?->format('d M Y h:i A') ?? '-').' | Task: '.($update->task?->title ?? '-').' | By: '.($update->user?->name ?? '-'),
+                'Status: '.$update->status.' | Progress: '.$update->progress_percent.'% | Remark: '.($update->remark ?: '-').' | Photo: '.($update->photo_path ?: '-'),
+            ];
+        });
+
+        $this->appendSection($lines, 'ASSIGNED LABOURS', $report['assigned_labours'], function ($attendance) {
+            return [
+                ($attendance->labour?->name ?? '-').' | Code: '.($attendance->labour?->labour_code ?? '-').' | Trade: '.($attendance->labour?->trade ?? '-').' | Contractor: '.($attendance->contractor?->name ?? '-'),
+            ];
+        });
+
+        $this->appendSection($lines, 'LABOUR ATTENDANCE', $report['labour_attendances'], function ($attendance) {
+            return [
+                ($attendance->attendance_date?->format('d M Y') ?? '-').' | '.($attendance->labour?->name ?? '-').' | '.$attendance->status.' | Hours: '.$attendance->work_hours,
+                'Engineer: '.($attendance->engineer?->name ?? '-').' | Remarks: '.($attendance->remarks ?: '-'),
+            ];
+        });
+
+        $this->appendSection($lines, 'MATERIAL REQUESTS', $report['material_requests'], function ($requestRow) {
+            return [
+                ($requestRow->request_date?->format('d M Y') ?? '-').' | '.($requestRow->material?->name ?? $requestRow->material_name).' | Qty: '.$requestRow->requested_quantity.' | Status: '.$requestRow->status,
+                'Engineer: '.($requestRow->engineer?->name ?? '-').' | Purpose: '.($requestRow->purpose ?: '-'),
+            ];
+        });
+
+        $this->appendSection($lines, 'MATERIAL ISSUES', $report['material_issues'], function ($issue) {
+            return [
+                ($issue->issued_at?->format('d M Y h:i A') ?? '-').' | '.($issue->material?->name ?? '-').' | Qty: '.$issue->issued_quantity.' | By: '.($issue->issuer?->name ?? '-'),
+            ];
+        });
+
+        $this->appendSection($lines, 'DPR REPORTS', $report['dprs'], function ($dpr) {
+            return [
+                ($dpr->dpr_date?->format('d M Y') ?? '-').' | Engineer: '.($dpr->user?->name ?? '-').' | Files: '.$dpr->hours->sum(fn ($hour) => $hour->photos->count()),
+                'Summary: '.$dpr->work_summary,
+            ];
+        });
+
+        $this->appendSection($lines, 'CHALLANS', $report['challans'], function ($challan) {
+            return [
+                ($challan->challan_date?->format('d M Y') ?? '-').' | No: '.$challan->challan_no.' | Party: '.$challan->party_name.' | Material/M/c: '.$challan->material_machine,
+                'Vehicle: '.($challan->vehicle_no ?: '-').' | Measurement: '.($challan->measurement ?: '-').' | By: '.($challan->user?->name ?? '-'),
+            ];
+        });
+
+        $this->appendSection($lines, 'VEHICLE ENTRIES', $report['vehicle_logs'], function ($log) {
+            return [
+                ($log->entry_date?->format('d M Y') ?? '-').' | Vehicle: '.($log->vehicle?->vehicle_number ?? $log->vehicle_number).' | Driver: '.($log->driver_name ?: '-'),
+                'In: '.($log->in_at?->format('h:i A') ?? '-').' | Out: '.($log->out_at?->format('h:i A') ?? '-').' | Diesel: '.$log->diesel_added.' | Remarks: '.($log->remarks ?: '-'),
+            ];
+        });
+
+        return collect($lines)
+            ->flatMap(fn (string $line) => $this->wrapLine($line, 138))
+            ->values()
+            ->all();
+    }
+
+    private function appendSection(array &$lines, string $title, $records, callable $formatter): void
+    {
+        $lines[] = '';
+        $lines[] = $title;
+
+        if ($records->isEmpty()) {
+            $lines[] = 'No data found.';
+            return;
+        }
+
+        foreach ($records as $index => $record) {
+            $lines[] = ($index + 1).'.';
+            foreach ($formatter($record) as $line) {
+                $lines[] = '   '.$line;
+            }
+        }
+    }
+
+    private function label(string $value): string
+    {
+        return ucwords(str_replace('_', ' ', $value));
+    }
+
+    private function wrapLine(string $line, int $limit): array
+    {
+        $line = $this->normalizePdfText($line);
+
+        return explode("\n", wordwrap($line, $limit, "\n", true));
+    }
+
+    private function escapePdfText(string $text): string
+    {
+        return str_replace(['\\', '(', ')'], ['\\\\', '\\(', '\\)'], $this->normalizePdfText($text));
+    }
+
+    private function normalizePdfText(string $text): string
+    {
+        $text = preg_replace('/\s+/', ' ', trim($text)) ?: '-';
+
+        if (function_exists('iconv')) {
+            $converted = iconv('UTF-8', 'ISO-8859-1//TRANSLIT//IGNORE', $text);
+
+            if ($converted !== false) {
+                return $converted;
+            }
+        }
+
+        return $text;
     }
 
     private function projects(LabourSite $site)
