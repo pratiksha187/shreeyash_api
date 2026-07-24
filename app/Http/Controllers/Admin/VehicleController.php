@@ -51,8 +51,8 @@ class VehicleController extends Controller
         ]);
 
         $selectedMonth = $filters['month'] ?? now()->format('Y-m');
-        $monthStart = Carbon::createFromFormat('Y-m', $selectedMonth)->startOfMonth();
-        $monthEnd = $monthStart->copy()->endOfMonth();
+        $monthStart = $this->billingCycleStartDate($selectedMonth, $vehicle);
+        $monthEnd = $monthStart->copy()->addMonthNoOverflow()->subDay();
         $selectedVehicleLog = null;
 
         $vehicleLogs = $vehicle->vehicleLogs()
@@ -100,7 +100,7 @@ class VehicleController extends Controller
             'isCamper' => $isCamper,
             'selectedMonth' => $selectedMonth,
             'selectedVehicleLog' => $selectedVehicleLog,
-            'monthLabel' => $monthStart->format('F Y'),
+            'monthLabel' => $this->billingCycleLabel($monthStart, $monthEnd),
             'calendarRows' => $calendarRows,
             'summary' => [
                 'total_records' => $vehicleLogs->count(),
@@ -372,6 +372,7 @@ class VehicleController extends Controller
             'driver_name' => ['nullable', 'string', 'max:255'],
             'driver_mobile' => ['nullable', 'string', 'max:20'],
             'default_site' => ['nullable', 'string', 'max:255'],
+            'billing_cycle_start_day' => ['nullable', 'integer', 'min:1', 'max:31'],
             'fixed_monthly_amount' => ['nullable', 'numeric', 'min:0', 'max:9999999999.99'],
             'ot_rate' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
             'hire_per_day_rate' => ['nullable', 'numeric', 'min:0', 'max:9999999999.99'],
@@ -383,6 +384,7 @@ class VehicleController extends Controller
         ]);
 
         $data['vehicle_number'] = strtoupper($data['vehicle_number']);
+        $data['billing_cycle_start_day'] = $data['billing_cycle_start_day'] ?? 1;
         $data['fixed_monthly_amount'] = $data['fixed_monthly_amount'] ?? 0;
         $data['ot_rate'] = $data['ot_rate'] ?? 0;
         $data['hire_per_day_rate'] = $data['hire_per_day_rate'] ?? 0;
@@ -392,5 +394,22 @@ class VehicleController extends Controller
         $data['extra_sunday_paid_amount'] = $data['extra_sunday_paid_amount'] ?? 0;
 
         return $data;
+    }
+
+    private function billingCycleStartDate(string $selectedMonth, Vehicle $vehicle): Carbon
+    {
+        $month = Carbon::createFromFormat('Y-m', $selectedMonth)->startOfMonth();
+        $startDay = min((int) ($vehicle->billing_cycle_start_day ?: 1), $month->daysInMonth);
+
+        return $month->day($startDay)->startOfDay();
+    }
+
+    private function billingCycleLabel(Carbon $startDate, Carbon $endDate): string
+    {
+        if ($startDate->isSameMonth($endDate)) {
+            return $startDate->format('F Y');
+        }
+
+        return $startDate->format('d M Y').' to '.$endDate->format('d M Y');
     }
 }

@@ -49,6 +49,14 @@
                 <div class="error">{{ $message }}</div>
             @enderror
         </div>
+
+        <div class="field">
+            <label for="billing_cycle_start_day">Billing Cycle Start Day</label>
+            <input id="billing_cycle_start_day" name="billing_cycle_start_day" type="number" min="1" max="31" step="1" value="{{ old('billing_cycle_start_day', $vehicle?->billing_cycle_start_day ?? 1) }}">
+            @error('billing_cycle_start_day')
+                <div class="error">{{ $message }}</div>
+            @enderror
+        </div>
     </div>
 </section>
 

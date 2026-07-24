@@ -77,6 +77,10 @@
             <strong>{{ $vehicle->default_site ?? '-' }}</strong>
         </div>
         <div class="card detail-item">
+            <span>Cycle Start Day</span>
+            <strong>{{ $vehicle->billing_cycle_start_day ?: 1 }}</strong>
+        </div>
+        <div class="card detail-item">
             <span>Fixed Amount</span>
             <strong>{{ number_format((float) $vehicle->fixed_monthly_amount, 2) }}</strong>
         </div>

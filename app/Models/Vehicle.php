@@ -19,6 +19,7 @@ class Vehicle extends Model
         'driver_name',
         'driver_mobile',
         'default_site',
+        'billing_cycle_start_day',
         'fixed_monthly_amount',
         'ot_rate',
         'hire_per_day_rate',
@@ -33,6 +34,7 @@ class Vehicle extends Model
     {
         return [
             'fixed_monthly_amount' => 'decimal:2',
+            'billing_cycle_start_day' => 'integer',
             'ot_rate' => 'decimal:2',
             'hire_per_day_rate' => 'decimal:2',
             'hire_per_hour_rate' => 'decimal:2',
