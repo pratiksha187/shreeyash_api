@@ -135,4 +135,60 @@ class VehicleHireBillingPageTest extends TestCase
             ->assertDontSee('BEFORE-CYCLE')
             ->assertDontSee('AFTER-CYCLE');
     }
+
+    public function test_vehicle_calendar_can_use_manual_billing_start_and_end_dates(): void
+    {
+        $session = [
+            'admin_logged_in' => true,
+            'admin_email' => 'admin@example.com',
+            'admin_role' => 'company_admin',
+            'admin_permissions' => ['vehicles'],
+        ];
+        $company = Company::query()->create([
+            'name' => 'Manual Date Company',
+            'slug' => 'manual-date-company',
+            'status' => 'active',
+        ]);
+        app(Tenant::class)->set($company);
+        $this->withoutMiddleware(EnsureAdminLoggedIn::class);
+
+        $vehicle = Vehicle::query()->create([
+            'vehicle_number' => 'MH 12 MD 1020',
+            'vehicle_type' => 'JCB',
+            'driver_name' => 'Driver',
+            'driver_mobile' => '9999999999',
+        ]);
+
+        foreach ([
+            ['2026-07-09', 'BEFORE-MANUAL'],
+            ['2026-07-10', 'START-MANUAL'],
+            ['2026-07-20', 'END-MANUAL'],
+            ['2026-07-21', 'AFTER-MANUAL'],
+        ] as [$date, $challanNo]) {
+            VehicleLog::query()->create([
+                'vehicle_id' => $vehicle->id,
+                'entry_date' => $date,
+                'vehicle_number' => $vehicle->vehicle_number,
+                'vehicle_type' => $vehicle->vehicle_type,
+                'driver_name' => $vehicle->driver_name,
+                'driver_mobile' => $vehicle->driver_mobile,
+                'challan_no' => $challanNo,
+                'in_at' => $date.' 09:00:00',
+                'out_at' => $date.' 17:00:00',
+            ]);
+        }
+
+        $this->withSession($session)
+            ->get("/admin/vehicles/{$vehicle->id}?month=2026-07&billing_start_date=2026-07-10&billing_end_date=2026-07-20")
+            ->assertOk()
+            ->assertSee('10 Jul 2026 to 20 Jul 2026')
+            ->assertSee('10/07/2026')
+            ->assertSee('20/07/2026')
+            ->assertSee('START-MANUAL')
+            ->assertSee('END-MANUAL')
+            ->assertDontSee('09/07/2026')
+            ->assertDontSee('21/07/2026')
+            ->assertDontSee('BEFORE-MANUAL')
+            ->assertDontSee('AFTER-MANUAL');
+    }
 }

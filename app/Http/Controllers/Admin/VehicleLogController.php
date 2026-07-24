@@ -18,6 +18,8 @@ class VehicleLogController extends Controller
 
         $data = $request->validate([
             'month' => ['required', 'date_format:Y-m'],
+            'billing_start_date' => ['nullable', 'date'],
+            'billing_end_date' => ['nullable', 'date', 'after_or_equal:billing_start_date'],
             'entries' => ['required', 'array'],
             'entries.*.log_id' => ['nullable', 'integer'],
             'entries.*.entry_date' => ['required', 'date'],
@@ -40,10 +42,12 @@ class VehicleLogController extends Controller
         }
 
         return redirect()
-            ->route('admin.vehicles.show', [
+            ->route('admin.vehicles.show', array_filter([
                 'vehicle' => $vehicle,
                 'month' => $data['month'],
-            ])
+                'billing_start_date' => $data['billing_start_date'] ?? null,
+                'billing_end_date' => $data['billing_end_date'] ?? null,
+            ]))
             ->with('success', 'Monthly vehicle entries saved successfully.');
     }
 

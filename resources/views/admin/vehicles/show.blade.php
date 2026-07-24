@@ -36,6 +36,56 @@
         };
     @endphp
 
+    <style>
+        .billing-filter-grid {
+            display: grid;
+            grid-template-columns: minmax(180px, 1fr) minmax(180px, 1fr) minmax(180px, 1fr) auto;
+            gap: 16px;
+            align-items: end;
+        }
+
+        .billing-filter-actions {
+            display: flex;
+            align-items: end;
+        }
+
+        .billing-filter-actions .btn {
+            width: 100%;
+            min-width: 148px;
+        }
+
+        .billing-period-note {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            margin-top: 16px;
+            padding: 14px 16px;
+            border: 1px solid #bfdbfe;
+            border-radius: 8px;
+            background: #eff6ff;
+            color: #1e3a8a;
+            font-weight: 800;
+        }
+
+        .billing-period-note span {
+            color: #64748b;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+
+        @media (max-width: 900px) {
+            .billing-filter-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .billing-period-note {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+        }
+    </style>
+
     <div class="page-header">
         <div>
             <h1>{{ $vehicle->vehicle_number }}</h1>
@@ -114,25 +164,38 @@
         </div>
     </section>
 
-    <form class="card form-card report-filter" method="GET" action="{{ route('admin.vehicles.show', $vehicle) }}">
+    <form class="card form-card report-filter" method="GET" action="{{ route('admin.vehicles.show', $vehicle) }}" data-billing-filter data-cycle-start-day="{{ $vehicle->billing_cycle_start_day ?: 1 }}">
         <section class="form-section">
-            <h2 class="section-title">Calendar Filter</h2>
-            <div class="form-grid three">
+            <h2 class="section-title">Billing Calendar</h2>
+            <div class="billing-filter-grid">
                 <div class="field">
                     <label for="month">Month</label>
-                    <input id="month" name="month" type="month" value="{{ old('month', $selectedMonth) }}">
+                    <input id="month" name="month" data-billing-month type="month" value="{{ old('month', $selectedMonth) }}">
                     @error('month')
                         <div class="error">{{ $message }}</div>
                     @enderror
                 </div>
                 <div class="field">
-                    <label>&nbsp;</label>
-                    <button class="btn" type="submit">Show Calendar</button>
+                    <label for="billing_start_date">Billing Start Date</label>
+                    <input id="billing_start_date" name="billing_start_date" data-billing-start type="date" value="{{ old('billing_start_date', $billingCycleStartDate->toDateString()) }}">
+                    @error('billing_start_date')
+                        <div class="error">{{ $message }}</div>
+                    @enderror
                 </div>
                 <div class="field">
-                    <label>Billing Period</label>
-                    <input type="text" value="{{ $monthLabel }}" readonly>
+                    <label for="billing_end_date">Billing End Date</label>
+                    <input id="billing_end_date" name="billing_end_date" data-billing-end type="date" value="{{ old('billing_end_date', $billingCycleEndDate->toDateString()) }}">
+                    @error('billing_end_date')
+                        <div class="error">{{ $message }}</div>
+                    @enderror
                 </div>
+                <div class="billing-filter-actions">
+                    <button class="btn" type="submit">Show Calendar</button>
+                </div>
+            </div>
+            <div class="billing-period-note">
+                <span>Selected Billing Period</span>
+                <strong>{{ $monthLabel }}</strong>
             </div>
         </section>
     </form>
@@ -171,6 +234,8 @@
     <form id="monthly-entry-form" class="card table-wrap" method="POST" action="{{ route('admin.vehicles.logs.monthly', $vehicle) }}" data-hour-rate="{{ (float) $vehicle->hire_per_hour_rate }}">
         @csrf
         <input name="month" type="hidden" value="{{ $selectedMonth }}">
+        <input name="billing_start_date" type="hidden" value="{{ $billingCycleStartDate->toDateString() }}">
+        <input name="billing_end_date" type="hidden" value="{{ $billingCycleEndDate->toDateString() }}">
 
         <table class="vehicle-sheet-table editable-sheet">
             <thead>
@@ -415,8 +480,47 @@
     </div>
 
     <script>
+        const billingFilter = document.querySelector('[data-billing-filter]');
+        const billingMonth = document.querySelector('[data-billing-month]');
+        const billingStart = document.querySelector('[data-billing-start]');
+        const billingEnd = document.querySelector('[data-billing-end]');
         const monthlyEntryForm = document.getElementById('monthly-entry-form');
         const defaultHourRate = parseFloat(monthlyEntryForm?.dataset.hourRate || 0);
+
+        function formatDateInput(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+
+            return `${year}-${month}-${day}`;
+        }
+
+        function addMonthsNoOverflow(date, months) {
+            const targetMonth = date.getMonth() + months;
+            const target = new Date(date.getFullYear(), targetMonth, 1);
+            const lastDay = new Date(target.getFullYear(), target.getMonth() + 1, 0).getDate();
+            target.setDate(Math.min(date.getDate(), lastDay));
+
+            return target;
+        }
+
+        function syncBillingDatesFromMonth() {
+            if (!billingFilter || !billingMonth || !billingStart || !billingEnd || !billingMonth.value) {
+                return;
+            }
+
+            const cycleStartDay = parseInt(billingFilter.dataset.cycleStartDay || '1', 10);
+            const [year, month] = billingMonth.value.split('-').map(Number);
+            const monthLastDay = new Date(year, month, 0).getDate();
+            const startDate = new Date(year, month - 1, Math.min(cycleStartDay, monthLastDay));
+            const endDate = addMonthsNoOverflow(startDate, 1);
+            endDate.setDate(endDate.getDate() - 1);
+
+            billingStart.value = formatDateInput(startDate);
+            billingEnd.value = formatDateInput(endDate);
+        }
+
+        billingMonth?.addEventListener('change', syncBillingDatesFromMonth);
 
         function parseDisplayTime(value) {
             const normalized = (value || '').trim().toUpperCase().replace(/\s+/g, ' ');

@@ -47,12 +47,13 @@ class VehicleController extends Controller
 
         $filters = $request->validate([
             'month' => ['nullable', 'date_format:Y-m'],
+            'billing_start_date' => ['nullable', 'date'],
+            'billing_end_date' => ['nullable', 'date', 'after_or_equal:billing_start_date'],
             'log_id' => ['nullable', 'integer'],
         ]);
 
         $selectedMonth = $filters['month'] ?? now()->format('Y-m');
-        $monthStart = $this->billingCycleStartDate($selectedMonth, $vehicle);
-        $monthEnd = $monthStart->copy()->addMonthNoOverflow()->subDay();
+        [$monthStart, $monthEnd] = $this->billingPeriodDates($selectedMonth, $vehicle, $filters);
         $selectedVehicleLog = null;
 
         $vehicleLogs = $vehicle->vehicleLogs()
@@ -404,6 +405,25 @@ class VehicleController extends Controller
         $startDay = min((int) ($vehicle->billing_cycle_start_day ?: 1), $month->daysInMonth);
 
         return $month->day($startDay)->startOfDay();
+    }
+
+    /**
+     * @param array<string, mixed> $filters
+     * @return array{0: Carbon, 1: Carbon}
+     */
+    private function billingPeriodDates(string $selectedMonth, Vehicle $vehicle, array $filters): array
+    {
+        $defaultStartDate = $this->billingCycleStartDate($selectedMonth, $vehicle);
+        $defaultEndDate = $defaultStartDate->copy()->addMonthNoOverflow()->subDay();
+
+        $startDate = filled($filters['billing_start_date'] ?? null)
+            ? Carbon::parse($filters['billing_start_date'])->startOfDay()
+            : $defaultStartDate;
+        $endDate = filled($filters['billing_end_date'] ?? null)
+            ? Carbon::parse($filters['billing_end_date'])->startOfDay()
+            : $defaultEndDate;
+
+        return [$startDate, $endDate];
     }
 
     private function billingCycleLabel(Carbon $startDate, Carbon $endDate): string
