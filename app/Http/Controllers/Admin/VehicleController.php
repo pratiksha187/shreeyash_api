@@ -101,6 +101,8 @@ class VehicleController extends Controller
             'selectedMonth' => $selectedMonth,
             'selectedVehicleLog' => $selectedVehicleLog,
             'monthLabel' => $this->billingCycleLabel($monthStart, $monthEnd),
+            'billingCycleStartDate' => $monthStart->copy(),
+            'billingCycleEndDate' => $monthEnd->copy(),
             'calendarRows' => $calendarRows,
             'summary' => [
                 'total_records' => $vehicleLogs->count(),
@@ -406,10 +408,6 @@ class VehicleController extends Controller
 
     private function billingCycleLabel(Carbon $startDate, Carbon $endDate): string
     {
-        if ($startDate->isSameMonth($endDate)) {
-            return $startDate->format('F Y');
-        }
-
         return $startDate->format('d M Y').' to '.$endDate->format('d M Y');
     }
 }

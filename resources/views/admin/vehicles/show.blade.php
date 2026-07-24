@@ -39,7 +39,7 @@
     <div class="page-header">
         <div>
             <h1>{{ $vehicle->vehicle_number }}</h1>
-            <p>{{ $vehicle->vehicle_type ?? 'Vehicle' }} records for {{ $monthLabel }}.</p>
+            <p>{{ $vehicle->vehicle_type ?? 'Vehicle' }} billing period: {{ $monthLabel }}.</p>
         </div>
         <div class="actions" style="margin-top: 0;">
             <a class="btn secondary" href="{{ route('admin.vehicles.index') }}">Back to Vehicles</a>
@@ -79,6 +79,14 @@
         <div class="card detail-item">
             <span>Cycle Start Day</span>
             <strong>{{ $vehicle->billing_cycle_start_day ?: 1 }}</strong>
+        </div>
+        <div class="card detail-item">
+            <span>Billing Start Date</span>
+            <strong>{{ $billingCycleStartDate->format('d M Y') }}</strong>
+        </div>
+        <div class="card detail-item">
+            <span>Billing End Date</span>
+            <strong>{{ $billingCycleEndDate->format('d M Y') }}</strong>
         </div>
         <div class="card detail-item">
             <span>Fixed Amount</span>
@@ -121,6 +129,10 @@
                     <label>&nbsp;</label>
                     <button class="btn" type="submit">Show Calendar</button>
                 </div>
+                <div class="field">
+                    <label>Billing Period</label>
+                    <input type="text" value="{{ $monthLabel }}" readonly>
+                </div>
             </div>
         </section>
     </form>
@@ -151,7 +163,7 @@
     <div class="page-header">
         <div>
             <h1>{{ $monthLabel }} Vehicle Sheet</h1>
-            <p>Daily duty hours, hourly amount, site, diesel, and bill totals are calculated automatically.</p>
+            <p>Billing start date {{ $billingCycleStartDate->format('d/m/Y') }} and end date {{ $billingCycleEndDate->format('d/m/Y') }}.</p>
         </div>
         <button class="btn secondary no-print" type="button" onclick="window.print()">Print Sheet</button>
     </div>
