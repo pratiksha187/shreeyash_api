@@ -111,6 +111,11 @@ class MonthlyAttendanceReportMailer
         foreach (CarbonPeriod::create($monthStart, $monthEnd) as $date) {
             $dateString = $date->toDateString();
             $attendance = $attendances->get($dateString);
+
+            if ($date->isSunday() && ! $attendance) {
+                continue;
+            }
+
             $status = $attendance?->status ?? 'not_marked';
             $checkIn = $attendance?->localCheckInAt();
             $checkOut = $attendance?->localCheckOutAt();
