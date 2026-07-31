@@ -233,7 +233,7 @@ class PaymentController extends Controller
             return $actualSundayCount;
         }
 
-        return max($actualSundayCount, $from->daysInMonth - 26);
+        return max(0, $from->daysInMonth - 26);
     }
 
     private function isPresentAttendanceHalfDay(Attendance $attendance, User $user): bool
