@@ -149,14 +149,16 @@ class PaymentController extends Controller
             }
         }
 
-        $weekoffCount = 0;
+        $actualSundayCount = 0;
         foreach (CarbonPeriod::create($from, '1 day', $to) as $date) {
             $dateString = $date->toDateString();
 
             if ($date->isSunday() && ! isset($holidayDates[$dateString])) {
-                $weekoffCount++;
+                $actualSundayCount++;
             }
         }
+
+        $weekoffCount = $this->weekoffCountForPeriod($from, $to, $actualSundayCount);
 
         $presentDays = count($presentDates);
         $halfDayCount = count($halfDayDates);
@@ -218,6 +220,18 @@ class PaymentController extends Controller
             'total_deduction' => $totalDeduction,
             'net_payable' => $netPayable,
         ];
+    }
+
+    private function weekoffCountForPeriod(Carbon $from, Carbon $to, int $actualSundayCount): int
+    {
+        $isFullMonth = $from->isSameDay($from->copy()->startOfMonth())
+            && $to->isSameDay($from->copy()->endOfMonth());
+
+        if (! $isFullMonth) {
+            return $actualSundayCount;
+        }
+
+        return max($actualSundayCount, $from->daysInMonth - 26);
     }
 
     public function slip(Request $request, int $payment): Response
