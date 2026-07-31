@@ -113,8 +113,6 @@ class PaymentController extends Controller
         $presentDates = [];
         $halfDayDates = [];
         $leaveDates = [];
-        $attendanceDates = [];
-        $cOffDates = [];
         $leaveDatesByType = [
             'casual' => [],
             'sick' => [],
@@ -124,14 +122,9 @@ class PaymentController extends Controller
 
         foreach ($attendances as $attendance) {
             $date = $attendance->attendance_date->toDateString();
-            $attendanceDates[$date] = true;
 
             if ($attendance->status === 'present') {
-                if ($attendance->attendance_date->isSunday()) {
-                    $cOffDates[$date] = true;
-                } else {
-                    $presentDates[$date] = true;
-                }
+                $presentDates[$date] = true;
             } elseif ($attendance->status === 'half_day') {
                 $halfDayDates[$date] = true;
             } elseif ($attendance->status === 'leave') {
@@ -151,7 +144,6 @@ class PaymentController extends Controller
                 ! isset($presentDates[$dateString])
                 && ! isset($halfDayDates[$dateString])
                 && ! isset($leaveDates[$dateString])
-                && ! isset($cOffDates[$dateString])
             ) {
                 $holidayDates[$dateString] = true;
             }
@@ -161,7 +153,7 @@ class PaymentController extends Controller
         foreach (CarbonPeriod::create($from, '1 day', $to) as $date) {
             $dateString = $date->toDateString();
 
-            if ($date->isSunday() && ! isset($attendanceDates[$dateString]) && ! isset($holidayDates[$dateString])) {
+            if ($date->isSunday() && ! isset($holidayDates[$dateString])) {
                 $weekoffCount++;
             }
         }
@@ -170,7 +162,7 @@ class PaymentController extends Controller
         $halfDayCount = count($halfDayDates);
         $leaveTotal = count($leaveDates);
         $holidayCount = count($holidayDates);
-        $cOffCount = count($cOffDates);
+        $cOffCount = 0;
         $paidDays = $presentDays + $weekoffCount + $holidayCount + $leaveTotal + $cOffCount + ($halfDayCount * 0.5);
 
         $attendancePayable = round($perDayRate * $paidDays, 2);
