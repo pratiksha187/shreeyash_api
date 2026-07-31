@@ -33,6 +33,15 @@
                 </div>
 
                 <div class="field">
+                    <label for="status">Status</label>
+                    <select id="status" name="status">
+                        <option value="" @selected($status === '')>All Employees</option>
+                        <option value="active" @selected($status === 'active')>Active</option>
+                        <option value="inactive" @selected($status === 'inactive')>Inactive</option>
+                    </select>
+                </div>
+
+                <div class="field">
                     <label>&nbsp;</label>
                     <button class="btn" type="submit">Search</button>
                 </div>
@@ -50,9 +59,10 @@
             <colgroup>
                 <col style="width: 22%;">
                 <col style="width: 24%;">
-                <col style="width: 14%;">
                 <col style="width: 13%;">
-                <col style="width: 13%;">
+                <col style="width: 10%;">
+                <col style="width: 12%;">
+                <col style="width: 12%;">
                 <col style="width: 14%;">
             </colgroup>
             <thead>
@@ -60,6 +70,7 @@
                     <th>Employee</th>
                     <th>Contact</th>
                     <th>Designation</th>
+                    <th>Status</th>
                     <th>Birthday</th>
                     <th>Dates</th>
                     <th>Action</th>
@@ -85,6 +96,11 @@
                         <td data-label="Designation">
                             <span class="designation-pill">{{ $employee->designation ?? 'Employee' }}</span>
                         </td>
+                        <td data-label="Status">
+                            <span class="status-pill {{ $employee->is_active ? 'status-approved' : 'status-rejected' }}">
+                                {{ $employee->is_active ? 'Active' : 'Inactive' }}
+                            </span>
+                        </td>
                         <td data-label="Birthday">
                             <div class="date-stack">
                                 <span>{{ $employee->date_of_birth?->format('d M Y') ?? '-' }}</span>
@@ -108,8 +124,8 @@
                     </tr>
                 @empty
                     <tr>
-                        <td class="empty" colspan="6">
-                            {{ $search !== '' ? 'No employees found for this search.' : 'No employees added yet.' }}
+                        <td class="empty" colspan="7">
+                            {{ $search !== '' || $status !== '' ? 'No employees found for this search.' : 'No employees added yet.' }}
                         </td>
                     </tr>
                 @endforelse

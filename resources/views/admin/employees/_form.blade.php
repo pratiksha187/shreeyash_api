@@ -91,6 +91,18 @@
                 <div class="error">{{ $message }}</div>
             @enderror
         </div>
+
+        <div class="field">
+            <label for="is_active">Account Status</label>
+            <select id="is_active" name="is_active" required>
+                @php($isActive = old('is_active', $employee ? (int) $employee->is_active : 1))
+                <option value="1" @selected((int) $isActive === 1)>Active</option>
+                <option value="0" @selected((int) $isActive === 0)>Inactive</option>
+            </select>
+            @error('is_active')
+                <div class="error">{{ $message }}</div>
+            @enderror
+        </div>
     </div>
 
     <div class="form-grid three">

@@ -27,12 +27,17 @@ class EmployeeController extends Controller
 
         $filters = $request->validate([
             'search' => ['nullable', 'string', 'max:255'],
+            'status' => ['nullable', Rule::in(['active', 'inactive'])],
         ]);
         $search = trim((string) ($filters['search'] ?? ''));
+        $status = $filters['status'] ?? '';
 
         $employeesQuery = User::query()
             ->forCurrentCompany()
             ->employees()
+            ->when($status !== '', function ($query) use ($status) {
+                $query->where('is_active', $status === 'active');
+            })
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($query) use ($search) {
                     $query->where('name', 'like', '%'.$search.'%')
@@ -54,6 +59,7 @@ class EmployeeController extends Controller
         return view('admin.employees.index', [
             'employees' => $employees,
             'search' => $search,
+            'status' => $status,
         ]);
     }
 
@@ -269,6 +275,7 @@ class EmployeeController extends Controller
             'advance' => ['nullable', 'numeric', 'min:0'],
             'pf' => ['nullable', 'numeric', 'min:0'],
             'designation' => ['nullable', 'string', 'max:255', Rule::exists('roles', 'name')],
+            'is_active' => ['required', 'boolean'],
         ]);
 
         $plainPassword = $data['password'];
@@ -277,7 +284,7 @@ class EmployeeController extends Controller
         $data['password'] = Hash::make($data['password']);
         $data['company_id'] = app(Tenant::class)->id();
         $data['role'] = 'employee';
-        $data['is_active'] = true;
+        $data['is_active'] = (bool) $data['is_active'];
 
         $employee = User::query()->create($data);
         session()->put("employee_plain_passwords.{$employee->id}", $plainPassword);
@@ -320,6 +327,7 @@ class EmployeeController extends Controller
             'advance' => ['nullable', 'numeric', 'min:0'],
             'pf' => ['nullable', 'numeric', 'min:0'],
             'designation' => ['nullable', 'string', 'max:255', Rule::exists('roles', 'name')],
+            'is_active' => ['required', 'boolean'],
         ]);
 
         unset($data['password_confirmation']);
