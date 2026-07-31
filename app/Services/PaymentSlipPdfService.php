@@ -56,7 +56,7 @@ class PaymentSlipPdfService
             ['Conveyance 20%', 'Rs. ' . number_format((float) $payment->conveyance_20, 2)],
             ['Other Allowance', 'Rs. ' . number_format((float) $payment->other_allowance, 2)],
             ['OT/Arrears/Penalty', 'Rs. ' . number_format((float) ($payment->ot_arrears_penalty ?? 0), 2)],
-            ['Gross Payable', 'Rs. ' . number_format((float) $payment->gross_payable, 2)],
+            ['Gross Payable', 'Rs. ' . number_format((float) $payment->gross_payable, 0)],
         ], 24, 10, [0]);
         $deductionsY = $this->pdfTable($content, 315, $tableY, [130, 100], [
             ['PF', 'Rs. ' . number_format((float) $payment->pf_12, 2)],
@@ -74,7 +74,7 @@ class PaymentSlipPdfService
         $content .= $this->pdfFillColor(0.96, 0.91, 0.76);
         $content .= $this->pdfRect(50, $y - 30, 495, 34, true);
         $this->pdfTable($content, 50, $y, [245, 250], [
-            ['Net Payable', 'Rs. ' . number_format((float) $payment->net_payable, 2)],
+            ['Net Payable', 'Rs. ' . number_format((float) $payment->net_payable, 0)],
         ], 30, 13, [0]);
 
         $content .= $this->pdfStrokeColor(0.72, 0.72, 0.72);

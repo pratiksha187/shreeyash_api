@@ -173,7 +173,7 @@ class PaymentController extends Controller
 
         $attendancePayable = round($perDayRate * $paidDays, 2);
         $otArrearsPenalty = round((float) ($adjustments['ot_arrears_penalty'] ?? 0), 2);
-        $grossPayable = round($attendancePayable + $otArrearsPenalty, 2);
+        $grossPayable = round($attendancePayable + $otArrearsPenalty);
         $basic60 = round($grossSalary * 0.6, 2);
         $hra5 = round($grossSalary * 0.05, 2);
         $conveyance20 = round($grossSalary * 0.2, 2);
@@ -188,7 +188,7 @@ class PaymentController extends Controller
         $loanDeduction = round((float) ($adjustments['loan_deduction'] ?? 0), 2);
         $loanClosing = max(0, round($loanOpening - $loanDeduction, 2));
         $totalDeduction = round($pf + $insurance + $pt + $lateMark + $advance + $loanDeduction, 2);
-        $netPayable = round($grossPayable - $totalDeduction, 2);
+        $netPayable = round($grossPayable - $totalDeduction);
 
         return [
             'company_id' => app(Tenant::class)->id(),
