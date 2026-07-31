@@ -168,10 +168,10 @@ class PaymentController extends Controller
         $attendancePayable = round($perDayRate * $paidDays, 2);
         $otArrearsPenalty = round((float) ($adjustments['ot_arrears_penalty'] ?? 0), 2);
         $grossPayable = round($attendancePayable + $otArrearsPenalty, 2);
-        $basic60 = round($grossPayable * 0.6, 2);
-        $hra5 = round($grossPayable * 0.05, 2);
-        $conveyance20 = round($grossPayable * 0.2, 2);
-        $otherAllowance = round($grossPayable - $basic60 - $hra5 - $conveyance20, 2);
+        $basic60 = round($grossSalary * 0.6, 2);
+        $hra5 = round($grossSalary * 0.05, 2);
+        $conveyance20 = round($grossSalary * 0.2, 2);
+        $otherAllowance = round($grossSalary - $basic60 - $hra5 - $conveyance20, 2);
 
         $pf = (float) ($user->pf ?? 0);
         $insurance = (float) ($user->insurance ?? 0);
