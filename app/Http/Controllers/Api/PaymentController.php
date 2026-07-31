@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Attendance;
 use App\Models\Payment;
 use App\Models\User;
 use App\Services\PaymentSlipPdfService;
@@ -123,10 +124,10 @@ class PaymentController extends Controller
         foreach ($attendances as $attendance) {
             $date = $attendance->attendance_date->toDateString();
 
-            if ($attendance->status === 'present') {
-                $presentDates[$date] = true;
-            } elseif ($attendance->status === 'half_day') {
+            if ($attendance->status === 'half_day' || $this->isPresentAttendanceHalfDay($attendance, $user)) {
                 $halfDayDates[$date] = true;
+            } elseif ($attendance->status === 'present') {
+                $presentDates[$date] = true;
             } elseif ($attendance->status === 'leave') {
                 $leaveDates[$date] = true;
                 $leaveType = $attendance->leave_type ?? 'casual';
@@ -162,10 +163,11 @@ class PaymentController extends Controller
 
         $presentDays = count($presentDates);
         $halfDayCount = count($halfDayDates);
+        $presentDaysInMonth = $presentDays + ($halfDayCount * 0.5);
         $leaveTotal = count($leaveDates);
         $holidayCount = count($holidayDates);
         $cOffCount = 0;
-        $paidDays = $presentDays + $weekoffCount + $holidayCount + $leaveTotal + $cOffCount + ($halfDayCount * 0.5);
+        $paidDays = $presentDaysInMonth + $weekoffCount + $holidayCount + $leaveTotal + $cOffCount;
 
         $attendancePayable = round($perDayRate * $paidDays, 2);
         $otArrearsPenalty = round((float) ($adjustments['ot_arrears_penalty'] ?? 0), 2);
@@ -192,7 +194,7 @@ class PaymentController extends Controller
             'from_date' => $from->toDateString(),
             'to_date' => $to->toDateString(),
             'present_days' => $paidDays,
-            'present_days_in_month' => $presentDays,
+            'present_days_in_month' => $presentDaysInMonth,
             'weekoff_count' => $weekoffCount,
             'holiday_count' => $holidayCount,
             'c_off_count' => $cOffCount,
@@ -232,6 +234,38 @@ class PaymentController extends Controller
         }
 
         return max($actualSundayCount, $from->daysInMonth - 26);
+    }
+
+    private function isPresentAttendanceHalfDay(Attendance $attendance, User $user): bool
+    {
+        if ($attendance->status !== 'present') {
+            return false;
+        }
+
+        $checkIn = $attendance->localCheckInAt();
+        $checkOut = $attendance->localCheckOutAt();
+
+        if (! $checkIn || ! $checkOut || ! $attendance->attendance_date) {
+            return false;
+        }
+
+        $workDate = $attendance->attendance_date->copy();
+        $start = $workDate->copy()->setTimeFrom($checkIn);
+        $end = $workDate->copy()->setTimeFrom($checkOut);
+
+        if ($end->lessThan($start)) {
+            $end->addDay();
+        }
+
+        $workedMinutes = (int) $start->diffInMinutes($end);
+
+        return $workedMinutes >= 240
+            && $workedMinutes <= (int) ceil($this->expectedWorkMinutes($user) / 2);
+    }
+
+    private function expectedWorkMinutes(User $user): int
+    {
+        return max(1, (int) round(((float) ($user->hours_per_day ?: 9)) * 60));
     }
 
     public function slip(Request $request, int $payment): Response
