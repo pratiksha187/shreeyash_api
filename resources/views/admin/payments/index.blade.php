@@ -114,6 +114,9 @@
                 <tr>
                     <th>Employee</th>
                     <th>Period</th>
+                    <th>Present Days</th>
+                    <th>Half Days</th>
+                    <th>Week Offs</th>
                     <th>Paid Days</th>
                     <th>Gross Payable</th>
                     <th>Deductions</th>
@@ -127,6 +130,9 @@
                     <tr>
                         <td>{{ $payment->user?->name ?? '-' }}</td>
                         <td>{{ $payment->from_date?->format('d M Y') }} - {{ $payment->to_date?->format('d M Y') }}</td>
+                        <td>{{ $payment->present_days_in_month }}</td>
+                        <td>{{ $payment->half_day_count }}</td>
+                        <td>{{ $payment->weekoff_count }}</td>
                         <td>{{ $payment->present_days }}</td>
                         <td>{{ number_format((float) $payment->gross_payable, 2) }}</td>
                         <td>{{ number_format((float) $payment->total_deduction, 2) }}</td>
@@ -138,7 +144,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td class="empty" colspan="8">No payments generated yet.</td>
+                        <td class="empty" colspan="11">No payments generated yet.</td>
                     </tr>
                 @endforelse
             </tbody>
