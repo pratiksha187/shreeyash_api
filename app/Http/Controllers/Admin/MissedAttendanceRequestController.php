@@ -17,13 +17,25 @@ class MissedAttendanceRequestController extends Controller
 {
     public function index(Request $request): View
     {
+        $request->merge([
+            'user_id' => $this->normalizeAllFilter($request->input('user_id')),
+            'status' => $this->normalizeAllFilter($request->input('status')),
+            'request_for' => $this->normalizeAllFilter($request->input('request_for')),
+        ]);
+
         $filters = $request->validate([
             'from_date' => ['nullable', 'date'],
             'to_date' => ['nullable', 'date', 'after_or_equal:from_date'],
-            'user_id' => ['nullable', 'exists:users,id'],
+            'user_id' => ['nullable', 'integer'],
             'status' => ['nullable', Rule::in(MissedAttendanceRequest::STATUSES)],
             'request_for' => ['nullable', Rule::in(MissedAttendanceRequest::REQUEST_TYPES)],
         ]);
+
+        if (! empty($filters['user_id']) && ! User::query()->forCurrentCompany()->employees()->whereKey($filters['user_id'])->exists()) {
+            throw ValidationException::withMessages([
+                'user_id' => 'The selected employee is invalid.',
+            ]);
+        }
 
         $fromDate = isset($filters['from_date'])
             ? Carbon::parse($filters['from_date'])->toDateString()
@@ -127,6 +139,21 @@ class MissedAttendanceRequestController extends Controller
         return back()->with('success', 'Missed attendance request updated successfully.');
     }
 
+    private function normalizeAllFilter(mixed $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $value = trim((string) $value);
+
+        if ($value === '' || $value === '0' || in_array(strtolower($value), ['all', 'all employees', 'all status', 'all types'], true)) {
+            return null;
+        }
+
+        return $value;
+    }
+
     private function applyAttendanceApproval(
         MissedAttendanceRequest $missedAttendanceRequest,
         ?Attendance $attendance,
@@ -188,3 +215,4 @@ class MissedAttendanceRequestController extends Controller
         );
     }
 }
+
