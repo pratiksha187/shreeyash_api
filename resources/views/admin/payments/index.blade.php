@@ -86,6 +86,17 @@
                 </div>
 
                 <div class="field">
+                    <label for="deduct_pf">PF</label>
+                    <label style="display:flex;align-items:center;gap:10px;min-height:52px;padding:0 14px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;color:#0f172a;font-weight:800;">
+                        <input id="deduct_pf" name="deduct_pf" type="checkbox" value="1" @checked(old('deduct_pf')) style="width:18px;height:18px;">
+                        Cut PF 12% on Basic 60%
+                    </label>
+                    @error('deduct_pf')
+                        <div class="error">{{ $message }}</div>
+                    @enderror
+                </div>
+
+                <div class="field">
                     <label for="loan_opening">Loan Opening</label>
                     <input id="loan_opening" name="loan_opening" type="number" min="0" step="0.01" value="{{ old('loan_opening', 0) }}">
                     @error('loan_opening')

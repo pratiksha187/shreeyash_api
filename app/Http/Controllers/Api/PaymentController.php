@@ -50,6 +50,7 @@ class PaymentController extends Controller
             'ot_arrears_penalty' => ['nullable', 'numeric', 'min:-9999999999.99', 'max:9999999999.99'],
             'late_mark' => ['nullable', 'numeric', 'min:0', 'max:9999999999.99'],
             'advance' => ['nullable', 'numeric', 'min:0', 'max:9999999999.99'],
+            'deduct_pf' => ['nullable', 'boolean'],
             'loan_opening' => ['nullable', 'numeric', 'min:0', 'max:9999999999.99'],
             'loan_deduction' => ['nullable', 'numeric', 'min:0', 'max:9999999999.99'],
         ]);
@@ -178,7 +179,8 @@ class PaymentController extends Controller
         $conveyance20 = round($grossPayable * 0.2, 2);
         $otherAllowance = round($grossPayable - $basic60 - $hra5 - $conveyance20, 2);
 
-        $pf = (float) ($user->pf ?? 0);
+        $deductPf = (bool) ($adjustments['deduct_pf'] ?? false);
+        $pf = $deductPf ? round($basic60 * 0.12, 2) : 0;
         $insurance = (float) ($user->insurance ?? 0);
         $pt = (float) ($user->pt ?? 0);
         $advance = round((float) ($adjustments['advance'] ?? 0), 2);
