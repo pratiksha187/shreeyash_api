@@ -103,6 +103,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/payments', [PaymentController::class, 'index'])->name('payments.index');
         Route::post('/payments/generate', [PaymentController::class, 'generate'])->name('payments.generate');
         Route::get('/payments/{payment}/slip', [PaymentController::class, 'slip'])->name('payments.slip');
+        Route::delete('/payments/{payment}', [PaymentController::class, 'destroy'])->name('payments.destroy');
         Route::get('/diesel-purchases', [DailyDieselPurchaseController::class, 'index'])->name('diesel-purchases.index');
         Route::post('/diesel-purchases/monthly-entries', [DailyDieselPurchaseController::class, 'storeMonthly'])->name('diesel-purchases.monthly');
         Route::get('/machinery-diesel-logs', [MachineryDieselLogController::class, 'index'])->name('machinery-diesel-logs.index');

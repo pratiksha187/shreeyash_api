@@ -101,6 +101,23 @@ class PaymentController extends Controller
         ]);
     }
 
+    public function destroy(int $payment): RedirectResponse
+    {
+        $payment = Payment::query()
+            ->forCurrentCompany()
+            ->findOrFail($payment);
+
+        if ($payment->pdf_file_path) {
+            Storage::disk('local')->delete($payment->pdf_file_path);
+        }
+
+        $payment->delete();
+
+        return redirect()
+            ->route('admin.payments.index')
+            ->with('success', 'Payment deleted successfully.');
+    }
+
     private function calculatePayment(User $user, Carbon $from, Carbon $to, array $adjustments = []): array
     {
         $grossSalary = (float) ($user->salary ?? 0);

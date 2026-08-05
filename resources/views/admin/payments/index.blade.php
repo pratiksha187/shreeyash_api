@@ -131,6 +131,7 @@
                     <th>Net Payable</th>
                     <th>Loan Closing</th>
                     <th>PDF</th>
+                    <th>Action</th>
                 </tr>
             </thead>
             <tbody>
@@ -149,10 +150,17 @@
                         <td>
                             <a class="table-link" href="{{ route('admin.payments.slip', $payment) }}" target="_blank">Open Slip</a>
                         </td>
+                        <td>
+                            <form method="POST" action="{{ route('admin.payments.destroy', $payment) }}" onsubmit="return confirm('Delete this payment?');">
+                                @csrf
+                                @method('DELETE')
+                                <button class="btn danger small" type="submit">Delete</button>
+                            </form>
+                        </td>
                     </tr>
                 @empty
                     <tr>
-                        <td class="empty" colspan="11">No payments generated yet.</td>
+                        <td class="empty" colspan="12">No payments generated yet.</td>
                     </tr>
                 @endforelse
             </tbody>
