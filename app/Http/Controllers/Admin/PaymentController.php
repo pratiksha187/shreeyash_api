@@ -267,13 +267,17 @@ class PaymentController extends Controller
 
         $workedMinutes = (int) $start->diffInMinutes($end);
 
-        return $workedMinutes >= 240
-            && $workedMinutes <= (int) ceil($this->expectedWorkMinutes($user) / 2);
+        return $workedMinutes < $this->halfDayMaximumMinutes();
     }
 
     private function expectedWorkMinutes(User $user): int
     {
         return max(1, (int) round(((float) ($user->hours_per_day ?: 9)) * 60));
+    }
+
+    private function halfDayMaximumMinutes(): int
+    {
+        return 6 * 60;
     }
 
 }
