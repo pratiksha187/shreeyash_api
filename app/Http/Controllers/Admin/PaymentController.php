@@ -49,6 +49,7 @@ class PaymentController extends Controller
             'to_date' => ['required', 'date', 'after_or_equal:from_date'],
             'ot_arrears_penalty' => ['nullable', 'numeric', 'min:-9999999999.99', 'max:9999999999.99'],
             'late_mark' => ['nullable', 'numeric', 'min:0', 'max:9999999999.99'],
+            'advance' => ['nullable', 'numeric', 'min:0', 'max:9999999999.99'],
             'loan_opening' => ['nullable', 'numeric', 'min:0', 'max:9999999999.99'],
             'loan_deduction' => ['nullable', 'numeric', 'min:0', 'max:9999999999.99'],
         ]);
@@ -182,7 +183,7 @@ class PaymentController extends Controller
         $pf = (float) ($user->pf ?? 0);
         $insurance = (float) ($user->insurance ?? 0);
         $pt = (float) ($user->pt ?? 0);
-        $advance = (float) ($user->advance ?? 0);
+        $advance = round((float) ($adjustments['advance'] ?? 0), 2);
         $lateMark = round((float) ($adjustments['late_mark'] ?? 0), 2);
         $loanOpening = round((float) ($adjustments['loan_opening'] ?? 0), 2);
         $loanDeduction = round((float) ($adjustments['loan_deduction'] ?? 0), 2);

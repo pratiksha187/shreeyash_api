@@ -78,6 +78,14 @@
                 </div>
 
                 <div class="field">
+                    <label for="advance">Advance</label>
+                    <input id="advance" name="advance" type="number" min="0" step="0.01" value="{{ old('advance', 0) }}">
+                    @error('advance')
+                        <div class="error">{{ $message }}</div>
+                    @enderror
+                </div>
+
+                <div class="field">
                     <label for="loan_opening">Loan Opening</label>
                     <input id="loan_opening" name="loan_opening" type="number" min="0" step="0.01" value="{{ old('loan_opening', 0) }}">
                     @error('loan_opening')

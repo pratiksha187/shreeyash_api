@@ -302,6 +302,7 @@ class ProjectTaskController extends Controller
         if (! $project) {
             return;
         }
+        
 
         $tasks = $project->tasks()->get(['status', 'progress_percent']);
 
