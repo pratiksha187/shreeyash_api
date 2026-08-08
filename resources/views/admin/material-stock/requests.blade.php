@@ -125,15 +125,17 @@
 
         .material-requests-page .request-detail-panel {
             display: grid;
-            grid-template-columns: minmax(0, 1fr) minmax(260px, .75fr) minmax(180px, .45fr);
-            gap: 18px;
-            padding: 16px;
+            grid-template-columns: minmax(360px, 1.1fr) minmax(280px, .8fr) minmax(180px, .45fr);
+            gap: 16px;
+            padding: 18px 20px;
             border-top: 1px solid var(--line);
+            align-items: start;
         }
 
         .material-requests-page .request-detail-card {
             display: grid;
-            gap: 10px;
+            align-content: start;
+            gap: 12px;
             min-width: 0;
         }
 
@@ -142,10 +144,18 @@
             color: #0f172a;
             font-size: 16px;
             line-height: 1.25;
+            text-align: center;
         }
 
-        .material-requests-page .request-delete-card {
-            align-content: start;
+        .material-requests-page .request-message-card {
+            display: grid;
+            align-content: center;
+            min-height: 118px;
+            padding: 12px;
+            border: 1px dashed #cbd5e1;
+            border-radius: 8px;
+            background: #fff;
+            text-align: center;
         }
 
         .material-requests-page .request-delete-card form {
@@ -165,7 +175,7 @@
         .material-requests-page .inline-status-form {
             display: grid;
             grid-template-columns: 1fr;
-            gap: 8px;
+            gap: 9px;
             min-width: 0;
         }
 
@@ -187,6 +197,13 @@
         .material-requests-page .inline-status-form .btn.small {
             width: 100%;
             min-height: 34px;
+            justify-content: center;
+        }
+
+        .material-requests-page .request-detail-card .btn.small,
+        .material-requests-page .request-detail-card a.btn.small {
+            width: 100%;
+            min-height: 42px;
             justify-content: center;
         }
 
@@ -426,21 +443,29 @@
                                                 <button class="btn small" type="submit">Send / Issue Material</button>
                                             </form>
                                         @elseif (in_array($requestRow->status, ['approved', 'partially_approved'], true) && ! $requestRow->material_id)
-                                            <span class="table-subtext">Typed material request. Add this material in Material Master, purchase/add stock, then issue.</span>
+                                            <div class="request-message-card">
+                                                <span class="table-subtext">Typed material request. Add this material in Material Master, purchase/add stock, then issue.</span>
+                                            </div>
                                             <a class="btn small" href="{{ route('admin.materials.index') }}">Add Material</a>
                                         @elseif (in_array($requestRow->status, ['approved', 'partially_approved'], true) && $remainingApproved > 0 && $available <= 0)
-                                            <span class="table-subtext">No stock available for issue.</span>
+                                            <div class="request-message-card">
+                                                <span class="table-subtext">No stock available for issue.</span>
+                                            </div>
                                             <a class="btn small" href="{{ route('admin.product-purchases.index') }}">Create Purchase</a>
                                         @elseif ($requestRow->status === 'purchase_required')
                                             <a class="btn small" href="{{ route('admin.product-purchases.index') }}">Create Purchase</a>
                                         @else
-                                            <span class="table-subtext">No issue action</span>
+                                            <div class="request-message-card">
+                                                <span class="table-subtext">No issue action</span>
+                                            </div>
                                         @endif
                                     </div>
                                     <div class="request-detail-card request-delete-card">
                                         <h3>Delete</h3>
                                         @if ((float) $requestRow->issued_quantity > 0)
-                                            <span class="table-subtext">Issued request cannot be deleted.</span>
+                                            <div class="request-message-card">
+                                                <span class="table-subtext">Issued request cannot be deleted.</span>
+                                            </div>
                                         @else
                                             <form method="POST" action="{{ route('admin.material-requests.destroy', $requestRow) }}" onsubmit="return confirm('Delete this material request?');">
                                                 @csrf
