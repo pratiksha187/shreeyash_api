@@ -9,60 +9,68 @@ return new class extends Migration
     public function up(): void
     {
         if (Schema::hasTable('suppliers')) {
-            Schema::table('suppliers', function (Blueprint $table) {
-                if (! Schema::hasColumn('suppliers', 'gst_registration_type')) {
-                    $table->string('gst_registration_type', 80)->nullable()->after('gstin');
+            $addSupplierColumn = function (string $column, callable $definition): void {
+                if (! Schema::hasColumn('suppliers', $column)) {
+                    Schema::table('suppliers', $definition);
                 }
-                if (! Schema::hasColumn('suppliers', 'gst_return_status')) {
-                    $table->string('gst_return_status', 80)->nullable()->after('gst_registration_type');
-                }
-                if (! Schema::hasColumn('suppliers', 'tds_section')) {
-                    $table->string('tds_section', 80)->nullable()->after('gst_return_status');
-                }
-                if (! Schema::hasColumn('suppliers', 'tds_percent')) {
-                    $table->decimal('tds_percent', 5, 2)->nullable()->after('tds_section');
-                }
-                if (! Schema::hasColumn('suppliers', 'e_invoice_applicable')) {
-                    $table->boolean('e_invoice_applicable')->default(false)->after('tds_percent');
-                }
-                if (! Schema::hasColumn('suppliers', 'e_way_bill_applicable')) {
-                    $table->boolean('e_way_bill_applicable')->default(false)->after('e_invoice_applicable');
-                }
-                if (! Schema::hasColumn('suppliers', 'vendor_reconciliation_status')) {
-                    $table->string('vendor_reconciliation_status', 80)->nullable()->after('e_way_bill_applicable');
-                }
-                if (! Schema::hasColumn('suppliers', 'auditor_export_note')) {
-                    $table->text('auditor_export_note')->nullable()->after('vendor_reconciliation_status');
-                }
+            };
+
+            $addSupplierColumn('gst_registration_type', function (Blueprint $table) {
+                $table->string('gst_registration_type', 80)->nullable()->after('gstin');
+            });
+            $addSupplierColumn('gst_return_status', function (Blueprint $table) {
+                $table->string('gst_return_status', 80)->nullable()->after('gst_registration_type');
+            });
+            $addSupplierColumn('tds_section', function (Blueprint $table) {
+                $table->string('tds_section', 80)->nullable()->after('gst_return_status');
+            });
+            $addSupplierColumn('tds_percent', function (Blueprint $table) {
+                $table->decimal('tds_percent', 5, 2)->nullable()->after('tds_section');
+            });
+            $addSupplierColumn('e_invoice_applicable', function (Blueprint $table) {
+                $table->boolean('e_invoice_applicable')->default(false)->after('tds_percent');
+            });
+            $addSupplierColumn('e_way_bill_applicable', function (Blueprint $table) {
+                $table->boolean('e_way_bill_applicable')->default(false)->after('e_invoice_applicable');
+            });
+            $addSupplierColumn('vendor_reconciliation_status', function (Blueprint $table) {
+                $table->string('vendor_reconciliation_status', 80)->nullable()->after('e_way_bill_applicable');
+            });
+            $addSupplierColumn('auditor_export_note', function (Blueprint $table) {
+                $table->text('auditor_export_note')->nullable()->after('vendor_reconciliation_status');
             });
         }
 
         if (Schema::hasTable('purchase_orders')) {
-            Schema::table('purchase_orders', function (Blueprint $table) {
-                if (! Schema::hasColumn('purchase_orders', 'supplier_tds_section')) {
-                    $table->string('supplier_tds_section', 80)->nullable()->after('supplier_ref');
+            $addPurchaseOrderColumn = function (string $column, callable $definition): void {
+                if (! Schema::hasColumn('purchase_orders', $column)) {
+                    Schema::table('purchase_orders', $definition);
                 }
-                if (! Schema::hasColumn('purchase_orders', 'tds_percent')) {
-                    $table->decimal('tds_percent', 5, 2)->default(0)->after('supplier_tds_section');
-                }
-                if (! Schema::hasColumn('purchase_orders', 'tds_amount')) {
-                    $table->decimal('tds_amount', 15, 2)->default(0)->after('total_amount');
-                }
-                if (! Schema::hasColumn('purchase_orders', 'net_payable_amount')) {
-                    $table->decimal('net_payable_amount', 15, 2)->default(0)->after('tds_amount');
-                }
-                if (! Schema::hasColumn('purchase_orders', 'e_invoice_applicable')) {
-                    $table->boolean('e_invoice_applicable')->default(false)->after('net_payable_amount');
-                }
-                if (! Schema::hasColumn('purchase_orders', 'e_way_bill_applicable')) {
-                    $table->boolean('e_way_bill_applicable')->default(false)->after('e_invoice_applicable');
-                }
-                if (! Schema::hasColumn('purchase_orders', 'vendor_reconciliation_status')) {
-                    $table->string('vendor_reconciliation_status', 80)->nullable()->after('e_way_bill_applicable');
-                }
-                if (! Schema::hasColumn('purchase_orders', 'auditor_export_note')) {
-                    $table->text('auditor_export_note')->nullable()->after('vendor_reconciliation_status');
-                }
+            };
+
+            $addPurchaseOrderColumn('supplier_tds_section', function (Blueprint $table) {
+                $table->string('supplier_tds_section', 80)->nullable()->after('supplier_ref');
+            });
+            $addPurchaseOrderColumn('tds_percent', function (Blueprint $table) {
+                $table->decimal('tds_percent', 5, 2)->default(0)->after('supplier_tds_section');
+            });
+            $addPurchaseOrderColumn('tds_amount', function (Blueprint $table) {
+                $table->decimal('tds_amount', 15, 2)->default(0)->after('total_amount');
+            });
+            $addPurchaseOrderColumn('net_payable_amount', function (Blueprint $table) {
+                $table->decimal('net_payable_amount', 15, 2)->default(0)->after('tds_amount');
+            });
+            $addPurchaseOrderColumn('e_invoice_applicable', function (Blueprint $table) {
+                $table->boolean('e_invoice_applicable')->default(false)->after('net_payable_amount');
+            });
+            $addPurchaseOrderColumn('e_way_bill_applicable', function (Blueprint $table) {
+                $table->boolean('e_way_bill_applicable')->default(false)->after('e_invoice_applicable');
+            });
+            $addPurchaseOrderColumn('vendor_reconciliation_status', function (Blueprint $table) {
+                $table->string('vendor_reconciliation_status', 80)->nullable()->after('e_way_bill_applicable');
+            });
+            $addPurchaseOrderColumn('auditor_export_note', function (Blueprint $table) {
+                $table->text('auditor_export_note')->nullable()->after('vendor_reconciliation_status');
             });
         }
     }

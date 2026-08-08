@@ -7,13 +7,17 @@ use App\Models\Supplier;
 use App\Support\Tenant;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\View\View;
 
 class SupplierController extends Controller
 {
     public function index(): View
     {
+        $this->ensureSupplierStatutoryColumns();
+
         return view('admin.suppliers.index', [
             'suppliers' => Supplier::query()->forCurrentCompany()->orderBy('name')->paginate(20),
         ]);
@@ -21,6 +25,8 @@ class SupplierController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        $this->ensureSupplierStatutoryColumns();
+
         Supplier::query()->create($this->validatedData($request));
 
         return back()->with('success', 'Supplier added successfully.');
@@ -28,6 +34,8 @@ class SupplierController extends Controller
 
     public function update(Request $request, int $supplier): RedirectResponse
     {
+        $this->ensureSupplierStatutoryColumns();
+
         $supplier = Supplier::query()->forCurrentCompany()->findOrFail($supplier);
         $supplier->update($this->validatedData($request, $supplier->id));
 
@@ -83,5 +91,46 @@ class SupplierController extends Controller
         $connectionName = app(Tenant::class)->connectionName();
 
         return $connectionName ? $connectionName.'.'.$table : $table;
+    }
+
+    private function ensureSupplierStatutoryColumns(): void
+    {
+        $connection = app(Tenant::class)->connectionName() ?: config('database.default');
+        $schema = Schema::connection($connection);
+
+        if (! $schema->hasTable('suppliers')) {
+            return;
+        }
+
+        $addColumn = function (string $column, callable $definition) use ($schema) {
+            if (! $schema->hasColumn('suppliers', $column)) {
+                $schema->table('suppliers', $definition);
+            }
+        };
+
+        $addColumn('gst_registration_type', function (Blueprint $table) {
+            $table->string('gst_registration_type', 80)->nullable()->after('gstin');
+        });
+        $addColumn('gst_return_status', function (Blueprint $table) {
+            $table->string('gst_return_status', 80)->nullable()->after('gst_registration_type');
+        });
+        $addColumn('tds_section', function (Blueprint $table) {
+            $table->string('tds_section', 80)->nullable()->after('gst_return_status');
+        });
+        $addColumn('tds_percent', function (Blueprint $table) {
+            $table->decimal('tds_percent', 5, 2)->nullable()->after('tds_section');
+        });
+        $addColumn('e_invoice_applicable', function (Blueprint $table) {
+            $table->boolean('e_invoice_applicable')->default(false)->after('tds_percent');
+        });
+        $addColumn('e_way_bill_applicable', function (Blueprint $table) {
+            $table->boolean('e_way_bill_applicable')->default(false)->after('e_invoice_applicable');
+        });
+        $addColumn('vendor_reconciliation_status', function (Blueprint $table) {
+            $table->string('vendor_reconciliation_status', 80)->nullable()->after('e_way_bill_applicable');
+        });
+        $addColumn('auditor_export_note', function (Blueprint $table) {
+            $table->text('auditor_export_note')->nullable()->after('vendor_reconciliation_status');
+        });
     }
 }
