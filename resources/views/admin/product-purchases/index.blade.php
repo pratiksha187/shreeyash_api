@@ -175,6 +175,10 @@
             min-width: 0;
         }
 
+        .purchase-material-select {
+            text-align: left;
+        }
+
         .purchase-actions {
             display: flex;
             flex-wrap: wrap;
@@ -387,7 +391,14 @@
                 </div>
                 <div class="field wide">
                     <label>Item Name</label>
-                    <input name="product_name" required>
+                    <select class="js-material-select" name="material_id" required>
+                        <option value="">Select material</option>
+                        @foreach ($materials as $material)
+                            <option value="{{ $material->id }}" data-name="{{ $material->name }}" data-unit="{{ $material->unit }}" @selected((string) old('material_id') === (string) $material->id)>{{ $material->name }}{{ $material->unit ? ' - '.$material->unit : '' }}</option>
+                        @endforeach
+                    </select>
+                    <input name="product_name" type="hidden" value="{{ old('product_name') }}" required>
+                    <input name="unit" type="hidden" value="{{ old('unit') }}">
                 </div>
                 <div class="field">
                     <label>Size</label>
@@ -409,8 +420,6 @@
                     <label>Amt</label>
                     <div class="amount-preview js-total-preview">0.00</div>
                     <input class="js-total" type="hidden" value="0.00" readonly>
-                    <input name="material_id" type="hidden">
-                    <input name="unit" type="hidden">
                     <input name="quantity" type="hidden" value="0">
                     <input name="tax_amount" type="hidden" value="0">
                     <input name="transport_amount" type="hidden" value="0">
@@ -470,14 +479,30 @@
                                 <td><input class="purchase-date-input sheet-highlight" form="{{ $formId }}" name="purchase_date" type="date" value="{{ $purchase->purchase_date->toDateString() }}" required></td>
                                 <td><input class="purchase-text-input" form="{{ $formId }}" name="supplier_name" value="{{ $purchase->supplier_name }}"></td>
                                 <td><input form="{{ $formId }}" name="invoice_no" value="{{ $purchase->invoice_no }}"></td>
-                                <td><input class="purchase-text-input" form="{{ $formId }}" name="product_name" value="{{ $purchase->product_name }}" required></td>
+                                <td>
+                                    <select class="purchase-material-select js-material-select" form="{{ $formId }}" name="material_id" required>
+                                        @if (! $purchase->material_id)
+                                            <option value="" selected>{{ $purchase->product_name ?: 'Select material' }}</option>
+                                        @else
+                                            <option value="">Select material</option>
+                                        @endif
+                                        @foreach ($materials as $material)
+                                            <option
+                                                value="{{ $material->id }}"
+                                                data-name="{{ $material->name }}"
+                                                data-unit="{{ $material->unit }}"
+                                                @selected((int) $purchase->material_id === (int) $material->id)
+                                            >{{ $material->name }}{{ $material->unit ? ' - '.$material->unit : '' }}</option>
+                                        @endforeach
+                                    </select>
+                                    <input form="{{ $formId }}" name="product_name" type="hidden" value="{{ $purchase->product_name }}" required>
+                                </td>
                                 <td><input class="sheet-highlight" form="{{ $formId }}" name="size" value="{{ $purchase->size }}"></td>
                                 <td><input class="js-pcs" form="{{ $formId }}" name="pcs" type="number" min="0" step="0.01" value="{{ number_format($purchase->pcs, 2, '.', '') }}"></td>
                                 <td><input class="js-weight" form="{{ $formId }}" name="weight_kg" type="number" min="0" step="0.01" value="{{ number_format($purchase->weight_kg, 2, '.', '') }}"></td>
                                 <td><input class="js-rate" form="{{ $formId }}" name="rate" type="number" min="0" step="0.01" value="{{ number_format($purchase->rate, 2, '.', '') }}" required></td>
                                 <td>
                                     <input class="js-total" type="number" value="{{ number_format($purchase->total_amount, 2, '.', '') }}" readonly>
-                                    <input form="{{ $formId }}" name="material_id" type="hidden" value="{{ $purchase->material_id }}">
                                     <input form="{{ $formId }}" name="unit" type="hidden" value="{{ $purchase->unit }}">
                                     <input form="{{ $formId }}" name="quantity" type="hidden" value="{{ number_format($purchase->quantity, 2, '.', '') }}">
                                     <input form="{{ $formId }}" name="tax_amount" type="hidden" value="{{ number_format($purchase->tax_amount, 2, '.', '') }}">
@@ -521,6 +546,26 @@
         }
 
         document.querySelectorAll('[data-purchase-row]').forEach((row) => {
+            const applyMaterial = () => {
+                const materialSelect = row.querySelector('.js-material-select');
+                const selected = materialSelect?.selectedOptions[0];
+                const productName = row.querySelector('input[name="product_name"]');
+                const unit = row.querySelector('input[name="unit"]');
+
+                if (!materialSelect || !selected || !selected.value) {
+                    return;
+                }
+
+                if (productName) {
+                    productName.value = selected.dataset.name || selected.textContent.trim();
+                }
+
+                if (unit) {
+                    unit.dataset.masterUnit = selected.dataset.unit || '';
+                    unit.value = selected.dataset.unit || unit.value;
+                }
+            };
+
             const recalculate = () => {
                 const pcs = parseFloat(row.querySelector('.js-pcs')?.value || 0);
                 const weight = parseFloat(row.querySelector('.js-weight')?.value || 0);
@@ -544,15 +589,22 @@
                 }
 
                 if (unit) {
-                    unit.value = weight > 0 ? 'Kg' : 'Nos';
+                    unit.value = unit.dataset.masterUnit || (weight > 0 ? 'Kg' : 'Nos');
                 }
             };
 
-            row.querySelectorAll('input').forEach((input) => {
-                input.addEventListener('input', recalculate);
-                input.addEventListener('change', recalculate);
+            row.querySelectorAll('input, select').forEach((input) => {
+                input.addEventListener('input', () => {
+                    applyMaterial();
+                    recalculate();
+                });
+                input.addEventListener('change', () => {
+                    applyMaterial();
+                    recalculate();
+                });
             });
 
+            applyMaterial();
             recalculate();
         });
     </script>

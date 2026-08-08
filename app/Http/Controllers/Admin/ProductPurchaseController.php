@@ -12,6 +12,7 @@ use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class ProductPurchaseController extends Controller
@@ -123,7 +124,7 @@ class ProductPurchaseController extends Controller
             'stock_labour_site_id' => ['nullable', 'integer'],
             'supplier_name' => ['nullable', 'string', 'max:255'],
             'invoice_no' => ['nullable', 'string', 'max:100'],
-            'product_name' => ['required', 'string', 'max:255'],
+            'product_name' => ['required_without:material_id', 'nullable', 'string', 'max:255'],
             'size' => ['nullable', 'string', 'max:100'],
             'pcs' => ['nullable', 'numeric', 'min:0', 'max:999999999.99'],
             'weight_kg' => ['nullable', 'numeric', 'min:0', 'max:999999999.99'],
@@ -137,10 +138,38 @@ class ProductPurchaseController extends Controller
 
         $data['pcs'] = $data['pcs'] ?? 0;
         $data['weight_kg'] = $data['weight_kg'] ?? 0;
+        $this->applyMaterialMasterData($data);
         $data['quantity'] = $this->billingQuantity($data);
         $data['unit'] = $data['unit'] ?: ((float) $data['weight_kg'] > 0 ? 'Kg' : 'Nos');
 
         return $data;
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     */
+    private function applyMaterialMasterData(array &$data): void
+    {
+        if (empty($data['material_id']) || ! $this->hasTable('materials')) {
+            return;
+        }
+
+        $material = Material::query()
+            ->forCurrentCompany()
+            ->where('is_active', true)
+            ->find($data['material_id']);
+
+        if (! $material) {
+            throw ValidationException::withMessages([
+                'material_id' => 'Selected material was not found in Material Master.',
+            ]);
+        }
+
+        $data['product_name'] = $material->name;
+
+        if ($material->unit) {
+            $data['unit'] = $material->unit;
+        }
     }
 
     /**
