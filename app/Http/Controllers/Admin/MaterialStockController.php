@@ -22,6 +22,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class MaterialStockController extends Controller
 {
@@ -368,21 +369,91 @@ class MaterialStockController extends Controller
             return view('admin.material-stock.issues', [
                 'issues' => $this->emptyPaginator(),
                 'movements' => collect(),
+                'summary' => [
+                    'issues' => 0,
+                    'issued_quantity' => 0,
+                    'movements' => 0,
+                    'stock_rows' => 0,
+                ],
             ])->with('error', 'Material issue or stock movement table is missing. Please create the material stock tables first.');
         }
 
+        $issueQuery = MaterialIssue::query()->forCurrentCompany();
+        $movementQuery = StockMovement::query()->forCurrentCompany();
+
         return view('admin.material-stock.issues', [
-            'issues' => MaterialIssue::query()
-                ->forCurrentCompany()
+            'issues' => (clone $issueQuery)
                 ->with(['request.engineer:id,name,mobile', 'material:id,name,unit', 'site:id,name', 'project:id,name,code', 'task:id,title', 'issuer:id,name'])
                 ->latest('issued_at')
                 ->paginate(20),
-            'movements' => StockMovement::query()
-                ->forCurrentCompany()
+            'movements' => (clone $movementQuery)
                 ->with(['material:id,name,unit', 'site:id,name', 'project:id,name,code', 'task:id,title'])
                 ->latest()
                 ->limit(50)
                 ->get(),
+            'summary' => [
+                'issues' => (clone $issueQuery)->count(),
+                'issued_quantity' => (float) (clone $issueQuery)->sum('issued_quantity'),
+                'movements' => (clone $movementQuery)->count(),
+                'stock_rows' => $this->hasTable('material_stocks') ? MaterialStock::query()->forCurrentCompany()->count() : 0,
+            ],
+        ]);
+    }
+
+    public function downloadStockMovements(): StreamedResponse
+    {
+        $this->ensureInventoryProjectColumns();
+
+        if (! $this->hasTable('stock_movements')) {
+            abort(404, 'Stock movements table is missing.');
+        }
+
+        $filename = 'stock-movements-'.now()->format('Y-m-d-His').'.csv';
+
+        return response()->streamDownload(function () {
+            $handle = fopen('php://output', 'w');
+
+            fputcsv($handle, [
+                'Date',
+                'Material',
+                'Unit',
+                'Site',
+                'Project',
+                'Task',
+                'Type',
+                'Quantity',
+                'Balance After',
+                'Reference Type',
+                'Reference ID',
+                'Remarks',
+            ]);
+
+            StockMovement::query()
+                ->forCurrentCompany()
+                ->with(['material:id,name,unit', 'site:id,name', 'project:id,name,code', 'task:id,title'])
+                ->latest()
+                ->chunk(200, function ($movements) use ($handle) {
+                    foreach ($movements as $movement) {
+                        fputcsv($handle, [
+                            $movement->created_at?->format('d M Y h:i A'),
+                            $movement->material?->name,
+                            $movement->material?->unit,
+                            $movement->site?->name ?? 'Main Store',
+                            $movement->project?->name,
+                            $movement->task?->title,
+                            ucwords(str_replace('_', ' ', $movement->type)),
+                            number_format((float) $movement->quantity, 2, '.', ''),
+                            number_format((float) $movement->balance_after, 2, '.', ''),
+                            $movement->reference_type,
+                            $movement->reference_id,
+                            $movement->remarks,
+                        ]);
+                    }
+                });
+
+            fclose($handle);
+        }, $filename, [
+            'Content-Type' => 'text/csv',
         ]);
     }
 
