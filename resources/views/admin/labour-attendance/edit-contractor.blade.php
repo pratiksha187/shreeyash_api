@@ -3,9 +3,61 @@
 @section('title', 'Edit Contractor | Admin Panel')
 @section('headerTitle', 'Edit Contractor')
 @section('headerSubtitle', 'Update contractor master details')
+@section('bodyClass', 'contractor-page')
 
 @section('content')
     <style>
+        body.contractor-page {
+            overflow-x: hidden;
+        }
+
+        body.contractor-page .main {
+            max-width: 1280px;
+        }
+
+        body.contractor-page .page-header {
+            align-items: flex-start;
+        }
+
+        body.contractor-page .page-header > div {
+            min-width: 0;
+        }
+
+        body.contractor-page .page-header .btn {
+            flex: 0 0 auto;
+            white-space: nowrap;
+        }
+
+        .contractor-form {
+            display: grid;
+            gap: 28px;
+            padding: 28px 32px;
+            overflow: hidden;
+        }
+
+        .contractor-form .form-section {
+            margin-bottom: 0;
+        }
+
+        .contractor-form .section-title {
+            margin-bottom: 18px;
+            font-size: 22px;
+        }
+
+        .contractor-form .form-grid {
+            align-items: start;
+            gap: 18px 24px;
+        }
+
+        .contractor-form .field {
+            min-width: 0;
+        }
+
+        .contractor-form .actions {
+            justify-content: flex-start;
+            margin-top: 0;
+        }
+
         .contractor-wide {
             grid-column: span 2;
         }
@@ -33,7 +85,7 @@
         <div class="alert-error">{{ $errors->first() }}</div>
     @endif
 
-    <form class="card form-card" method="POST" action="{{ route('admin.contractors.update', $contractor) }}">
+    <form class="card form-card contractor-form" method="POST" action="{{ route('admin.contractors.update', $contractor) }}">
         @csrf
         @method('PUT')
 

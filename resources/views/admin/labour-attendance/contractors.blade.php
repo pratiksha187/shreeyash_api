@@ -3,11 +3,76 @@
 @section('title', 'Contractor Master | Admin Panel')
 @section('headerTitle', 'Contractor Master')
 @section('headerSubtitle', 'Create and manage contractors')
+@section('bodyClass', 'contractor-page')
 
 @section('content')
     <style>
+        body.contractor-page {
+            overflow-x: hidden;
+        }
+
+        body.contractor-page .main {
+            max-width: 1280px;
+        }
+
+        body.contractor-page .page-header {
+            align-items: flex-start;
+        }
+
+        body.contractor-page .page-header > div {
+            min-width: 0;
+        }
+
+        body.contractor-page .page-header .btn {
+            flex: 0 0 auto;
+            white-space: nowrap;
+        }
+
+        .contractor-form {
+            display: grid;
+            gap: 28px;
+            padding: 28px 32px;
+            overflow: hidden;
+        }
+
+        .contractor-form .form-section {
+            margin-bottom: 0;
+        }
+
+        .contractor-form .section-title {
+            margin-bottom: 18px;
+            font-size: 22px;
+        }
+
+        .contractor-form .form-grid {
+            align-items: start;
+            gap: 18px 24px;
+        }
+
+        .contractor-form .field {
+            min-width: 0;
+        }
+
+        .contractor-form .actions {
+            justify-content: flex-start;
+            margin-top: 0;
+        }
+
+        .contractor-table-wrap {
+            overflow-x: auto;
+        }
+
+        .contractor-table {
+            min-width: 1180px;
+        }
+
+        .contractor-table th,
+        .contractor-table td {
+            padding: 14px 16px;
+        }
+
         .contractor-summary {
-            min-width: 220px;
+            min-width: 190px;
             line-height: 1.45;
         }
 
@@ -52,7 +117,7 @@
         <div class="alert-error">{{ $errors->first() }}</div>
     @endif
 
-    <form class="card form-card report-filter" method="POST" action="{{ route('admin.contractors.store') }}">
+    <form class="card form-card report-filter contractor-form" method="POST" action="{{ route('admin.contractors.store') }}">
         @csrf
         <section class="form-section">
             <h2 class="section-title">Add Contractor</h2>
@@ -152,8 +217,8 @@
         </section>
     </form>
 
-    <div class="card table-wrap">
-        <table>
+    <div class="card table-wrap contractor-table-wrap">
+        <table class="contractor-table">
             <thead>
                 <tr>
                     <th>ID</th>
