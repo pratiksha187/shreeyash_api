@@ -1,10 +1,144 @@
 @extends('admin.layouts.app')
 
 @section('title', 'Material Requests | Admin Panel')
+@section('bodyClass', 'material-requests-page')
 @section('headerTitle', 'Material Requests')
 @section('headerSubtitle', 'Approve engineer material requests and issue stock to sites')
 
 @section('content')
+    <style>
+        .material-requests-page .main {
+            max-width: none;
+        }
+
+        .material-requests-page .stats-grid {
+            grid-template-columns: repeat(4, minmax(180px, 1fr));
+            gap: 18px;
+        }
+
+        .material-requests-page .stat-card {
+            min-height: 116px;
+            display: grid;
+            align-content: center;
+            padding: 24px 30px;
+        }
+
+        .material-requests-page .request-filter-card {
+            padding: 28px 38px 32px;
+        }
+
+        .material-requests-page .request-filter-grid {
+            display: grid;
+            grid-template-columns: minmax(190px, 1fr) minmax(220px, 1fr) minmax(260px, 1.25fr) 170px;
+            gap: 22px 28px;
+            align-items: end;
+        }
+
+        .material-requests-page .request-filter-grid .field {
+            min-width: 0;
+        }
+
+        .material-requests-page .request-filter-grid .filter-action {
+            display: flex;
+            align-items: end;
+        }
+
+        .material-requests-page .request-filter-grid .filter-action .btn {
+            width: 100%;
+            min-height: 52px;
+            justify-content: center;
+        }
+
+        .material-requests-page .requests-table-wrap {
+            overflow-x: auto;
+            width: 100%;
+        }
+
+        .material-requests-page .requests-table {
+            min-width: 1480px;
+            table-layout: fixed;
+        }
+
+        .material-requests-page .requests-table th,
+        .material-requests-page .requests-table td {
+            padding: 14px 12px;
+            vertical-align: top;
+            white-space: normal;
+        }
+
+        .material-requests-page .requests-table th {
+            font-size: 13px;
+            letter-spacing: 0;
+        }
+
+        .material-requests-page .col-engineer { width: 10%; }
+        .material-requests-page .col-project { width: 15%; }
+        .material-requests-page .col-material { width: 13%; }
+        .material-requests-page .col-requested { width: 11%; }
+        .material-requests-page .col-available { width: 12%; }
+        .material-requests-page .col-status { width: 9%; }
+        .material-requests-page .col-approve { width: 18%; }
+        .material-requests-page .col-issue { width: 12%; }
+
+        .material-requests-page .inline-status-form {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 8px;
+            min-width: 0;
+        }
+
+        .material-requests-page .inline-status-form select,
+        .material-requests-page .inline-status-form input,
+        .material-requests-page .inline-status-form textarea {
+            width: 100%;
+            min-width: 0;
+            min-height: 38px;
+            padding: 8px 10px;
+            font-size: 13px;
+        }
+
+        .material-requests-page .inline-status-form textarea {
+            min-height: 58px;
+            resize: vertical;
+        }
+
+        .material-requests-page .inline-status-form .btn.small {
+            width: 100%;
+            min-height: 38px;
+            justify-content: center;
+        }
+
+        .material-requests-page .status-pill {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            max-width: 100%;
+            white-space: normal;
+            text-align: center;
+        }
+
+        @media (max-width: 1200px) {
+            .material-requests-page .stats-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .material-requests-page .request-filter-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 700px) {
+            .material-requests-page .stats-grid,
+            .material-requests-page .request-filter-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .material-requests-page .request-filter-card {
+                padding: 22px;
+            }
+        }
+    </style>
+
     <div class="page-header">
         <div>
             <h1>Material Requests</h1>
@@ -23,10 +157,10 @@
         <div class="card stat-card"><span>Current Page</span><strong>{{ $requests->count() }}</strong></div>
     </section>
 
-    <form class="card form-card report-filter" method="GET" action="{{ route('admin.material-requests.index') }}">
+    <form class="card form-card report-filter request-filter-card" method="GET" action="{{ route('admin.material-requests.index') }}">
         <section class="form-section">
             <h2 class="section-title">Filter</h2>
-            <div class="form-grid three">
+            <div class="request-filter-grid">
                 <div class="field">
                     <label>Status</label>
                     <select name="status">
@@ -56,8 +190,7 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="field">
-                    <label>&nbsp;</label>
+                <div class="field filter-action">
                     <button class="btn" type="submit">Show Requests</button>
                 </div>
             </div>
@@ -65,8 +198,18 @@
     </form>
 
     <div class="card table-card">
-        <div class="table-wrap">
-            <table>
+        <div class="table-wrap requests-table-wrap">
+            <table class="requests-table">
+                <colgroup>
+                    <col class="col-engineer">
+                    <col class="col-project">
+                    <col class="col-material">
+                    <col class="col-requested">
+                    <col class="col-available">
+                    <col class="col-status">
+                    <col class="col-approve">
+                    <col class="col-issue">
+                </colgroup>
                 <thead>
                     <tr>
                         <th>Engineer</th>
