@@ -257,6 +257,12 @@ return [
                     'route' => 'admin.material-issues.index',
                     'active' => 'admin.material-issues.*',
                 ],
+                [
+                    'key' => 'material_stock',
+                    'label' => 'Safety Store',
+                    'route' => 'admin.safety-store.index',
+                    'active' => 'admin.safety-store.*',
+                ],
             ],
         ],
         [
@@ -399,6 +405,7 @@ return [
         'admin.material-stock.*' => 'material_stock',
         'admin.material-requests.*' => 'material_stock',
         'admin.material-issues.*' => 'material_stock',
+        'admin.safety-store.*' => 'material_stock',
         'admin.suppliers.*' => 'supplier_master',
         'admin.units.*' => 'unit_master',
         'admin.vehicle-maintenance.*' => 'vehicle_maintenance',
