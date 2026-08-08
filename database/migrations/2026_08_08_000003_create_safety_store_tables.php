@@ -60,11 +60,13 @@ return new class extends Migration
             Schema::create('safety_requests', function (Blueprint $table) {
                 $table->id();
                 $table->unsignedBigInteger('company_id')->nullable();
+                $table->unsignedBigInteger('user_id')->nullable();
                 $table->unsignedBigInteger('safety_item_id');
                 $table->unsignedBigInteger('labour_site_id')->nullable();
                 $table->unsignedBigInteger('project_id')->nullable();
                 $table->unsignedBigInteger('project_task_id')->nullable();
                 $table->date('request_date')->nullable();
+                $table->date('required_by')->nullable();
                 $table->decimal('requested_quantity', 12, 2);
                 $table->decimal('approved_quantity', 12, 2)->default(0);
                 $table->decimal('issued_quantity', 12, 2)->default(0);

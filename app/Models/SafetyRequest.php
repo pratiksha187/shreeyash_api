@@ -23,11 +23,13 @@ class SafetyRequest extends Model
 
     protected $fillable = [
         'company_id',
+        'user_id',
         'safety_item_id',
         'labour_site_id',
         'project_id',
         'project_task_id',
         'request_date',
+        'required_by',
         'requested_quantity',
         'approved_quantity',
         'issued_quantity',
@@ -43,6 +45,7 @@ class SafetyRequest extends Model
     {
         return [
             'request_date' => 'date',
+            'required_by' => 'date',
             'requested_quantity' => 'decimal:2',
             'approved_quantity' => 'decimal:2',
             'issued_quantity' => 'decimal:2',
@@ -53,6 +56,11 @@ class SafetyRequest extends Model
     public function item(): BelongsTo
     {
         return $this->belongsTo(SafetyItem::class, 'safety_item_id');
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 
     public function site(): BelongsTo

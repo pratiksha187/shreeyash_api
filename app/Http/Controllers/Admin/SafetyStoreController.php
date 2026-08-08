@@ -34,7 +34,7 @@ class SafetyStoreController extends Controller
 
         $requests = SafetyRequest::query()
             ->forCurrentCompany()
-            ->with(['item', 'site', 'project:id,name,code', 'task:id,title'])
+            ->with(['item', 'site', 'project:id,name,code', 'task:id,title', 'user:id,name,mobile'])
             ->when(isset($filters['status']), fn ($query) => $query->where('status', $filters['status']))
             ->when(isset($filters['labour_site_id']), fn ($query) => $query->where('labour_site_id', $filters['labour_site_id']))
             ->latest()
@@ -128,6 +128,7 @@ class SafetyStoreController extends Controller
             'project_id' => ['nullable', 'integer'],
             'project_task_id' => ['nullable', 'integer'],
             'request_date' => ['nullable', 'date'],
+            'required_by' => ['nullable', 'date'],
             'requested_quantity' => ['required', 'numeric', 'min:0.01', 'max:999999999.99'],
             'requested_by' => ['nullable', 'string', 'max:255'],
             'priority' => ['nullable', 'string', 'max:30'],
@@ -142,6 +143,7 @@ class SafetyStoreController extends Controller
             'project_id' => ($data['project_id'] ?? null) ? (int) $data['project_id'] : null,
             'project_task_id' => ($data['project_task_id'] ?? null) ? (int) $data['project_task_id'] : null,
             'request_date' => $data['request_date'] ?? now()->toDateString(),
+            'required_by' => $data['required_by'] ?? null,
             'requested_quantity' => $data['requested_quantity'],
             'requested_by' => $data['requested_by'] ?? null,
             'priority' => $data['priority'] ?? 'normal',
@@ -306,8 +308,11 @@ class SafetyStoreController extends Controller
 
         if (! $schema->hasTable('safety_requests')) {
             $schema->create('safety_requests', function (Blueprint $table) {
-                $table->id(); $table->unsignedBigInteger('company_id')->nullable(); $table->unsignedBigInteger('safety_item_id'); $table->unsignedBigInteger('labour_site_id')->nullable(); $table->unsignedBigInteger('project_id')->nullable(); $table->unsignedBigInteger('project_task_id')->nullable(); $table->date('request_date')->nullable(); $table->decimal('requested_quantity', 12, 2); $table->decimal('approved_quantity', 12, 2)->default(0); $table->decimal('issued_quantity', 12, 2)->default(0); $table->string('requested_by')->nullable(); $table->string('priority', 30)->default('normal'); $table->string('status', 40)->default('pending'); $table->text('purpose')->nullable(); $table->text('admin_note')->nullable(); $table->timestamp('reviewed_at')->nullable(); $table->timestamps();
+                $table->id(); $table->unsignedBigInteger('company_id')->nullable(); $table->unsignedBigInteger('user_id')->nullable(); $table->unsignedBigInteger('safety_item_id'); $table->unsignedBigInteger('labour_site_id')->nullable(); $table->unsignedBigInteger('project_id')->nullable(); $table->unsignedBigInteger('project_task_id')->nullable(); $table->date('request_date')->nullable(); $table->date('required_by')->nullable(); $table->decimal('requested_quantity', 12, 2); $table->decimal('approved_quantity', 12, 2)->default(0); $table->decimal('issued_quantity', 12, 2)->default(0); $table->string('requested_by')->nullable(); $table->string('priority', 30)->default('normal'); $table->string('status', 40)->default('pending'); $table->text('purpose')->nullable(); $table->text('admin_note')->nullable(); $table->timestamp('reviewed_at')->nullable(); $table->timestamps();
             });
+        } else {
+            $this->ensureColumn($schema, 'safety_requests', 'user_id', fn (Blueprint $table) => $table->unsignedBigInteger('user_id')->nullable()->after('company_id'));
+            $this->ensureColumn($schema, 'safety_requests', 'required_by', fn (Blueprint $table) => $table->date('required_by')->nullable()->after('request_date'));
         }
 
         if (! $schema->hasTable('safety_issues')) {
@@ -320,6 +325,13 @@ class SafetyStoreController extends Controller
             $schema->create('safety_stock_movements', function (Blueprint $table) {
                 $table->id(); $table->unsignedBigInteger('company_id')->nullable(); $table->unsignedBigInteger('safety_item_id'); $table->unsignedBigInteger('labour_site_id')->nullable(); $table->unsignedBigInteger('project_id')->nullable(); $table->unsignedBigInteger('project_task_id')->nullable(); $table->string('type', 40); $table->decimal('quantity', 12, 2); $table->decimal('balance_after', 12, 2)->default(0); $table->string('reference_type')->nullable(); $table->unsignedBigInteger('reference_id')->nullable(); $table->text('remarks')->nullable(); $table->timestamps();
             });
+        }
+    }
+
+    private function ensureColumn($schema, string $tableName, string $column, callable $definition): void
+    {
+        if (! $schema->hasColumn($tableName, $column)) {
+            $schema->table($tableName, $definition);
         }
     }
 }

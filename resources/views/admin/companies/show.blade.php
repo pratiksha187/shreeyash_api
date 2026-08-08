@@ -282,9 +282,9 @@
                                     @php
                                         $selectedPermissions = $user->resolvedAdminPermissions();
                                         $permissionGroups = [
-                                            'hr' => ['employees', 'attendance_reports', 'missed_requests', 'leave_requests', 'labour_attendance', 'labour_costing', 'driver_attendance', 'site_master', 'contractor_master', 'labour_master', 'supplier_master', 'unit_master', 'payments', 'dpr_reports', 'challans', 'complaints', 'site_reports'],
+                                            'hr' => ['employees', 'attendance_reports', 'missed_requests', 'leave_requests', 'labour_attendance', 'labour_costing', 'driver_attendance', 'site_master', 'contractor_master', 'labour_master', 'supplier_master', 'unit_master', 'safety_store', 'payments', 'dpr_reports', 'challans', 'complaints', 'site_reports'],
                                             'engg' => ['project_management', 'site_reports', 'dpr_reports', 'fdd_test_records', 'mir_file_reports', 'complaints'],
-                                            'purchase' => ['diesel_purchases', 'machinery_diesel_logs', 'product_purchases', 'purchase_orders', 'material_stock', 'supplier_master', 'unit_master', 'vehicle_maintenance'],
+                                            'purchase' => ['diesel_purchases', 'machinery_diesel_logs', 'product_purchases', 'purchase_orders', 'material_stock', 'safety_store', 'supplier_master', 'unit_master', 'vehicle_maintenance'],
                                         ];
                                     @endphp
                                     <div class="module-permission-toolbar">

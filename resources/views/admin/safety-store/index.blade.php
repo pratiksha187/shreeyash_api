@@ -113,7 +113,7 @@
             <div class="safety-panel-head"><h2>Approve & Issue Requests</h2><p>Approve request and issue from available store/site stock.</p></div>
             <div class="table-wrap">
                 <table class="safety-table">
-                    <thead><tr><th>Sr</th><th>Item</th><th>Site / Work</th><th>Requested</th><th>Status</th><th>Approve / Issue</th></tr></thead>
+                        <thead><tr><th>Sr</th><th>Item</th><th>Site / Work</th><th>Requested</th><th>Status</th><th>Approve / Issue</th></tr></thead>
                     <tbody>
                         @forelse ($requests as $requestRow)
                             @php($remaining = max(0, (float) $requestRow->approved_quantity - (float) $requestRow->issued_quantity))
@@ -121,7 +121,13 @@
                                 <td><strong>{{ $requests->firstItem() + $loop->index }}</strong></td>
                                 <td><strong>{{ $requestRow->item?->name }}</strong><div class="table-subtext">{{ $requestRow->item?->category ?? '-' }}</div></td>
                                 <td><strong>{{ $requestRow->site?->name ?? 'Main Store' }}</strong><div class="table-subtext">{{ $requestRow->project?->name ?? '-' }}</div><div class="table-subtext">Task: {{ $requestRow->task?->title ?? '-' }}</div></td>
-                                <td>{{ number_format($requestRow->requested_quantity, 2) }} {{ $requestRow->item?->unit }}<div class="table-subtext">Issued: {{ number_format($requestRow->issued_quantity, 2) }}</div></td>
+                                <td>
+                                    {{ number_format($requestRow->requested_quantity, 2) }} {{ $requestRow->item?->unit }}
+                                    <div class="table-subtext">By: {{ $requestRow->requested_by ?: ($requestRow->user?->name ?? '-') }}</div>
+                                    <div class="table-subtext">Request: {{ $requestRow->request_date?->format('d M Y') ?? '-' }}</div>
+                                    <div class="table-subtext">Required: {{ $requestRow->required_by?->format('d M Y') ?? '-' }}</div>
+                                    <div class="table-subtext">Issued: {{ number_format($requestRow->issued_quantity, 2) }}</div>
+                                </td>
                                 <td><span class="safety-pill {{ $requestRow->status }}">{{ ucwords(str_replace('_', ' ', $requestRow->status)) }}</span></td>
                                 <td>
                                     <div class="safety-actions">
