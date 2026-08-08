@@ -142,52 +142,7 @@ class MaterialStockController extends Controller
 
     public function adjustStock(Request $request): RedirectResponse
     {
-        if (! $this->hasTable('materials') || ! $this->hasTable('material_stocks') || ! $this->hasTable('stock_movements')) {
-            return back()->with('error', 'Material stock tables are missing. Please create materials, material_stocks, and stock_movements tables first.');
-        }
-
-        $data = $request->validate([
-            'material_id' => ['required', 'integer'],
-            'labour_site_id' => ['nullable', 'integer'],
-            'type' => ['required', Rule::in([StockMovement::ADJUSTMENT_IN, StockMovement::ADJUSTMENT_OUT, StockMovement::RETURN_IN])],
-            'quantity' => ['required', 'numeric', 'min:0.01', 'max:999999999.99'],
-            'project_id' => ['nullable', 'integer'],
-            'project_task_id' => ['nullable', 'integer'],
-            'remarks' => ['nullable', 'string', 'max:2000'],
-        ]);
-
-        if (! Material::query()->forCurrentCompany()->whereKey($data['material_id'])->exists()) {
-            return back()->with('error', 'Selected material was not found in Material Master.');
-        }
-        $this->ensureProjectTaskLink($data['project_id'] ?? null, $data['project_task_id'] ?? null);
-
-        if ($data['type'] === StockMovement::ADJUSTMENT_OUT) {
-            $this->stockService->removeStock(
-                (int) $data['material_id'],
-                $data['labour_site_id'] ? (int) $data['labour_site_id'] : null,
-                (float) $data['quantity'],
-                StockMovement::ADJUSTMENT_OUT,
-                null,
-                null,
-                $data['remarks'] ?? 'Manual stock adjustment',
-                $data['project_id'] ? (int) $data['project_id'] : null,
-                $data['project_task_id'] ? (int) $data['project_task_id'] : null
-            );
-        } else {
-            $this->stockService->addStock(
-                (int) $data['material_id'],
-                $data['labour_site_id'] ? (int) $data['labour_site_id'] : null,
-                (float) $data['quantity'],
-                $data['type'],
-                null,
-                null,
-                $data['remarks'] ?? 'Manual stock adjustment',
-                $data['project_id'] ? (int) $data['project_id'] : null,
-                $data['project_task_id'] ? (int) $data['project_task_id'] : null
-            );
-        }
-
-        return back()->with('success', 'Stock updated successfully.');
+        return back()->with('error', 'Direct stock adjustment is disabled. Add inward stock from Product Purchase and send outward stock from Material Requests.');
     }
 
     public function requests(Request $request): View

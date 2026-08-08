@@ -2,13 +2,13 @@
 
 @section('title', 'Material Stock | Admin Panel')
 @section('headerTitle', 'Material Stock')
-@section('headerSubtitle', 'Check available material by store or site')
+@section('headerSubtitle', 'Stock balance from product purchase inward and request issue outward')
 
 @section('content')
     <div class="page-header">
         <div>
             <h1>Material Stock</h1>
-            <p>View stock, add adjustment entries, and track low stock items.</p>
+            <p>View available stock by store/site. Add inward stock from Product Purchase and issue outward stock from Material Requests.</p>
         </div>
     </div>
 
@@ -59,75 +59,6 @@
                 <div class="field">
                     <label>&nbsp;</label>
                     <button class="btn" type="submit">Show Stock</button>
-                </div>
-            </div>
-        </section>
-    </form>
-
-    <form class="card form-card" method="POST" action="{{ route('admin.material-stock.adjust') }}">
-        @csrf
-        <section class="form-section">
-            <h2 class="section-title">Stock Adjustment</h2>
-            <div class="form-grid">
-                <div class="field">
-                    <label>Material</label>
-                    <select name="material_id" required>
-                        <option value="">Select material</option>
-                        @foreach ($materials as $material)
-                            <option value="{{ $material->id }}">{{ $material->name }}{{ $material->unit ? ' ('.$material->unit.')' : '' }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="field">
-                    <label>Site / Store</label>
-                    <select name="labour_site_id">
-                        <option value="">Main Store</option>
-                        @foreach ($sites as $site)
-                            <option value="{{ $site->id }}">{{ $site->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="field">
-                    <label>Project</label>
-                    <select name="project_id">
-                        <option value="">No project link</option>
-                        @foreach ($projects as $project)
-                            <option value="{{ $project->id }}">
-                                {{ $project->code ? $project->code.' - ' : '' }}{{ $project->name }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="field">
-                    <label>Project Task</label>
-                    <select name="project_task_id">
-                        <option value="">No task link</option>
-                        @foreach ($projectTasks as $task)
-                            <option value="{{ $task->id }}">
-                                {{ $task->boq_item_number ? $task->boq_item_number.' - ' : '' }}{{ $task->title }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="field">
-                    <label>Type</label>
-                    <select name="type" required>
-                        <option value="adjustment_in">Add Stock</option>
-                        <option value="adjustment_out">Remove Stock</option>
-                        <option value="return_in">Return In</option>
-                    </select>
-                </div>
-                <div class="field">
-                    <label>Quantity</label>
-                    <input name="quantity" type="number" min="0.01" step="0.01" required>
-                </div>
-                <div class="field">
-                    <label>Remarks</label>
-                    <input name="remarks">
-                </div>
-                <div class="field">
-                    <label>&nbsp;</label>
-                    <button class="btn" type="submit">Update Stock</button>
                 </div>
             </div>
         </section>

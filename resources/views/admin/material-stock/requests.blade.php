@@ -181,7 +181,7 @@
                                         </select>
                                         <input class="issue-quantity-input" name="issued_quantity" type="number" min="0.01" max="{{ number_format(min($remainingApproved, $firstSourceAvailable ?: $available), 2, '.', '') }}" step="0.01" value="{{ number_format(min($remainingApproved, $firstSourceAvailable ?: $available), 2, '.', '') }}" data-remaining="{{ number_format($remainingApproved, 2, '.', '') }}">
                                         <textarea name="remarks" placeholder="Issue remarks"></textarea>
-                                        <button class="btn small" type="submit">Issue Material</button>
+                                        <button class="btn small" type="submit">Send / Issue Material</button>
                                     </form>
                                 @elseif (in_array($requestRow->status, ['approved', 'partially_approved'], true) && ! $requestRow->material_id)
                                     <span class="table-subtext">Typed material request. Add this material in Material Master, purchase/add stock, then issue.</span>

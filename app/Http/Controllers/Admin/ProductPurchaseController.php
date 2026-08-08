@@ -131,11 +131,11 @@ class ProductPurchaseController extends Controller
     {
         $data = $request->validate([
             'purchase_date' => ['required', 'date'],
-            'material_id' => ['nullable', 'integer'],
+            'material_id' => ['required', 'integer'],
             'stock_labour_site_id' => ['nullable', 'integer'],
             'supplier_name' => ['nullable', 'string', 'max:255'],
             'invoice_no' => ['nullable', 'string', 'max:100'],
-            'product_name' => ['required_without:material_id', 'nullable', 'string', 'max:255'],
+            'product_name' => ['nullable', 'string', 'max:255'],
             'size' => ['nullable', 'string', 'max:100'],
             'pcs' => ['nullable', 'numeric', 'min:0', 'max:999999999.99'],
             'weight_kg' => ['nullable', 'numeric', 'min:0', 'max:999999999.99'],
@@ -161,8 +161,10 @@ class ProductPurchaseController extends Controller
      */
     private function applyMaterialMasterData(array &$data): void
     {
-        if (empty($data['material_id']) || ! $this->hasTable('materials')) {
-            return;
+        if (! $this->hasTable('materials')) {
+            throw ValidationException::withMessages([
+                'material_id' => 'Material Master is required before saving a product purchase.',
+            ]);
         }
 
         $material = Material::query()
