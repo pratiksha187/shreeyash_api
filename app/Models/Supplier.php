@@ -16,6 +16,14 @@ class Supplier extends Model
         'mobile',
         'email',
         'gstin',
+        'gst_registration_type',
+        'gst_return_status',
+        'tds_section',
+        'tds_percent',
+        'e_invoice_applicable',
+        'e_way_bill_applicable',
+        'vendor_reconciliation_status',
+        'auditor_export_note',
         'address',
         'default_dispatched_through',
         'default_destination',
@@ -26,6 +34,9 @@ class Supplier extends Model
     protected function casts(): array
     {
         return [
+            'tds_percent' => 'decimal:2',
+            'e_invoice_applicable' => 'boolean',
+            'e_way_bill_applicable' => 'boolean',
             'is_active' => 'boolean',
         ];
     }

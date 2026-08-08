@@ -53,6 +53,9 @@ class PurchaseOrderController extends Controller
             $cgst = (float) ($data['cgst_amount'] ?? 0);
             $sgst = (float) ($data['sgst_amount'] ?? 0);
             $igst = (float) ($data['igst_amount'] ?? 0);
+            $total = $subtotal + $cgst + $sgst + $igst;
+            $tdsPercent = (float) ($data['tds_percent'] ?? 0);
+            $tdsAmount = round($total * ($tdsPercent / 100), 2);
 
             $order = PurchaseOrder::query()->create([
                 ...collect($data)->except('items')->all(),
@@ -61,7 +64,10 @@ class PurchaseOrderController extends Controller
                 'cgst_amount' => $cgst,
                 'sgst_amount' => $sgst,
                 'igst_amount' => $igst,
-                'total_amount' => $subtotal + $cgst + $sgst + $igst,
+                'total_amount' => $total,
+                'tds_percent' => $tdsPercent,
+                'tds_amount' => $tdsAmount,
+                'net_payable_amount' => $total - $tdsAmount,
             ]);
 
             $items->each(function (array $item, int $index) use ($order) {
@@ -143,6 +149,12 @@ class PurchaseOrderController extends Controller
             'supplier_address' => ['nullable', 'string', 'max:2000'],
             'supplier_gstin' => ['nullable', 'string', 'max:40'],
             'supplier_ref' => ['nullable', 'string', 'max:120'],
+            'supplier_tds_section' => ['nullable', 'string', 'max:80'],
+            'tds_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'e_invoice_applicable' => ['nullable', 'boolean'],
+            'e_way_bill_applicable' => ['nullable', 'boolean'],
+            'vendor_reconciliation_status' => ['nullable', 'string', 'max:80'],
+            'auditor_export_note' => ['nullable', 'string', 'max:3000'],
             'dispatched_through' => ['nullable', 'string', 'max:120'],
             'destination' => ['nullable', 'string', 'max:160'],
             'delivery_location' => ['nullable', 'string', 'max:2000'],

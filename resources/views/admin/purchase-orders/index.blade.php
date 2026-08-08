@@ -140,6 +140,12 @@
                                     data-name="{{ $supplier->name }}"
                                     data-address="{{ $supplier->address }}"
                                     data-gstin="{{ $supplier->gstin }}"
+                                    data-tds-section="{{ $supplier->tds_section }}"
+                                    data-tds-percent="{{ $supplier->tds_percent }}"
+                                    data-e-invoice="{{ $supplier->e_invoice_applicable ? '1' : '0' }}"
+                                    data-e-way-bill="{{ $supplier->e_way_bill_applicable ? '1' : '0' }}"
+                                    data-vendor-reconciliation="{{ $supplier->vendor_reconciliation_status }}"
+                                    data-auditor-export-note="{{ $supplier->auditor_export_note }}"
                                     data-dispatch="{{ $supplier->default_dispatched_through }}"
                                     data-destination="{{ $supplier->default_destination }}"
                                     data-terms="{{ $supplier->default_terms }}"
@@ -168,6 +174,31 @@
                     <label>Supplier Ref.
                         <input name="supplier_ref" value="{{ old('supplier_ref') }}">
                     </label>
+                    <label>TDS Section
+                        <input id="supplier_tds_section" name="supplier_tds_section" value="{{ old('supplier_tds_section') }}">
+                    </label>
+                    <label>TDS %
+                        <input id="tds_percent" class="po-tds" name="tds_percent" type="number" min="0" max="100" step="0.01" value="{{ old('tds_percent', 0) }}">
+                    </label>
+                    <label>E-Invoice
+                        <select id="e_invoice_applicable" name="e_invoice_applicable">
+                            <option value="0" @selected(old('e_invoice_applicable', '0') === '0')>No</option>
+                            <option value="1" @selected(old('e_invoice_applicable') === '1')>Yes</option>
+                        </select>
+                    </label>
+                    <label>E-Way Bill
+                        <select id="e_way_bill_applicable" name="e_way_bill_applicable">
+                            <option value="0" @selected(old('e_way_bill_applicable', '0') === '0')>No</option>
+                            <option value="1" @selected(old('e_way_bill_applicable') === '1')>Yes</option>
+                        </select>
+                    </label>
+                    <label>Vendor Reconciliation
+                        <select id="vendor_reconciliation_status" name="vendor_reconciliation_status">
+                            @foreach (['' => 'Select status', 'pending' => 'Pending', 'matched' => 'Matched', 'mismatch' => 'Mismatch', 'not_required' => 'Not Required'] as $value => $label)
+                                <option value="{{ $value }}" @selected(old('vendor_reconciliation_status') === $value)>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </label>
                     <label>Dispatched Through
                         <input id="dispatched_through" name="dispatched_through" value="{{ old('dispatched_through') }}">
                     </label>
@@ -176,6 +207,9 @@
                     </label>
                     <label class="wide">Delivery Location
                         <textarea name="delivery_location">{{ old('delivery_location') }}</textarea>
+                    </label>
+                    <label class="wide">Auditor Export Note
+                        <textarea id="auditor_export_note" name="auditor_export_note">{{ old('auditor_export_note') }}</textarea>
                     </label>
                     <label>Status
                         <select name="status">
@@ -236,6 +270,8 @@
                 </div>
                 <div class="po-summary">
                     <label>Total Amount<input id="po-total" type="number" value="0.00" readonly></label>
+                    <label>TDS Amount<input id="po-tds-amount" type="number" value="0.00" readonly></label>
+                    <label>Net Payable<input id="po-net-payable" type="number" value="0.00" readonly></label>
                 </div>
             </section>
 
@@ -260,6 +296,7 @@ Payment Terms: Payment shall be made after material receipt as per agreed terms.
                             <th>Supplier</th>
                             <th>Items</th>
                             <th>Total</th>
+                            <th>Net Payable</th>
                             <th>Status</th>
                             <th>Action</th>
                         </tr>
@@ -272,6 +309,7 @@ Payment Terms: Payment shall be made after material receipt as per agreed terms.
                                 <td>{{ $order->supplier_name }}</td>
                                 <td>{{ $order->items_count }}</td>
                                 <td>{{ number_format((float) $order->total_amount, 2) }}</td>
+                                <td>{{ number_format((float) ($order->net_payable_amount ?: $order->total_amount), 2) }}</td>
                                 <td><span class="status-pill status-approved">{{ ucfirst($order->status) }}</span></td>
                                 <td>
                                     <div class="po-row-actions">
@@ -285,7 +323,7 @@ Payment Terms: Payment shall be made after material receipt as per agreed terms.
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="7">No purchase orders created yet.</td></tr>
+                            <tr><td colspan="8">No purchase orders created yet.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -309,12 +347,20 @@ Payment Terms: Payment shall be made after material receipt as per agreed terms.
                 document.getElementById('supplier_name').value = selected.dataset.name || '';
                 document.getElementById('supplier_address').value = selected.dataset.address || '';
                 document.getElementById('supplier_gstin').value = selected.dataset.gstin || '';
+                document.getElementById('supplier_tds_section').value = selected.dataset.tdsSection || '';
+                document.getElementById('tds_percent').value = selected.dataset.tdsPercent || 0;
+                document.getElementById('e_invoice_applicable').value = selected.dataset.eInvoice || '0';
+                document.getElementById('e_way_bill_applicable').value = selected.dataset.eWayBill || '0';
+                document.getElementById('vendor_reconciliation_status').value = selected.dataset.vendorReconciliation || '';
+                document.getElementById('auditor_export_note').value = selected.dataset.auditorExportNote || '';
                 document.getElementById('dispatched_through').value = selected.dataset.dispatch || '';
                 document.getElementById('destination').value = selected.dataset.destination || '';
 
                 if (selected.dataset.terms) {
                     document.getElementById('terms').value = selected.dataset.terms;
                 }
+
+                calculatePo();
             });
         }
 
@@ -338,8 +384,13 @@ Payment Terms: Payment shall be made after material receipt as per agreed terms.
             });
 
             const tax = Array.from(document.querySelectorAll('.po-tax')).reduce((sum, input) => sum + parseFloat(input.value || 0), 0);
+            const total = subtotal + tax;
+            const tdsPercent = parseFloat(document.getElementById('tds_percent')?.value || 0);
+            const tdsAmount = total * (tdsPercent / 100);
             document.getElementById('po-subtotal').value = subtotal.toFixed(2);
-            document.getElementById('po-total').value = (subtotal + tax).toFixed(2);
+            document.getElementById('po-total').value = total.toFixed(2);
+            document.getElementById('po-tds-amount').value = tdsAmount.toFixed(2);
+            document.getElementById('po-net-payable').value = (total - tdsAmount).toFixed(2);
         }
 
         document.getElementById('add-po-item').addEventListener('click', () => {
@@ -365,7 +416,7 @@ Payment Terms: Payment shall be made after material receipt as per agreed terms.
         });
 
         document.addEventListener('input', (event) => {
-            if (event.target.matches('.po-qty, .po-rate, .po-tax')) {
+            if (event.target.matches('.po-qty, .po-rate, .po-tax, .po-tds')) {
                 calculatePo();
             }
         });

@@ -19,6 +19,14 @@ class PurchaseOrder extends Model
         'supplier_address',
         'supplier_gstin',
         'supplier_ref',
+        'supplier_tds_section',
+        'tds_percent',
+        'tds_amount',
+        'net_payable_amount',
+        'e_invoice_applicable',
+        'e_way_bill_applicable',
+        'vendor_reconciliation_status',
+        'auditor_export_note',
         'other_reference',
         'dispatched_through',
         'destination',
@@ -44,6 +52,11 @@ class PurchaseOrder extends Model
             'sgst_amount' => 'decimal:2',
             'igst_amount' => 'decimal:2',
             'total_amount' => 'decimal:2',
+            'tds_percent' => 'decimal:2',
+            'tds_amount' => 'decimal:2',
+            'net_payable_amount' => 'decimal:2',
+            'e_invoice_applicable' => 'boolean',
+            'e_way_bill_applicable' => 'boolean',
         ];
     }
 

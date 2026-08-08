@@ -27,6 +27,7 @@
             width: 100%;
             border-collapse: collapse;
             table-layout: fixed;
+            min-width: 1220px;
         }
 
         .supplier-table th,
@@ -72,14 +73,28 @@
             width: 100%;
         }
 
+        .supplier-statutory-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 14px 18px;
+            margin-top: 18px;
+        }
+
+        .supplier-statutory-stack {
+            display: grid;
+            gap: 8px;
+        }
+
         @media (max-width: 1100px) {
-            .supplier-grid {
+            .supplier-grid,
+            .supplier-statutory-grid {
                 grid-template-columns: repeat(2, minmax(0, 1fr));
             }
         }
 
         @media (max-width: 760px) {
-            .supplier-grid {
+            .supplier-grid,
+            .supplier-statutory-grid {
                 grid-template-columns: 1fr;
             }
 
@@ -93,7 +108,7 @@
         <div class="page-head">
             <div>
                 <h1>Supplier Master</h1>
-                <p>Use this master in Purchase Orders to auto-fill supplier address, GSTIN and terms.</p>
+                <p>Use this master in Purchase Orders to auto-fill supplier address, GST, TDS and statutory details.</p>
             </div>
         </div>
 
@@ -117,6 +132,47 @@
                     <label class="wide">Default Terms<textarea name="default_terms">{{ old('default_terms', 'Material Supply: Supplier shall supply and deliver material as per agreed specification and quantity.'."\n".'Payment Terms: Payment shall be made after material receipt as per agreed terms.') }}</textarea></label>
                 </div>
             </section>
+            <section class="form-section">
+                <h2 class="section-title">GST / Statutory</h2>
+                <div class="supplier-statutory-grid">
+                    <label>GST Registration
+                        <select name="gst_registration_type">
+                            @foreach (['' => 'Select type', 'regular' => 'Regular', 'composition' => 'Composition', 'unregistered' => 'Unregistered'] as $value => $label)
+                                <option value="{{ $value }}" @selected(old('gst_registration_type') === $value)>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </label>
+                    <label>GST Return Status
+                        <select name="gst_return_status">
+                            @foreach (['' => 'Select status', 'pending' => 'Pending', 'filed' => 'Filed', 'not_applicable' => 'Not Applicable'] as $value => $label)
+                                <option value="{{ $value }}" @selected(old('gst_return_status') === $value)>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </label>
+                    <label>TDS Section<input name="tds_section" value="{{ old('tds_section') }}" placeholder="194C, 194J"></label>
+                    <label>TDS %<input name="tds_percent" type="number" min="0" max="100" step="0.01" value="{{ old('tds_percent') }}"></label>
+                    <label>E-Invoice
+                        <select name="e_invoice_applicable">
+                            <option value="0" @selected(old('e_invoice_applicable', '0') === '0')>No</option>
+                            <option value="1" @selected(old('e_invoice_applicable') === '1')>Yes</option>
+                        </select>
+                    </label>
+                    <label>E-Way Bill
+                        <select name="e_way_bill_applicable">
+                            <option value="0" @selected(old('e_way_bill_applicable', '0') === '0')>No</option>
+                            <option value="1" @selected(old('e_way_bill_applicable') === '1')>Yes</option>
+                        </select>
+                    </label>
+                    <label>Vendor Reconciliation
+                        <select name="vendor_reconciliation_status">
+                            @foreach (['' => 'Select status', 'pending' => 'Pending', 'matched' => 'Matched', 'mismatch' => 'Mismatch', 'not_required' => 'Not Required'] as $value => $label)
+                                <option value="{{ $value }}" @selected(old('vendor_reconciliation_status') === $value)>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </label>
+                    <label>Auditor Export Note<textarea name="auditor_export_note">{{ old('auditor_export_note') }}</textarea></label>
+                </div>
+            </section>
             <button class="btn" type="submit">Save Supplier</button>
         </form>
 
@@ -129,8 +185,9 @@
                             <th style="width: 16%">Name</th>
                             <th style="width: 14%">Contact</th>
                             <th style="width: 14%">GST / Email</th>
-                            <th style="width: 22%">Address</th>
-                            <th style="width: 16%">Defaults</th>
+                            <th style="width: 20%">Statutory</th>
+                            <th style="width: 18%">Address</th>
+                            <th style="width: 14%">Defaults</th>
                             <th style="width: 8%">Status</th>
                             <th style="width: 10%">Action</th>
                         </tr>
@@ -147,6 +204,36 @@
                                 <td>
                                     <input form="{{ $formId }}" name="gstin" value="{{ $supplier->gstin }}" placeholder="GSTIN">
                                     <input form="{{ $formId }}" name="email" type="email" value="{{ $supplier->email }}" placeholder="Email">
+                                </td>
+                                <td>
+                                    <div class="supplier-statutory-stack">
+                                        <select form="{{ $formId }}" name="gst_registration_type">
+                                            @foreach (['' => 'GST type', 'regular' => 'Regular', 'composition' => 'Composition', 'unregistered' => 'Unregistered'] as $value => $label)
+                                                <option value="{{ $value }}" @selected($supplier->gst_registration_type === $value)>{{ $label }}</option>
+                                            @endforeach
+                                        </select>
+                                        <select form="{{ $formId }}" name="gst_return_status">
+                                            @foreach (['' => 'GST return', 'pending' => 'Pending', 'filed' => 'Filed', 'not_applicable' => 'Not Applicable'] as $value => $label)
+                                                <option value="{{ $value }}" @selected($supplier->gst_return_status === $value)>{{ $label }}</option>
+                                            @endforeach
+                                        </select>
+                                        <input form="{{ $formId }}" name="tds_section" value="{{ $supplier->tds_section }}" placeholder="TDS Section">
+                                        <input form="{{ $formId }}" name="tds_percent" type="number" min="0" max="100" step="0.01" value="{{ $supplier->tds_percent }}" placeholder="TDS %">
+                                        <select form="{{ $formId }}" name="e_invoice_applicable">
+                                            <option value="0" @selected(! $supplier->e_invoice_applicable)>E-Invoice: No</option>
+                                            <option value="1" @selected($supplier->e_invoice_applicable)>E-Invoice: Yes</option>
+                                        </select>
+                                        <select form="{{ $formId }}" name="e_way_bill_applicable">
+                                            <option value="0" @selected(! $supplier->e_way_bill_applicable)>E-Way Bill: No</option>
+                                            <option value="1" @selected($supplier->e_way_bill_applicable)>E-Way Bill: Yes</option>
+                                        </select>
+                                        <select form="{{ $formId }}" name="vendor_reconciliation_status">
+                                            @foreach (['' => 'Vendor recon', 'pending' => 'Pending', 'matched' => 'Matched', 'mismatch' => 'Mismatch', 'not_required' => 'Not Required'] as $value => $label)
+                                                <option value="{{ $value }}" @selected($supplier->vendor_reconciliation_status === $value)>{{ $label }}</option>
+                                            @endforeach
+                                        </select>
+                                        <textarea form="{{ $formId }}" name="auditor_export_note" placeholder="Auditor export note">{{ $supplier->auditor_export_note }}</textarea>
+                                    </div>
                                 </td>
                                 <td><textarea form="{{ $formId }}" name="address">{{ $supplier->address }}</textarea></td>
                                 <td>
@@ -176,7 +263,7 @@
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="7">No supplier added yet.</td></tr>
+                            <tr><td colspan="8">No supplier added yet.</td></tr>
                         @endforelse
                     </tbody>
                 </table>

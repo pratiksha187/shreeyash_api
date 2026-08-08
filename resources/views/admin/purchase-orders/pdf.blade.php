@@ -108,7 +108,10 @@
                 <span class="label">Supplier:</span><br>
                 <span class="bold">{{ $order->supplier_name }}</span><br>
                 {!! nl2br(e($order->supplier_address ?: '-')) !!}<br>
-                GSTIN/UIN: {{ $order->supplier_gstin ?: '-' }}
+                GSTIN/UIN: {{ $order->supplier_gstin ?: '-' }}<br>
+                TDS: {{ $order->supplier_tds_section ?: '-' }} {{ (float) $order->tds_percent > 0 ? '('.number_format((float) $order->tds_percent, 2).'%)' : '' }}<br>
+                E-Invoice: {{ $order->e_invoice_applicable ? 'Applicable' : 'No' }} |
+                E-Way Bill: {{ $order->e_way_bill_applicable ? 'Applicable' : 'No' }}
             </td>
         </tr>
     </table>
@@ -159,10 +162,27 @@
                 <td colspan="6" class="right bold">Total</td>
                 <td class="right bold">{{ number_format((float) $order->total_amount, 2) }}</td>
             </tr>
+            @if ((float) $order->tds_amount > 0)
+                <tr>
+                    <td colspan="6" class="right">TDS Deduction</td>
+                    <td class="right">{{ number_format((float) $order->tds_amount, 2) }}</td>
+                </tr>
+            @endif
+            <tr>
+                <td colspan="6" class="right bold">Net Payable</td>
+                <td class="right bold">{{ number_format((float) ($order->net_payable_amount ?: $order->total_amount), 2) }}</td>
+            </tr>
         </tbody>
     </table>
 
     <table>
+        <tr>
+            <td class="terms">
+                <span class="label">Statutory / Auditor Note:</span><br>
+                Vendor Reconciliation: {{ $order->vendor_reconciliation_status ? ucwords(str_replace('_', ' ', $order->vendor_reconciliation_status)) : '-' }}<br>
+                {!! nl2br(e($order->auditor_export_note ?: '-')) !!}
+            </td>
+        </tr>
         <tr>
             <td class="terms">
                 <span class="label">Terms & Conditions:</span><br>
