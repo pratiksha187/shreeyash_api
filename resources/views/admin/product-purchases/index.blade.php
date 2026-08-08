@@ -398,11 +398,22 @@
                 </div>
                 <div class="field wide">
                     <label>Item Name</label>
-                    <select class="js-material-select" name="material_id" required>
-                        <option value="">Select material</option>
-                        @foreach ($materials as $material)
-                            <option value="{{ $material->id }}" data-name="{{ $material->name }}" data-unit="{{ $material->unit }}" @selected((string) old('material_id') === (string) $material->id)>{{ $material->name }}{{ $material->unit ? ' - '.$material->unit : '' }}</option>
-                        @endforeach
+                    <select class="js-material-select" name="item_key" required>
+                        <option value="">Select material / safety item</option>
+                        @if ($materials->isNotEmpty())
+                            <optgroup label="Material Master">
+                                @foreach ($materials as $material)
+                                    <option value="material:{{ $material->id }}" data-name="{{ $material->name }}" data-unit="{{ $material->unit }}" @selected(old('item_key', old('material_id') ? 'material:'.old('material_id') : '') === 'material:'.$material->id)>{{ $material->name }}{{ $material->unit ? ' - '.$material->unit : '' }}</option>
+                                @endforeach
+                            </optgroup>
+                        @endif
+                        @if ($safetyItems->isNotEmpty())
+                            <optgroup label="Safety Item Master">
+                                @foreach ($safetyItems as $item)
+                                    <option value="safety:{{ $item->id }}" data-name="{{ $item->name }}" data-unit="{{ $item->unit }}" @selected(old('item_key') === 'safety:'.$item->id)>{{ $item->name }}{{ $item->unit ? ' - '.$item->unit : '' }}</option>
+                                @endforeach
+                            </optgroup>
+                        @endif
                     </select>
                     <input name="product_name" type="hidden" value="{{ old('product_name') }}" required>
                     <input name="unit" type="hidden" value="{{ old('unit') }}">
@@ -502,20 +513,36 @@
                                 </td>
                                 <td><input form="{{ $formId }}" name="invoice_no" value="{{ $purchase->invoice_no }}"></td>
                                 <td>
-                                    <select class="purchase-material-select js-material-select" form="{{ $formId }}" name="material_id" required>
-                                        @if (! $purchase->material_id)
-                                            <option value="" selected>{{ $purchase->product_name ?: 'Select material' }}</option>
+                                    <select class="purchase-material-select js-material-select" form="{{ $formId }}" name="item_key" required>
+                                        @if (! $purchase->material_id && ! $purchase->safety_item_id)
+                                            <option value="" selected>{{ $purchase->product_name ?: 'Select material / safety item' }}</option>
                                         @else
-                                            <option value="">Select material</option>
+                                            <option value="">Select material / safety item</option>
                                         @endif
-                                        @foreach ($materials as $material)
-                                            <option
-                                                value="{{ $material->id }}"
-                                                data-name="{{ $material->name }}"
-                                                data-unit="{{ $material->unit }}"
-                                                @selected((int) $purchase->material_id === (int) $material->id)
-                                            >{{ $material->name }}{{ $material->unit ? ' - '.$material->unit : '' }}</option>
-                                        @endforeach
+                                        @if ($materials->isNotEmpty())
+                                            <optgroup label="Material Master">
+                                                @foreach ($materials as $material)
+                                                    <option
+                                                        value="material:{{ $material->id }}"
+                                                        data-name="{{ $material->name }}"
+                                                        data-unit="{{ $material->unit }}"
+                                                        @selected((int) $purchase->material_id === (int) $material->id)
+                                                    >{{ $material->name }}{{ $material->unit ? ' - '.$material->unit : '' }}</option>
+                                                @endforeach
+                                            </optgroup>
+                                        @endif
+                                        @if ($safetyItems->isNotEmpty())
+                                            <optgroup label="Safety Item Master">
+                                                @foreach ($safetyItems as $item)
+                                                    <option
+                                                        value="safety:{{ $item->id }}"
+                                                        data-name="{{ $item->name }}"
+                                                        data-unit="{{ $item->unit }}"
+                                                        @selected((int) $purchase->safety_item_id === (int) $item->id)
+                                                    >{{ $item->name }}{{ $item->unit ? ' - '.$item->unit : '' }}</option>
+                                                @endforeach
+                                            </optgroup>
+                                        @endif
                                     </select>
                                     <input form="{{ $formId }}" name="product_name" type="hidden" value="{{ $purchase->product_name }}" required>
                                 </td>

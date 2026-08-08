@@ -13,6 +13,7 @@ class ProductPurchase extends Model
     protected $fillable = [
         'company_id',
         'material_id',
+        'safety_item_id',
         'stock_labour_site_id',
         'purchase_date',
         'supplier_name',
@@ -47,6 +48,11 @@ class ProductPurchase extends Model
     public function material(): BelongsTo
     {
         return $this->belongsTo(Material::class);
+    }
+
+    public function safetyItem(): BelongsTo
+    {
+        return $this->belongsTo(SafetyItem::class);
     }
 
     public function stockSite(): BelongsTo

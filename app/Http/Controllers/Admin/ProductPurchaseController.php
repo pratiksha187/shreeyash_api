@@ -6,13 +6,18 @@ use App\Http\Controllers\Controller;
 use App\Models\LabourSite;
 use App\Models\Material;
 use App\Models\ProductPurchase;
+use App\Models\SafetyItem;
+use App\Models\SafetyStock;
+use App\Models\SafetyStockMovement;
 use App\Models\StockMovement;
 use App\Models\Supplier;
 use App\Services\MaterialStockService;
+use App\Support\Tenant;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
@@ -24,6 +29,8 @@ class ProductPurchaseController extends Controller
 
     public function index(Request $request): View
     {
+        $this->ensureProductPurchaseSafetyColumns();
+
         $filters = $request->validate([
             'month' => ['nullable', 'date_format:Y-m'],
             'search' => ['nullable', 'string', 'max:100'],
@@ -40,7 +47,7 @@ class ProductPurchaseController extends Controller
 
         $purchases = ProductPurchase::query()
             ->forCurrentCompany()
-            ->with(['material', 'stockSite'])
+            ->with(['material', 'safetyItem', 'stockSite'])
             ->when(! $showAll, fn ($query) => $query->whereBetween('purchase_date', [$monthStart->toDateString(), $monthEnd->toDateString()]))
             ->when($selectedSiteId, fn ($query) => $query->where('stock_labour_site_id', $selectedSiteId))
             ->when($search, function ($query, string $search) {
@@ -66,6 +73,9 @@ class ProductPurchaseController extends Controller
             'materials' => $this->hasTable('materials')
                 ? Material::query()->forCurrentCompany()->where('is_active', true)->orderBy('name')->get()
                 : collect(),
+            'safetyItems' => $this->hasTable('safety_items')
+                ? SafetyItem::query()->forCurrentCompany()->where('is_active', true)->orderBy('name')->get()
+                : collect(),
             'suppliers' => $this->hasTable('suppliers')
                 ? Supplier::query()->forCurrentCompany()->where('is_active', true)->orderBy('name')->get(['id', 'name'])
                 : collect(),
@@ -83,6 +93,8 @@ class ProductPurchaseController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        $this->ensureProductPurchaseSafetyColumns();
+
         $data = $this->validatedData($request);
         $data['total_amount'] = $this->totalAmount($data);
 
@@ -100,6 +112,8 @@ class ProductPurchaseController extends Controller
 
     public function update(Request $request, int $productPurchase): RedirectResponse
     {
+        $this->ensureProductPurchaseSafetyColumns();
+
         $productPurchase = $this->findCurrentCompanyPurchase($productPurchase);
         $data = $this->validatedData($request);
         $data['total_amount'] = $this->totalAmount($data);
@@ -117,6 +131,8 @@ class ProductPurchaseController extends Controller
 
     public function destroy(int $productPurchase): RedirectResponse
     {
+        $this->ensureProductPurchaseSafetyColumns();
+
         $productPurchase = $this->findCurrentCompanyPurchase($productPurchase);
 
         DB::transaction(function () use ($productPurchase) {
@@ -135,7 +151,8 @@ class ProductPurchaseController extends Controller
     {
         $data = $request->validate([
             'purchase_date' => ['required', 'date'],
-            'material_id' => ['required', 'integer'],
+            'item_key' => ['nullable', 'string', 'max:80'],
+            'material_id' => ['nullable', 'integer'],
             'supplier_id' => ['required', 'integer'],
             'stock_labour_site_id' => ['nullable', 'integer'],
             'supplier_name' => ['nullable', 'string', 'max:255'],
@@ -154,11 +171,12 @@ class ProductPurchaseController extends Controller
 
         $data['pcs'] = $data['pcs'] ?? 0;
         $data['weight_kg'] = $data['weight_kg'] ?? 0;
-        $this->applyMaterialMasterData($data);
+        $this->applyItemMasterData($data);
         $this->applySupplierMasterData($data);
         $data['quantity'] = $this->billingQuantity($data);
         $data['unit'] = $data['unit'] ?: ((float) $data['weight_kg'] > 0 ? 'Kg' : 'Nos');
         unset($data['supplier_id']);
+        unset($data['item_key']);
 
         return $data;
     }
@@ -166,7 +184,26 @@ class ProductPurchaseController extends Controller
     /**
      * @param array<string, mixed> $data
      */
-    private function applyMaterialMasterData(array &$data): void
+    private function applyItemMasterData(array &$data): void
+    {
+        $itemKey = (string) ($data['item_key'] ?? '');
+
+        if (str_starts_with($itemKey, 'safety:')) {
+            $this->applySafetyItemMasterData($data, (int) substr($itemKey, 7));
+            return;
+        }
+
+        $materialId = str_starts_with($itemKey, 'material:')
+            ? (int) substr($itemKey, 9)
+            : (int) ($data['material_id'] ?? 0);
+
+        $this->applyMaterialMasterData($data, $materialId);
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     */
+    private function applyMaterialMasterData(array &$data, int $materialId): void
     {
         if (! $this->hasTable('materials')) {
             throw ValidationException::withMessages([
@@ -177,7 +214,7 @@ class ProductPurchaseController extends Controller
         $material = Material::query()
             ->forCurrentCompany()
             ->where('is_active', true)
-            ->find($data['material_id']);
+            ->find($materialId);
 
         if (! $material) {
             throw ValidationException::withMessages([
@@ -186,10 +223,40 @@ class ProductPurchaseController extends Controller
         }
 
         $data['product_name'] = $material->name;
+        $data['material_id'] = $material->id;
+        $data['safety_item_id'] = null;
 
         if ($material->unit) {
             $data['unit'] = $material->unit;
         }
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     */
+    private function applySafetyItemMasterData(array &$data, int $safetyItemId): void
+    {
+        if (! $this->hasTable('safety_items')) {
+            throw ValidationException::withMessages([
+                'item_key' => 'Safety Item Master is required before saving a safety purchase.',
+            ]);
+        }
+
+        $item = SafetyItem::query()
+            ->forCurrentCompany()
+            ->where('is_active', true)
+            ->find($safetyItemId);
+
+        if (! $item) {
+            throw ValidationException::withMessages([
+                'item_key' => 'Selected safety item was not found in Safety Item Master.',
+            ]);
+        }
+
+        $data['product_name'] = $item->name;
+        $data['unit'] = $item->unit ?: ($data['unit'] ?? 'Nos');
+        $data['material_id'] = null;
+        $data['safety_item_id'] = $item->id;
     }
 
     /**
@@ -251,6 +318,11 @@ class ProductPurchaseController extends Controller
 
     private function recordPurchaseStock(ProductPurchase $purchase): void
     {
+        if ($purchase->safety_item_id) {
+            $this->recordSafetyPurchaseStock($purchase);
+            return;
+        }
+
         if (! $purchase->material_id || (float) $purchase->quantity <= 0) {
             return;
         }
@@ -272,6 +344,11 @@ class ProductPurchaseController extends Controller
 
     private function reversePurchaseStock(ProductPurchase $purchase, string $remarks): void
     {
+        if ($purchase->safety_item_id) {
+            $this->reverseSafetyPurchaseStock($purchase, $remarks);
+            return;
+        }
+
         if (! $purchase->material_id || (float) $purchase->quantity <= 0 || ! $this->purchaseWasPostedToStock($purchase)) {
             return;
         }
@@ -305,6 +382,107 @@ class ProductPurchaseController extends Controller
             ->exists();
     }
 
+    private function recordSafetyPurchaseStock(ProductPurchase $purchase): void
+    {
+        if (! $purchase->safety_item_id || (float) $purchase->quantity <= 0) {
+            return;
+        }
+
+        if (! $this->hasTable('safety_stocks') || ! $this->hasTable('safety_stock_movements')) {
+            return;
+        }
+
+        $this->addSafetyStock(
+            (int) $purchase->safety_item_id,
+            $purchase->stock_labour_site_id ? (int) $purchase->stock_labour_site_id : null,
+            (float) $purchase->quantity,
+            SafetyStockMovement::PURCHASE_IN,
+            'Safety stock added from product purchase '.$purchase->invoice_no,
+            $purchase->id
+        );
+    }
+
+    private function reverseSafetyPurchaseStock(ProductPurchase $purchase, string $remarks): void
+    {
+        if (! $purchase->safety_item_id || (float) $purchase->quantity <= 0 || ! $this->safetyPurchaseWasPostedToStock($purchase)) {
+            return;
+        }
+
+        if (! $this->hasTable('safety_stocks') || ! $this->hasTable('safety_stock_movements')) {
+            return;
+        }
+
+        $this->removeSafetyStock(
+            (int) $purchase->safety_item_id,
+            $purchase->stock_labour_site_id ? (int) $purchase->stock_labour_site_id : null,
+            (float) $purchase->quantity,
+            'purchase_reverse',
+            $remarks,
+            $purchase->id
+        );
+    }
+
+    private function safetyPurchaseWasPostedToStock(ProductPurchase $purchase): bool
+    {
+        if (! $this->hasTable('safety_stock_movements')) {
+            return false;
+        }
+
+        return SafetyStockMovement::query()
+            ->forCurrentCompany()
+            ->where('reference_type', ProductPurchase::class)
+            ->where('reference_id', $purchase->id)
+            ->where('type', SafetyStockMovement::PURCHASE_IN)
+            ->exists();
+    }
+
+    private function addSafetyStock(int $itemId, ?int $siteId, float $quantity, string $type, ?string $remarks, int $purchaseId): void
+    {
+        $stock = $this->safetyStockRow($itemId, $siteId);
+        $stock->available_quantity = (float) $stock->available_quantity + $quantity;
+        $stock->save();
+        $this->recordSafetyMovement($itemId, $siteId, $type, $quantity, (float) $stock->available_quantity, $remarks, $purchaseId);
+    }
+
+    private function removeSafetyStock(int $itemId, ?int $siteId, float $quantity, string $type, ?string $remarks, int $purchaseId): void
+    {
+        $stock = $this->safetyStockRow($itemId, $siteId);
+        if ((float) $stock->available_quantity < $quantity) {
+            throw ValidationException::withMessages([
+                'quantity' => 'Safety stock has already been issued, so this purchase cannot be changed/deleted without enough available balance.',
+            ]);
+        }
+
+        $stock->available_quantity = (float) $stock->available_quantity - $quantity;
+        $stock->save();
+        $this->recordSafetyMovement($itemId, $siteId, $type, $quantity, (float) $stock->available_quantity, $remarks, $purchaseId);
+    }
+
+    private function safetyStockRow(int $itemId, ?int $siteId): SafetyStock
+    {
+        return SafetyStock::query()->firstOrCreate([
+            'company_id' => app(Tenant::class)->id(),
+            'safety_item_id' => $itemId,
+            'labour_site_id' => $siteId,
+        ], [
+            'available_quantity' => 0,
+        ]);
+    }
+
+    private function recordSafetyMovement(int $itemId, ?int $siteId, string $type, float $quantity, float $balanceAfter, ?string $remarks, int $purchaseId): void
+    {
+        SafetyStockMovement::query()->create([
+            'safety_item_id' => $itemId,
+            'labour_site_id' => $siteId,
+            'type' => $type,
+            'quantity' => $quantity,
+            'balance_after' => $balanceAfter,
+            'reference_type' => ProductPurchase::class,
+            'reference_id' => $purchaseId,
+            'remarks' => $remarks,
+        ]);
+    }
+
     private function findCurrentCompanyPurchase(int $productPurchase): ProductPurchase
     {
         return ProductPurchase::query()
@@ -317,5 +495,20 @@ class ProductPurchaseController extends Controller
         return DB::connection(app(\App\Support\Tenant::class)->connectionName())
             ->getSchemaBuilder()
             ->hasTable($table);
+    }
+
+    private function ensureProductPurchaseSafetyColumns(): void
+    {
+        $connection = app(Tenant::class)->connectionName() ?: config('database.default');
+        $schema = Schema::connection($connection);
+
+        if (! $schema->hasTable('product_purchases') || $schema->hasColumn('product_purchases', 'safety_item_id')) {
+            return;
+        }
+
+        $schema->table('product_purchases', function ($table) {
+            $table->unsignedBigInteger('safety_item_id')->nullable()->after('material_id');
+            $table->index('safety_item_id');
+        });
     }
 }
