@@ -125,7 +125,7 @@
 
         .material-requests-page .request-detail-panel {
             display: grid;
-            grid-template-columns: minmax(0, 1fr) minmax(260px, .75fr);
+            grid-template-columns: minmax(0, 1fr) minmax(260px, .75fr) minmax(180px, .45fr);
             gap: 18px;
             padding: 16px;
             border-top: 1px solid var(--line);
@@ -142,6 +142,19 @@
             color: #0f172a;
             font-size: 16px;
             line-height: 1.25;
+        }
+
+        .material-requests-page .request-delete-card {
+            align-content: start;
+        }
+
+        .material-requests-page .request-delete-card form {
+            margin: 0;
+        }
+
+        .material-requests-page .request-delete-card .btn {
+            width: 100%;
+            justify-content: center;
         }
 
         .material-requests-page .requests-table th:last-child,
@@ -422,6 +435,18 @@
                                             <a class="btn small" href="{{ route('admin.product-purchases.index') }}">Create Purchase</a>
                                         @else
                                             <span class="table-subtext">No issue action</span>
+                                        @endif
+                                    </div>
+                                    <div class="request-detail-card request-delete-card">
+                                        <h3>Delete</h3>
+                                        @if ((float) $requestRow->issued_quantity > 0)
+                                            <span class="table-subtext">Issued request cannot be deleted.</span>
+                                        @else
+                                            <form method="POST" action="{{ route('admin.material-requests.destroy', $requestRow) }}" onsubmit="return confirm('Delete this material request?');">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button class="btn small danger" type="submit">Delete</button>
+                                            </form>
                                         @endif
                                     </div>
                                 </div>

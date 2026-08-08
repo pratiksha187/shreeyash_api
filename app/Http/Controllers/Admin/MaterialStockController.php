@@ -256,6 +256,36 @@ class MaterialStockController extends Controller
         return back()->with('success', 'Material request updated successfully.');
     }
 
+    public function destroyRequest(int $materialRequestId): RedirectResponse
+    {
+        $this->ensureInventoryProjectColumns();
+
+        if (! $this->hasTable('material_requests')) {
+            return redirect()
+                ->route('admin.material-requests.index')
+                ->with('error', 'Material request table is missing. Please create the material_requests table first.');
+        }
+
+        $materialRequest = MaterialRequest::query()->forCurrentCompany()->findOrFail($materialRequestId);
+        $this->ensureCurrentCompany($materialRequest);
+
+        $hasIssuedMaterial = (float) $materialRequest->issued_quantity > 0;
+        if (! $hasIssuedMaterial && $this->hasTable('material_issues')) {
+            $hasIssuedMaterial = MaterialIssue::query()
+                ->forCurrentCompany()
+                ->where('material_request_id', $materialRequest->id)
+                ->exists();
+        }
+
+        if ($hasIssuedMaterial) {
+            return back()->with('error', 'This request already has issued material, so it cannot be deleted.');
+        }
+
+        $materialRequest->delete();
+
+        return back()->with('success', 'Material request deleted successfully.');
+    }
+
     public function issue(Request $request, int $materialRequestId): RedirectResponse
     {
         $this->ensureInventoryProjectColumns();

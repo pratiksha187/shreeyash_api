@@ -160,6 +160,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('/material-stock/adjust', [MaterialStockController::class, 'adjustStock'])->name('material-stock.adjust');
         Route::get('/material-requests', [MaterialStockController::class, 'requests'])->name('material-requests.index');
         Route::patch('/material-requests/{materialRequestId}', [MaterialStockController::class, 'updateRequest'])->name('material-requests.update');
+        Route::delete('/material-requests/{materialRequestId}', [MaterialStockController::class, 'destroyRequest'])->name('material-requests.destroy');
         Route::post('/material-requests/{materialRequestId}/issue', [MaterialStockController::class, 'issue'])->name('material-requests.issue');
         Route::get('/material-issues', [MaterialStockController::class, 'issues'])->name('material-issues.index');
         Route::get('/suppliers', [SupplierController::class, 'index'])->name('suppliers.index');
