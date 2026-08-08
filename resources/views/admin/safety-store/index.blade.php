@@ -29,13 +29,33 @@
         .safety-actions select, .safety-actions input, .safety-actions textarea { width: 100%; min-width: 0; min-height: 34px; padding: 7px 8px; font-size: 12px; }
         .safety-actions textarea { min-height: 44px; }
         .safety-actions .btn { width: 100%; justify-content: center; }
+        .safety-requests-wrap { overflow-x: hidden; }
+        .safety-requests-table { min-width: 0; }
+        .safety-requests-table .col-sr { width: 7%; }
+        .safety-requests-table .col-item { width: 21%; }
+        .safety-requests-table .col-work { width: 24%; }
+        .safety-requests-table .col-requested { width: 20%; }
+        .safety-requests-table .col-status { width: 14%; }
+        .safety-requests-table .col-open { width: 14%; text-align: center; }
+        .safety-request-toggle { width: 38px; min-width: 38px; height: 34px; padding: 0; justify-content: center; font-size: 18px; line-height: 1; }
+        .safety-request-detail-row[hidden] { display: none; }
+        .safety-request-detail-row td { padding: 0; background: #f8fbff; border-top: 1px solid var(--line); }
+        .safety-request-detail-row:hover td { background: #f8fbff; }
+        .safety-request-detail-panel { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(280px, .9fr); gap: 16px; padding: 16px 20px 18px; }
+        .safety-request-detail-card { display: grid; gap: 10px; min-width: 0; align-content: start; padding: 14px; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+        .safety-request-detail-card h3 { margin: 0; color: #0f172a; font-size: 18px; line-height: 1.2; text-align: center; }
+        .safety-request-detail-card form { display: grid; gap: 10px; margin: 0; }
+        .safety-request-detail-card select, .safety-request-detail-card input, .safety-request-detail-card textarea { width: 100%; min-width: 0; min-height: 38px; }
+        .safety-request-detail-card textarea { min-height: 62px; resize: vertical; }
+        .safety-request-detail-card .btn { width: 100%; justify-content: center; min-height: 42px; }
+        .safety-request-message-card { display: grid; min-height: 148px; align-content: center; justify-items: center; padding: 16px; border: 1px dashed #cbd5e1; border-radius: 8px; color: #526b8d; text-align: center; font-weight: 700; background: #f8fafc; }
         .safety-pill { display: inline-flex; justify-content: center; min-height: 28px; padding: 5px 10px; border-radius: 999px; background: #e5f0fb; color: var(--brand-blue-dark); font-size: 12px; font-weight: 800; }
         .safety-pill.pending { background: #fef3c7; color: #92400e; }
         .safety-pill.approved, .safety-pill.issued { background: #dcfce7; color: #166534; }
         .safety-pill.rejected, .safety-pill.cancelled { background: #fee2e2; color: #991b1b; }
         .safety-pill.purchase_required { background: #ffedd5; color: #9a3412; }
-        @media (max-width: 1100px) { .safety-two, .safety-actions { grid-template-columns: 1fr; } .safety-store-page .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-        @media (max-width: 760px) { .safety-form-grid, .safety-store-page .stats-grid { grid-template-columns: 1fr; } .safety-form-grid .wide { grid-column: span 1; } }
+        @media (max-width: 1100px) { .safety-two, .safety-actions, .safety-request-detail-panel { grid-template-columns: 1fr; } .safety-store-page .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+        @media (max-width: 760px) { .safety-form-grid, .safety-store-page .stats-grid { grid-template-columns: 1fr; } .safety-form-grid .wide { grid-column: span 1; } .safety-table th, .safety-table td { padding: 9px 8px; } }
     </style>
 
     <div class="page-header">
@@ -135,12 +155,21 @@
 
         <section class="card safety-panel">
             <div class="safety-panel-head"><h2>Approve & Issue Requests</h2><p>Approve request and issue from available store/site stock.</p></div>
-            <div class="table-wrap">
-                <table class="safety-table">
-                        <thead><tr><th>Sr</th><th>Item</th><th>Site / Work</th><th>Requested</th><th>Status</th><th>Approve / Issue</th></tr></thead>
+            <div class="table-wrap safety-requests-wrap">
+                <table class="safety-table safety-requests-table">
+                    <colgroup>
+                        <col class="col-sr">
+                        <col class="col-item">
+                        <col class="col-work">
+                        <col class="col-requested">
+                        <col class="col-status">
+                        <col class="col-open">
+                    </colgroup>
+                    <thead><tr><th>Sr</th><th>Item</th><th>Site / Work</th><th>Requested</th><th>Status</th><th>Open</th></tr></thead>
                     <tbody>
                         @forelse ($requests as $requestRow)
                             @php($remaining = max(0, (float) $requestRow->approved_quantity - (float) $requestRow->issued_quantity))
+                            @php($detailId = 'safety-request-detail-'.$requestRow->id)
                             <tr>
                                 <td><strong>{{ $requests->firstItem() + $loop->index }}</strong></td>
                                 <td><strong>{{ $requestRow->item?->name }}</strong><div class="table-subtext">{{ $requestRow->item?->category ?? '-' }}</div></td>
@@ -153,26 +182,37 @@
                                     <div class="table-subtext">Issued: {{ number_format($requestRow->issued_quantity, 2) }}</div>
                                 </td>
                                 <td><span class="safety-pill {{ $requestRow->status }}">{{ ucwords(str_replace('_', ' ', $requestRow->status)) }}</span></td>
-                                <td>
-                                    <div class="safety-actions">
-                                        <form method="POST" action="{{ route('admin.safety-store.requests.update', $requestRow) }}">
-                                            @csrf @method('PATCH')
-                                            <select name="status">@foreach (['pending','approved','partially_approved','purchase_required','rejected','cancelled'] as $status)<option value="{{ $status }}" @selected($requestRow->status === $status)>{{ ucwords(str_replace('_', ' ', $status)) }}</option>@endforeach</select>
-                                            <input name="approved_quantity" type="number" min="0" step="0.01" value="{{ number_format($requestRow->approved_quantity ?: $requestRow->requested_quantity, 2, '.', '') }}">
-                                            <textarea name="admin_note" placeholder="Admin note">{{ $requestRow->admin_note }}</textarea>
-                                            <button class="btn small" type="submit">Approve / Save</button>
-                                        </form>
-                                        @if (in_array($requestRow->status, ['approved', 'partially_approved'], true) && $remaining > 0)
-                                            <form method="POST" action="{{ route('admin.safety-store.requests.issue', $requestRow) }}">
-                                                @csrf
-                                                <select name="issue_source_labour_site_id"><option value="">From Main Store</option>@foreach ($sites as $site)<option value="{{ $site->id }}">From {{ $site->name }}</option>@endforeach</select>
-                                                <input name="issued_quantity" type="number" min="0.01" max="{{ number_format($remaining, 2, '.', '') }}" step="0.01" value="{{ number_format($remaining, 2, '.', '') }}">
-                                                <textarea name="remarks" placeholder="Issue remarks"></textarea>
-                                                <button class="btn small" type="submit">Issue</button>
+                                <td class="col-open">
+                                    <button class="btn small safety-request-toggle" type="button" data-safety-request-toggle="{{ $detailId }}" aria-controls="{{ $detailId }}" aria-expanded="false">+</button>
+                                </td>
+                            </tr>
+                            <tr id="{{ $detailId }}" class="safety-request-detail-row" hidden>
+                                <td colspan="6">
+                                    <div class="safety-request-detail-panel">
+                                        <div class="safety-request-detail-card">
+                                            <h3>Approve / Reject</h3>
+                                            <form method="POST" action="{{ route('admin.safety-store.requests.update', $requestRow) }}">
+                                                @csrf @method('PATCH')
+                                                <select name="status">@foreach (['pending','approved','partially_approved','purchase_required','rejected','cancelled'] as $status)<option value="{{ $status }}" @selected($requestRow->status === $status)>{{ ucwords(str_replace('_', ' ', $status)) }}</option>@endforeach</select>
+                                                <input name="approved_quantity" type="number" min="0" step="0.01" value="{{ number_format($requestRow->approved_quantity ?: $requestRow->requested_quantity, 2, '.', '') }}">
+                                                <textarea name="admin_note" placeholder="Admin note">{{ $requestRow->admin_note }}</textarea>
+                                                <button class="btn small" type="submit">Save Approval</button>
                                             </form>
-                                        @else
-                                            <span class="table-subtext">Approve first, then issue safety item.</span>
-                                        @endif
+                                        </div>
+                                        <div class="safety-request-detail-card">
+                                            <h3>Issue</h3>
+                                            @if (in_array($requestRow->status, ['approved', 'partially_approved'], true) && $remaining > 0)
+                                                <form method="POST" action="{{ route('admin.safety-store.requests.issue', $requestRow) }}">
+                                                    @csrf
+                                                    <select name="issue_source_labour_site_id"><option value="">From Main Store</option>@foreach ($sites as $site)<option value="{{ $site->id }}">From {{ $site->name }}</option>@endforeach</select>
+                                                    <input name="issued_quantity" type="number" min="0.01" max="{{ number_format($remaining, 2, '.', '') }}" step="0.01" value="{{ number_format($remaining, 2, '.', '') }}">
+                                                    <textarea name="remarks" placeholder="Issue remarks"></textarea>
+                                                    <button class="btn small" type="submit">Issue Safety Item</button>
+                                                </form>
+                                            @else
+                                                <div class="safety-request-message-card">Approve first, then issue safety item.</div>
+                                            @endif
+                                        </div>
                                     </div>
                                 </td>
                             </tr>
@@ -207,4 +247,18 @@
         </section>
         @endif
     </div>
+
+    <script>
+        document.querySelectorAll('[data-safety-request-toggle]').forEach((button) => {
+            button.addEventListener('click', () => {
+                const detail = document.getElementById(button.dataset.safetyRequestToggle);
+                if (!detail) return;
+
+                const isOpen = !detail.hidden;
+                detail.hidden = isOpen;
+                button.textContent = isOpen ? '+' : '-';
+                button.setAttribute('aria-expanded', String(!isOpen));
+            });
+        });
+    </script>
 @endsection
