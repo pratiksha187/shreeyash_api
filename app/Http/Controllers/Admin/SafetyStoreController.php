@@ -23,6 +23,34 @@ use Illuminate\View\View;
 
 class SafetyStoreController extends Controller
 {
+    public function items(): View
+    {
+        $this->ensureSafetyTables();
+
+        return view('admin.safety-store.index', [
+            'mode' => 'master',
+            'items' => $this->activeItems(),
+            'allItems' => SafetyItem::query()->forCurrentCompany()->withSum('stocks', 'available_quantity')->latest()->paginate(10, ['*'], 'items_page'),
+            'stocks' => collect(),
+            'purchases' => collect(),
+            'requests' => collect(),
+            'issues' => collect(),
+            'movements' => collect(),
+            'sites' => collect(),
+            'projects' => collect(),
+            'projectTasks' => collect(),
+            'statuses' => SafetyRequest::STATUSES,
+            'selectedStatus' => null,
+            'selectedSiteId' => null,
+            'summary' => [
+                'items' => SafetyItem::query()->forCurrentCompany()->count(),
+                'stock_rows' => SafetyStock::query()->forCurrentCompany()->count(),
+                'pending' => SafetyRequest::query()->forCurrentCompany()->where('status', 'pending')->count(),
+                'issued' => SafetyRequest::query()->forCurrentCompany()->where('status', 'issued')->count(),
+            ],
+        ]);
+    }
+
     public function index(Request $request): View
     {
         $this->ensureSafetyTables();
@@ -42,6 +70,7 @@ class SafetyStoreController extends Controller
             ->withQueryString();
 
         return view('admin.safety-store.index', [
+            'mode' => 'store',
             'items' => $this->activeItems(),
             'allItems' => SafetyItem::query()->forCurrentCompany()->withSum('stocks', 'available_quantity')->latest()->paginate(10, ['*'], 'items_page'),
             'stocks' => SafetyStock::query()->forCurrentCompany()->with(['item', 'site'])->whereHas('item')->latest()->paginate(10, ['*'], 'stock_page'),

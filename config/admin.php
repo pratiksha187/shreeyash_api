@@ -259,6 +259,12 @@ return [
                     'route' => 'admin.material-issues.index',
                     'active' => 'admin.material-issues.*',
                 ],
+                [
+                    'key' => 'safety_store',
+                    'label' => 'Safety Store',
+                    'route' => 'admin.safety-store.index',
+                    'active' => 'admin.safety-store.*',
+                ],
             ],
         ],
         [
@@ -297,8 +303,8 @@ return [
                 [
                     'key' => 'safety_store',
                     'label' => 'Safety Item Master',
-                    'route' => 'admin.safety-store.index',
-                    'active' => 'admin.safety-store.*',
+                    'route' => 'admin.safety-items.index',
+                    'active' => 'admin.safety-items.*',
                 ],
             ],
         ],
@@ -407,6 +413,7 @@ return [
         'admin.material-stock.*' => 'material_stock',
         'admin.material-requests.*' => 'material_stock',
         'admin.material-issues.*' => 'material_stock',
+        'admin.safety-items.*' => 'safety_store',
         'admin.safety-store.*' => 'safety_store',
         'admin.suppliers.*' => 'supplier_master',
         'admin.units.*' => 'unit_master',

@@ -165,6 +165,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('/material-requests/{materialRequestId}/issue', [MaterialStockController::class, 'issue'])->name('material-requests.issue');
         Route::get('/material-issues', [MaterialStockController::class, 'issues'])->name('material-issues.index');
         Route::get('/material-issues/download-stock', [MaterialStockController::class, 'downloadStockMovements'])->name('material-issues.download-stock');
+        Route::get('/safety-items', [SafetyStoreController::class, 'items'])->name('safety-items.index');
         Route::get('/safety-store', [SafetyStoreController::class, 'index'])->name('safety-store.index');
         Route::post('/safety-store/items', [SafetyStoreController::class, 'storeItem'])->name('safety-store.items.store');
         Route::post('/safety-store/purchases', [SafetyStoreController::class, 'storePurchase'])->name('safety-store.purchases.store');

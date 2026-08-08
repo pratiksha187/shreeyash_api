@@ -2,8 +2,8 @@
 
 @section('title', 'Safety Store | Admin Panel')
 @section('bodyClass', 'safety-store-page')
-@section('headerTitle', 'Safety Store')
-@section('headerSubtitle', 'Safety item master, purchase inward, requests, approval and issue')
+@section('headerTitle', ($mode ?? 'store') === 'master' ? 'Safety Item Master' : 'Safety Store')
+@section('headerSubtitle', ($mode ?? 'store') === 'master' ? 'Add PPE and safety store item master' : 'Safety purchase inward, requests, approval and issue')
 
 @section('content')
     <style>
@@ -40,8 +40,8 @@
 
     <div class="page-header">
         <div>
-            <h1>Safety Store</h1>
-            <p>Add safety items, purchase stock, approve site requests and issue PPE/tools to the required work side.</p>
+            <h1>{{ ($mode ?? 'store') === 'master' ? 'Safety Item Master' : 'Safety Store' }}</h1>
+            <p>{{ ($mode ?? 'store') === 'master' ? 'Add PPE and safety store items for use in safety requests and purchase inward.' : 'Purchase stock, approve site requests and issue PPE/tools to the required work side.' }}</p>
         </div>
     </div>
 
@@ -57,8 +57,8 @@
     </section>
 
     <div class="safety-grid">
-        <section class="safety-two">
-            <div class="card safety-panel">
+        @if (($mode ?? 'store') === 'master')
+            <section class="card safety-panel">
                 <div class="safety-panel-head"><h2>Safety Item Master</h2><p>Add PPE and safety store items.</p></div>
                 <div class="safety-panel-body">
                     <form class="safety-form-grid" method="POST" action="{{ route('admin.safety-store.items.store') }}">
@@ -70,9 +70,34 @@
                         <div class="field"><button class="btn" type="submit">Save Item</button></div>
                     </form>
                 </div>
-            </div>
+            </section>
 
-            <div class="card safety-panel">
+            <section class="card safety-panel">
+                <div class="safety-panel-head"><h2>Safety Item List</h2><p>Items available for safety purchase and mobile requests.</p></div>
+                <div class="table-wrap">
+                    <table class="safety-table">
+                        <thead><tr><th>Sr</th><th>Name</th><th>Category</th><th>Unit</th><th>Minimum</th><th>Total Stock</th><th>Status</th></tr></thead>
+                        <tbody>
+                            @forelse ($allItems as $item)
+                                <tr>
+                                    <td><strong>{{ $allItems->firstItem() + $loop->index }}</strong></td>
+                                    <td>{{ $item->name }}</td>
+                                    <td>{{ $item->category ?? '-' }}</td>
+                                    <td>{{ $item->unit ?? '-' }}</td>
+                                    <td>{{ number_format($item->minimum_stock, 2) }}</td>
+                                    <td>{{ number_format($item->stocks_sum_available_quantity ?? 0, 2) }}</td>
+                                    <td><span class="status-pill {{ $item->is_active ? 'status-approved' : 'status-open' }}">{{ $item->is_active ? 'Active' : 'Inactive' }}</span></td>
+                                </tr>
+                            @empty
+                                <tr><td colspan="7">No safety items added yet.</td></tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pagination">{{ $allItems->links('admin.pagination') }}</div>
+            </section>
+        @else
+        <section class="card safety-panel">
                 <div class="safety-panel-head"><h2>Purchase / Inward</h2><p>Purchase safety item and add stock to store/site.</p></div>
                 <div class="safety-panel-body">
                     <form class="safety-form-grid" method="POST" action="{{ route('admin.safety-store.purchases.store') }}">
@@ -88,7 +113,6 @@
                         <div class="field"><button class="btn" type="submit">Save Purchase</button></div>
                     </form>
                 </div>
-            </div>
         </section>
 
         <section class="card safety-panel">
@@ -181,5 +205,6 @@
                 </div>
             </div>
         </section>
+        @endif
     </div>
 @endsection
