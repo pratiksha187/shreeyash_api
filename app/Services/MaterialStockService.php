@@ -5,7 +5,9 @@ namespace App\Services;
 use App\Models\MaterialStock;
 use App\Models\StockMovement;
 use App\Support\Tenant;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 
 class MaterialStockService
@@ -117,6 +119,8 @@ class MaterialStockService
         ?int $projectId,
         ?int $projectTaskId
     ): void {
+        $this->ensureStockMovementProjectColumns();
+
         StockMovement::query()->create([
             'material_id' => $materialId,
             'labour_site_id' => $siteId,
@@ -129,5 +133,27 @@ class MaterialStockService
             'reference_id' => $referenceId,
             'remarks' => $remarks,
         ]);
+    }
+
+    private function ensureStockMovementProjectColumns(): void
+    {
+        $connection = app(Tenant::class)->connectionName() ?: config('database.default');
+        $schema = Schema::connection($connection);
+
+        if (! $schema->hasTable('stock_movements')) {
+            return;
+        }
+
+        if (! $schema->hasColumn('stock_movements', 'project_id')) {
+            $schema->table('stock_movements', function (Blueprint $table) {
+                $table->unsignedBigInteger('project_id')->nullable()->after('labour_site_id');
+            });
+        }
+
+        if (! $schema->hasColumn('stock_movements', 'project_task_id')) {
+            $schema->table('stock_movements', function (Blueprint $table) {
+                $table->unsignedBigInteger('project_task_id')->nullable()->after('project_id');
+            });
+        }
     }
 }

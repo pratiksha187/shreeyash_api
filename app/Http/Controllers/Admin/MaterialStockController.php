@@ -17,7 +17,9 @@ use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -147,6 +149,8 @@ class MaterialStockController extends Controller
 
     public function requests(Request $request): View
     {
+        $this->ensureInventoryProjectColumns();
+
         if (! $this->hasTable('material_requests')) {
             return view('admin.material-stock.requests', [
                 'requests' => $this->emptyPaginator(),
@@ -212,6 +216,8 @@ class MaterialStockController extends Controller
 
     public function updateRequest(Request $request, int $materialRequestId): RedirectResponse
     {
+        $this->ensureInventoryProjectColumns();
+
         if (! $this->hasTable('material_requests')) {
             return redirect()
                 ->route('admin.material-requests.index')
@@ -252,6 +258,8 @@ class MaterialStockController extends Controller
 
     public function issue(Request $request, int $materialRequestId): RedirectResponse
     {
+        $this->ensureInventoryProjectColumns();
+
         if (! $this->hasTable('material_requests')) {
             return redirect()
                 ->route('admin.material-requests.index')
@@ -324,6 +332,8 @@ class MaterialStockController extends Controller
 
     public function issues(): View
     {
+        $this->ensureInventoryProjectColumns();
+
         if (! $this->hasTable('material_issues') || ! $this->hasTable('stock_movements')) {
             return view('admin.material-stock.issues', [
                 'issues' => $this->emptyPaginator(),
@@ -446,6 +456,30 @@ class MaterialStockController extends Controller
         return DB::connection(app(Tenant::class)->connectionName())
             ->getSchemaBuilder()
             ->hasTable($table);
+    }
+
+    private function ensureInventoryProjectColumns(): void
+    {
+        $connection = app(Tenant::class)->connectionName() ?: config('database.default');
+        $schema = Schema::connection($connection);
+
+        foreach (['material_requests', 'material_issues', 'stock_movements'] as $tableName) {
+            if (! $schema->hasTable($tableName)) {
+                continue;
+            }
+
+            if (! $schema->hasColumn($tableName, 'project_id')) {
+                $schema->table($tableName, function (Blueprint $table) {
+                    $table->unsignedBigInteger('project_id')->nullable()->after('labour_site_id');
+                });
+            }
+
+            if (! $schema->hasColumn($tableName, 'project_task_id')) {
+                $schema->table($tableName, function (Blueprint $table) {
+                    $table->unsignedBigInteger('project_task_id')->nullable()->after('project_id');
+                });
+            }
+        }
     }
 
     private function resolvedRequestMaterialId(MaterialRequest $materialRequest, mixed $selectedMaterialId): ?int
