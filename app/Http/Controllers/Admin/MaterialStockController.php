@@ -184,7 +184,7 @@ class MaterialStockController extends Controller
             ->when(isset($filters['labour_site_id']), fn ($query) => $query->where('labour_site_id', $filters['labour_site_id']))
             ->when(isset($filters['project_id']), fn ($query) => $query->where('project_id', $filters['project_id']))
             ->latest()
-            ->paginate(20)
+            ->paginate(10)
             ->withQueryString();
 
         $availableByRequest = $requests->getCollection()->mapWithKeys(fn (MaterialRequest $request) => [

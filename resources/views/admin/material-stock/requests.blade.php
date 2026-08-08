@@ -66,7 +66,7 @@
         .material-requests-page .requests-table th,
         .material-requests-page .requests-table td {
             padding: 10px 8px;
-            vertical-align: top;
+            vertical-align: middle;
             white-space: normal;
             overflow-wrap: anywhere;
         }
@@ -76,14 +76,78 @@
             letter-spacing: 0;
         }
 
-        .material-requests-page .col-engineer { width: 11%; }
-        .material-requests-page .col-project { width: 14%; }
-        .material-requests-page .col-material { width: 12%; }
-        .material-requests-page .col-requested { width: 11%; }
-        .material-requests-page .col-available { width: 11%; }
-        .material-requests-page .col-status { width: 9%; }
-        .material-requests-page .col-approve { width: 20%; }
-        .material-requests-page .col-issue { width: 12%; }
+        .material-requests-page .col-sr { width: 7%; }
+        .material-requests-page .col-engineer { width: 16%; }
+        .material-requests-page .col-project { width: 17%; }
+        .material-requests-page .col-material { width: 15%; }
+        .material-requests-page .col-requested { width: 14%; }
+        .material-requests-page .col-available { width: 13%; }
+        .material-requests-page .col-status { width: 10%; }
+        .material-requests-page .col-action { width: 8%; }
+
+        .material-requests-page .request-sr-cell {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .material-requests-page .request-toggle {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            padding: 0;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            background: #fff;
+            color: var(--brand-blue);
+            font-size: 18px;
+            font-weight: 900;
+            line-height: 1;
+        }
+
+        .material-requests-page .request-toggle[aria-expanded="true"] {
+            border-color: var(--primary);
+            background: var(--primary);
+            color: #fff;
+        }
+
+        .material-requests-page .request-detail-row[hidden] {
+            display: none;
+        }
+
+        .material-requests-page .request-detail-row td {
+            padding: 0;
+            background: #f8fbff;
+            vertical-align: top;
+        }
+
+        .material-requests-page .request-detail-panel {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(260px, .75fr);
+            gap: 18px;
+            padding: 16px;
+            border-top: 1px solid var(--line);
+        }
+
+        .material-requests-page .request-detail-card {
+            display: grid;
+            gap: 10px;
+            min-width: 0;
+        }
+
+        .material-requests-page .request-detail-card h3 {
+            margin: 0;
+            color: #0f172a;
+            font-size: 16px;
+            line-height: 1.25;
+        }
+
+        .material-requests-page .requests-table th:last-child,
+        .material-requests-page .requests-table td:last-child {
+            text-align: center;
+        }
 
         .material-requests-page .inline-status-form {
             display: grid;
@@ -140,6 +204,10 @@
 
             .material-requests-page .request-filter-card {
                 padding: 22px;
+            }
+
+            .material-requests-page .request-detail-panel {
+                grid-template-columns: 1fr;
             }
         }
     </style>
@@ -206,25 +274,25 @@
         <div class="table-wrap requests-table-wrap">
             <table class="requests-table">
                 <colgroup>
+                    <col class="col-sr">
                     <col class="col-engineer">
                     <col class="col-project">
                     <col class="col-material">
                     <col class="col-requested">
                     <col class="col-available">
                     <col class="col-status">
-                    <col class="col-approve">
-                    <col class="col-issue">
+                    <col class="col-action">
                 </colgroup>
                 <thead>
                     <tr>
+                        <th>Sr No</th>
                         <th>Engineer</th>
                         <th>Project / Site</th>
                         <th>Material</th>
                         <th>Requested</th>
                         <th>Available</th>
                         <th>Status</th>
-                        <th>Approve / Reject</th>
-                        <th>Issue</th>
+                        <th>Open</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -236,8 +304,12 @@
                             $firstSourceAvailable = $firstSourceStock ? (float) $firstSourceStock->available_quantity : 0;
                             $remainingApproved = max(0, (float) $requestRow->approved_quantity - (float) $requestRow->issued_quantity);
                             $material = $requestRow->relationLoaded('material') ? $requestRow->material : null;
+                            $detailId = 'request-detail-'.$requestRow->id;
                         @endphp
                         <tr>
+                            <td>
+                                <strong>{{ $requests->firstItem() + $loop->index }}</strong>
+                            </td>
                             <td>
                                 <strong>{{ $requestRow->engineer?->name ?? '-' }}</strong>
                                 <div class="table-subtext">{{ $requestRow->engineer?->mobile }}</div>
@@ -271,77 +343,88 @@
                             </td>
                             <td><span class="status-pill status-{{ $requestRow->status }}">{{ ucwords(str_replace('_', ' ', $requestRow->status)) }}</span></td>
                             <td>
-                                <form class="inline-status-form" method="POST" action="{{ route('admin.material-requests.update', $requestRow) }}">
-                                    @csrf
-                                    @method('PATCH')
-                                    @if ($materials->isNotEmpty())
-                                        <select name="material_id">
-                                            <option value="">Auto / Keep material</option>
-                                            @foreach ($materials as $materialOption)
-                                                <option value="{{ $materialOption->id }}" @selected((int) $requestRow->material_id === (int) $materialOption->id)>
-                                                    Link: {{ $materialOption->name }}{{ $materialOption->unit ? ' ('.$materialOption->unit.')' : '' }}
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                    @endif
-                                    <select name="project_id">
-                                        <option value="">No project link</option>
-                                        @foreach ($projects as $project)
-                                            <option value="{{ $project->id }}" @selected((int) $requestRow->project_id === (int) $project->id)>
-                                                {{ $project->code ? $project->code.' - ' : '' }}{{ $project->name }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                    <select name="project_task_id">
-                                        <option value="">No task link</option>
-                                        @foreach ($projectTasks as $task)
-                                            <option value="{{ $task->id }}" @selected((int) $requestRow->project_task_id === (int) $task->id)>
-                                                {{ $task->boq_item_number ? $task->boq_item_number.' - ' : '' }}{{ $task->title }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                    <select name="status">
-                                        <option value="pending" @selected($requestRow->status === 'pending')>Pending</option>
-                                        <option value="approved" @selected($requestRow->status === 'approved')>Approved</option>
-                                        <option value="partially_approved" @selected($requestRow->status === 'partially_approved')>Partially Approved</option>
-                                        <option value="purchase_required" @selected($requestRow->status === 'purchase_required')>Purchase Required</option>
-                                        <option value="rejected" @selected($requestRow->status === 'rejected')>Rejected</option>
-                                        <option value="cancelled" @selected($requestRow->status === 'cancelled')>Cancelled</option>
-                                    </select>
-                                    <input name="approved_quantity" type="number" min="0" step="0.01" value="{{ number_format($requestRow->approved_quantity ?: $requestRow->requested_quantity, 2, '.', '') }}">
-                                    <textarea name="admin_note" placeholder="Admin note">{{ $requestRow->admin_note }}</textarea>
-                                    <button class="btn small" type="submit">Save</button>
-                                </form>
+                                <button class="btn small request-toggle" type="button" data-request-toggle="{{ $detailId }}" aria-expanded="false" aria-controls="{{ $detailId }}">+</button>
                             </td>
-                            <td>
-                                @if (in_array($requestRow->status, ['approved', 'partially_approved'], true) && $remainingApproved > 0 && $available > 0 && $requestRow->material_id)
-                                    <form class="inline-status-form material-issue-form" method="POST" action="{{ route('admin.material-requests.issue', $requestRow) }}">
-                                        @csrf
-                                        <select name="issue_source_labour_site_id" class="issue-source-select">
-                                            @foreach ($sourceStocks as $sourceStock)
-                                                <option
-                                                    value="{{ $sourceStock->labour_site_id }}"
-                                                    data-available="{{ number_format($sourceStock->available_quantity, 2, '.', '') }}"
-                                                >
-                                                    From {{ $sourceStock->site?->name ?? 'Main Store' }} ({{ number_format($sourceStock->available_quantity, 2) }} available)
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                        <input class="issue-quantity-input" name="issued_quantity" type="number" min="0.01" max="{{ number_format(min($remainingApproved, $firstSourceAvailable ?: $available), 2, '.', '') }}" step="0.01" value="{{ number_format(min($remainingApproved, $firstSourceAvailable ?: $available), 2, '.', '') }}" data-remaining="{{ number_format($remainingApproved, 2, '.', '') }}">
-                                        <textarea name="remarks" placeholder="Issue remarks"></textarea>
-                                        <button class="btn small" type="submit">Send / Issue Material</button>
-                                    </form>
-                                @elseif (in_array($requestRow->status, ['approved', 'partially_approved'], true) && ! $requestRow->material_id)
-                                    <span class="table-subtext">Typed material request. Add this material in Material Master, purchase/add stock, then issue.</span>
-                                    <a class="btn small" href="{{ route('admin.materials.index') }}">Add Material</a>
-                                @elseif (in_array($requestRow->status, ['approved', 'partially_approved'], true) && $remainingApproved > 0 && $available <= 0)
-                                    <span class="table-subtext">No stock available for issue.</span>
-                                    <a class="btn small" href="{{ route('admin.product-purchases.index') }}">Create Purchase</a>
-                                @elseif ($requestRow->status === 'purchase_required')
-                                    <a class="btn small" href="{{ route('admin.product-purchases.index') }}">Create Purchase</a>
-                                @else
-                                    <span class="table-subtext">No issue action</span>
-                                @endif
+                        </tr>
+                        <tr id="{{ $detailId }}" class="request-detail-row" hidden>
+                            <td colspan="8">
+                                <div class="request-detail-panel">
+                                    <div class="request-detail-card">
+                                        <h3>Approve / Reject</h3>
+                                        <form class="inline-status-form" method="POST" action="{{ route('admin.material-requests.update', $requestRow) }}">
+                                            @csrf
+                                            @method('PATCH')
+                                            @if ($materials->isNotEmpty())
+                                                <select name="material_id">
+                                                    <option value="">Auto / Keep material</option>
+                                                    @foreach ($materials as $materialOption)
+                                                        <option value="{{ $materialOption->id }}" @selected((int) $requestRow->material_id === (int) $materialOption->id)>
+                                                            Link: {{ $materialOption->name }}{{ $materialOption->unit ? ' ('.$materialOption->unit.')' : '' }}
+                                                        </option>
+                                                    @endforeach
+                                                </select>
+                                            @endif
+                                            <select name="project_id">
+                                                <option value="">No project link</option>
+                                                @foreach ($projects as $project)
+                                                    <option value="{{ $project->id }}" @selected((int) $requestRow->project_id === (int) $project->id)>
+                                                        {{ $project->code ? $project->code.' - ' : '' }}{{ $project->name }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                            <select name="project_task_id">
+                                                <option value="">No task link</option>
+                                                @foreach ($projectTasks as $task)
+                                                    <option value="{{ $task->id }}" @selected((int) $requestRow->project_task_id === (int) $task->id)>
+                                                        {{ $task->boq_item_number ? $task->boq_item_number.' - ' : '' }}{{ $task->title }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                            <select name="status">
+                                                <option value="pending" @selected($requestRow->status === 'pending')>Pending</option>
+                                                <option value="approved" @selected($requestRow->status === 'approved')>Approved</option>
+                                                <option value="partially_approved" @selected($requestRow->status === 'partially_approved')>Partially Approved</option>
+                                                <option value="purchase_required" @selected($requestRow->status === 'purchase_required')>Purchase Required</option>
+                                                <option value="rejected" @selected($requestRow->status === 'rejected')>Rejected</option>
+                                                <option value="cancelled" @selected($requestRow->status === 'cancelled')>Cancelled</option>
+                                            </select>
+                                            <input name="approved_quantity" type="number" min="0" step="0.01" value="{{ number_format($requestRow->approved_quantity ?: $requestRow->requested_quantity, 2, '.', '') }}">
+                                            <textarea name="admin_note" placeholder="Admin note">{{ $requestRow->admin_note }}</textarea>
+                                            <button class="btn small" type="submit">Save</button>
+                                        </form>
+                                    </div>
+                                    <div class="request-detail-card">
+                                        <h3>Issue</h3>
+                                        @if (in_array($requestRow->status, ['approved', 'partially_approved'], true) && $remainingApproved > 0 && $available > 0 && $requestRow->material_id)
+                                            <form class="inline-status-form material-issue-form" method="POST" action="{{ route('admin.material-requests.issue', $requestRow) }}">
+                                                @csrf
+                                                <select name="issue_source_labour_site_id" class="issue-source-select">
+                                                    @foreach ($sourceStocks as $sourceStock)
+                                                        <option
+                                                            value="{{ $sourceStock->labour_site_id }}"
+                                                            data-available="{{ number_format($sourceStock->available_quantity, 2, '.', '') }}"
+                                                        >
+                                                            From {{ $sourceStock->site?->name ?? 'Main Store' }} ({{ number_format($sourceStock->available_quantity, 2) }} available)
+                                                        </option>
+                                                    @endforeach
+                                                </select>
+                                                <input class="issue-quantity-input" name="issued_quantity" type="number" min="0.01" max="{{ number_format(min($remainingApproved, $firstSourceAvailable ?: $available), 2, '.', '') }}" step="0.01" value="{{ number_format(min($remainingApproved, $firstSourceAvailable ?: $available), 2, '.', '') }}" data-remaining="{{ number_format($remainingApproved, 2, '.', '') }}">
+                                                <textarea name="remarks" placeholder="Issue remarks"></textarea>
+                                                <button class="btn small" type="submit">Send / Issue Material</button>
+                                            </form>
+                                        @elseif (in_array($requestRow->status, ['approved', 'partially_approved'], true) && ! $requestRow->material_id)
+                                            <span class="table-subtext">Typed material request. Add this material in Material Master, purchase/add stock, then issue.</span>
+                                            <a class="btn small" href="{{ route('admin.materials.index') }}">Add Material</a>
+                                        @elseif (in_array($requestRow->status, ['approved', 'partially_approved'], true) && $remainingApproved > 0 && $available <= 0)
+                                            <span class="table-subtext">No stock available for issue.</span>
+                                            <a class="btn small" href="{{ route('admin.product-purchases.index') }}">Create Purchase</a>
+                                        @elseif ($requestRow->status === 'purchase_required')
+                                            <a class="btn small" href="{{ route('admin.product-purchases.index') }}">Create Purchase</a>
+                                        @else
+                                            <span class="table-subtext">No issue action</span>
+                                        @endif
+                                    </div>
+                                </div>
                             </td>
                         </tr>
                     @empty
@@ -355,6 +438,25 @@
     <div class="pagination">{{ $requests->links('admin.pagination') }}</div>
 
     <script>
+        document.querySelectorAll('[data-request-toggle]').forEach((button) => {
+            button.addEventListener('click', () => {
+                const detailId = button.dataset.requestToggle;
+                const detailRow = document.getElementById(detailId);
+
+                if (!detailRow) {
+                    return;
+                }
+
+                const isOpening = detailRow.hidden;
+                detailRow.hidden = !isOpening;
+
+                document.querySelectorAll(`[data-request-toggle="${detailId}"]`).forEach((toggle) => {
+                    toggle.setAttribute('aria-expanded', isOpening ? 'true' : 'false');
+                    toggle.textContent = isOpening ? '-' : '+';
+                });
+            });
+        });
+
         document.querySelectorAll('.material-issue-form').forEach((form) => {
             const source = form.querySelector('.issue-source-select');
             const quantity = form.querySelector('.issue-quantity-input');
