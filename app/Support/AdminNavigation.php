@@ -53,26 +53,11 @@ class AdminNavigation
 
         $permissions = $this->permissions();
 
-        if ($permissions === []) {
-            $permissions = config('admin.company_admin_permissions', []);
-        }
-
         if (in_array('*', $permissions, true)) {
             return true;
         }
 
         if (in_array($permission, $permissions, true)) {
-            return true;
-        }
-
-        if (in_array($permission, ['machinery_diesel_logs', 'product_purchases', 'purchase_workflows', 'purchase_orders', 'material_stock'], true) && in_array('diesel_purchases', $permissions, true)) {
-            return true;
-        }
-
-        $groupPermissions = $this->groupPermissionsForModule($permission);
-        $fallbackGroupPermissions = config('admin.company_admin_permissions', []);
-
-        if (array_intersect($groupPermissions, $permissions) !== [] || array_intersect($groupPermissions, $fallbackGroupPermissions) !== []) {
             return true;
         }
 
@@ -136,21 +121,6 @@ class AdminNavigation
         }
 
         return array_values(array_filter($permissions));
-    }
-
-    /**
-     * @return array<int, string>
-     */
-    private function groupPermissionsForModule(string $permission): array
-    {
-        return match ($permission) {
-            'employees', 'attendance_reports', 'missed_requests', 'leave_requests', 'driver_attendance', 'payments', 'challans' => ['hr'],
-            'labour_attendance', 'labour_costing', 'site_master', 'contractor_master', 'labour_master', 'supplier_master', 'unit_master', 'dpr_reports', 'complaints', 'site_reports' => ['hr', 'engg', 'site_reports'],
-            'project_management' => ['engg', 'project_management'],
-            'machinery_diesel_logs', 'vehicle_maintenance' => ['purchase'],
-            'diesel_purchases', 'product_purchases', 'purchase_workflows', 'purchase_orders', 'material_stock' => ['purchase'],
-            default => [],
-        };
     }
 
     private function badgeForItem(string $key): ?int

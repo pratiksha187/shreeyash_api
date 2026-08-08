@@ -85,7 +85,7 @@ class User extends Authenticatable
 
     public function resolvedAdminPermissions(): array
     {
-        if (is_array($this->admin_permissions) && $this->admin_permissions !== []) {
+        if (is_array($this->admin_permissions)) {
             return array_values(array_filter($this->admin_permissions));
         }
 

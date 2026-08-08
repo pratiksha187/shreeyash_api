@@ -3,8 +3,120 @@
 @section('title', $company->name.' | Admin Panel')
 @section('headerTitle', $company->name)
 @section('headerSubtitle', 'Company login, users, and monthly subscription')
+@section('bodyClass', 'company-show-page')
 
 @section('content')
+    <style>
+        body.company-show-page {
+            overflow-x: hidden;
+        }
+
+        body.company-show-page .main {
+            max-width: 1320px;
+        }
+
+        .company-users-table {
+            table-layout: fixed;
+        }
+
+        .company-users-table th,
+        .company-users-table td {
+            vertical-align: top;
+        }
+
+        .company-users-table th:nth-child(1),
+        .company-users-table td:nth-child(1) {
+            width: 14%;
+        }
+
+        .company-users-table th:nth-child(2),
+        .company-users-table td:nth-child(2) {
+            width: 20%;
+        }
+
+        .company-users-table th:nth-child(3),
+        .company-users-table td:nth-child(3) {
+            width: 12%;
+        }
+
+        .company-users-table th:nth-child(4),
+        .company-users-table td:nth-child(4) {
+            width: 12%;
+        }
+
+        .company-users-table th:nth-child(5),
+        .company-users-table td:nth-child(5) {
+            width: 34%;
+        }
+
+        .company-users-table th:nth-child(6),
+        .company-users-table td:nth-child(6) {
+            width: 8%;
+        }
+
+        .company-user-meta {
+            display: grid;
+            gap: 3px;
+            min-width: 0;
+            line-height: 1.35;
+            overflow-wrap: anywhere;
+        }
+
+        .module-permission-form {
+            display: grid;
+            gap: 12px;
+            min-width: 0;
+        }
+
+        .module-permission-toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .module-permission-toolbar .btn {
+            min-height: 32px;
+            padding: 6px 10px;
+            font-size: 12px;
+        }
+
+        .module-permission-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+        }
+
+        .module-permission-grid .checkbox-option {
+            min-height: 40px;
+            padding: 9px 10px;
+            border: 1px solid #cfe0f3;
+            border-radius: 8px;
+            background: #f8fbff;
+            line-height: 1.25;
+        }
+
+        .module-permission-grid .checkbox-option span {
+            min-width: 0;
+            overflow-wrap: anywhere;
+        }
+
+        .module-permission-grid input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            flex: 0 0 auto;
+        }
+
+        @media (max-width: 1100px) {
+            .company-users-table {
+                min-width: 980px;
+            }
+
+            .company-users-wrap {
+                overflow-x: auto;
+            }
+        }
+    </style>
+
     <div class="page-header">
         <div>
             <h1>{{ $company->name }}</h1>
@@ -143,8 +255,8 @@
         </div>
     </div>
 
-    <div class="card table-wrap">
-        <table>
+    <div class="card table-wrap company-users-wrap">
+        <table class="company-users-table">
             <thead>
                 <tr>
                     <th>Name</th>
@@ -158,20 +270,44 @@
             <tbody>
                 @forelse ($company->users as $user)
                     <tr>
-                        <td>{{ $user->name }}</td>
-                        <td>{{ $user->email }}</td>
-                        <td>{{ $user->mobile ?? '-' }}</td>
-                        <td>{{ str_replace('_', ' ', $user->role) }}</td>
+                        <td><div class="company-user-meta">{{ $user->name }}</div></td>
+                        <td><div class="company-user-meta">{{ $user->email }}</div></td>
+                        <td><div class="company-user-meta">{{ $user->mobile ?? '-' }}</div></td>
+                        <td><div class="company-user-meta">{{ str_replace('_', ' ', $user->role) }}</div></td>
                         <td>
                             @if ($user->role === 'company_admin')
                                 <form class="module-permission-form" method="POST" action="{{ route('admin.companies.users.permissions', [$company, $user]) }}">
                                     @csrf
                                     @method('PATCH')
-                                    @php($selectedPermissions = $user->resolvedAdminPermissions())
-                                    <div class="checkbox-grid compact">
+                                    @php
+                                        $selectedPermissions = $user->resolvedAdminPermissions();
+                                        $permissionGroups = [
+                                            'hr' => ['employees', 'attendance_reports', 'missed_requests', 'leave_requests', 'labour_attendance', 'labour_costing', 'driver_attendance', 'site_master', 'contractor_master', 'labour_master', 'supplier_master', 'unit_master', 'payments', 'dpr_reports', 'challans', 'complaints', 'site_reports'],
+                                            'engg' => ['project_management', 'site_reports', 'dpr_reports', 'fdd_test_records', 'mir_file_reports', 'complaints'],
+                                            'purchase' => ['diesel_purchases', 'machinery_diesel_logs', 'product_purchases', 'purchase_orders', 'material_stock', 'supplier_master', 'unit_master', 'vehicle_maintenance'],
+                                        ];
+                                    @endphp
+                                    <div class="module-permission-toolbar">
+                                        <button class="btn secondary small" type="button" data-permission-select="all">Select All</button>
+                                        <button class="btn secondary small" type="button" data-permission-select="none">Clear All</button>
+                                    </div>
+                                    <div class="module-permission-grid">
                                         @foreach ($modulePermissions as $permissionKey => $permissionLabel)
+                                            @php
+                                                $parentGroups = collect($permissionGroups)
+                                                    ->filter(fn ($children) => in_array($permissionKey, $children, true))
+                                                    ->keys()
+                                                    ->implode(' ');
+                                            @endphp
                                             <label class="checkbox-option">
-                                                <input type="checkbox" name="admin_permissions[]" value="{{ $permissionKey }}" @checked(in_array($permissionKey, $selectedPermissions, true))>
+                                                <input
+                                                    type="checkbox"
+                                                    name="admin_permissions[]"
+                                                    value="{{ $permissionKey }}"
+                                                    @if (array_key_exists($permissionKey, $permissionGroups)) data-permission-group="{{ $permissionKey }}" @endif
+                                                    @if ($parentGroups !== '') data-permission-parents="{{ $parentGroups }}" @endif
+                                                    @checked(in_array($permissionKey, $selectedPermissions, true))
+                                                >
                                                 <span>{{ $permissionLabel }}</span>
                                             </label>
                                         @endforeach
@@ -227,4 +363,40 @@
             </tbody>
         </table>
     </div>
+
+    <script>
+        document.addEventListener('click', (event) => {
+            const button = event.target.closest('[data-permission-select]');
+            if (!button) {
+                return;
+            }
+
+            const form = button.closest('.module-permission-form');
+            if (!form) {
+                return;
+            }
+
+            const checked = button.dataset.permissionSelect === 'all';
+            form.querySelectorAll('input[name="admin_permissions[]"]').forEach((input) => {
+                input.checked = checked;
+            });
+        });
+
+        document.addEventListener('change', (event) => {
+            const groupCheckbox = event.target.closest('[data-permission-group]');
+            if (!groupCheckbox) {
+                return;
+            }
+
+            const form = groupCheckbox.closest('.module-permission-form');
+            const group = groupCheckbox.dataset.permissionGroup;
+
+            form.querySelectorAll('[data-permission-parents]').forEach((input) => {
+                const parents = (input.dataset.permissionParents || '').split(' ');
+                if (parents.includes(group)) {
+                    input.checked = groupCheckbox.checked;
+                }
+            });
+        });
+    </script>
 @endsection

@@ -133,11 +133,31 @@
 
                 <div class="field full">
                     <label>Admin Modules</label>
-                    @php($selectedPermissions = old('admin_permissions', $defaultAdminPermissions))
+                    @php
+                        $selectedPermissions = old('admin_permissions', $defaultAdminPermissions);
+                        $permissionGroups = [
+                            'hr' => ['employees', 'attendance_reports', 'missed_requests', 'leave_requests', 'labour_attendance', 'labour_costing', 'driver_attendance', 'site_master', 'contractor_master', 'labour_master', 'supplier_master', 'unit_master', 'payments', 'dpr_reports', 'challans', 'complaints', 'site_reports'],
+                            'engg' => ['project_management', 'site_reports', 'dpr_reports', 'fdd_test_records', 'mir_file_reports', 'complaints'],
+                            'purchase' => ['diesel_purchases', 'machinery_diesel_logs', 'product_purchases', 'purchase_orders', 'material_stock', 'supplier_master', 'unit_master', 'vehicle_maintenance'],
+                        ];
+                    @endphp
                     <div class="checkbox-grid">
                         @foreach ($modulePermissions as $permissionKey => $permissionLabel)
+                            @php
+                                $parentGroups = collect($permissionGroups)
+                                    ->filter(fn ($children) => in_array($permissionKey, $children, true))
+                                    ->keys()
+                                    ->implode(' ');
+                            @endphp
                             <label class="checkbox-option">
-                                <input type="checkbox" name="admin_permissions[]" value="{{ $permissionKey }}" @checked(in_array($permissionKey, $selectedPermissions, true))>
+                                <input
+                                    type="checkbox"
+                                    name="admin_permissions[]"
+                                    value="{{ $permissionKey }}"
+                                    @if (array_key_exists($permissionKey, $permissionGroups)) data-permission-group="{{ $permissionKey }}" @endif
+                                    @if ($parentGroups !== '') data-permission-parents="{{ $parentGroups }}" @endif
+                                    @checked(in_array($permissionKey, $selectedPermissions, true))
+                                >
                                 <span>{{ $permissionLabel }}</span>
                             </label>
                         @endforeach
@@ -153,4 +173,23 @@
             <a class="btn secondary" href="{{ route('admin.companies.index') }}">Cancel</a>
         </div>
     </form>
+
+    <script>
+        document.addEventListener('change', (event) => {
+            const groupCheckbox = event.target.closest('[data-permission-group]');
+            if (!groupCheckbox) {
+                return;
+            }
+
+            const form = groupCheckbox.closest('form');
+            const group = groupCheckbox.dataset.permissionGroup;
+
+            form.querySelectorAll('[data-permission-parents]').forEach((input) => {
+                const parents = (input.dataset.permissionParents || '').split(' ');
+                if (parents.includes(group)) {
+                    input.checked = groupCheckbox.checked;
+                }
+            });
+        });
+    </script>
 @endsection

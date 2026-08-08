@@ -56,10 +56,8 @@ class EnsureAdminLoggedIn
                     ->with('error', 'This company subscription is inactive or expired.');
             }
 
-            if ($request->session()->get('admin_role') !== 'company_admin') {
-                $request->session()->put('admin_role', 'company_admin');
-                $request->session()->put('admin_permissions', $this->adminPermissions($request));
-            }
+            $request->session()->put('admin_role', 'company_admin');
+            $request->session()->put('admin_permissions', $this->adminPermissions($request));
 
             $request->session()->put('admin_company_name', $company->name);
 
