@@ -135,24 +135,7 @@
                 </div>
         </section>
 
-        <section class="card safety-panel">
-            <div class="safety-panel-head"><h2>Safety Request</h2><p>Create site/work request for safety item, then approve and issue below.</p></div>
-            <div class="safety-panel-body">
-                <form class="safety-form-grid" method="POST" action="{{ route('admin.safety-store.requests.store') }}">
-                    @csrf
-                    <div class="field"><label>Item</label><select name="safety_item_id" required><option value="">Select Item</option>@foreach ($items as $item)<option value="{{ $item->id }}">{{ $item->name }}</option>@endforeach</select></div>
-                    <div class="field"><label>For Site</label><select name="labour_site_id"><option value="">Main Store</option>@foreach ($sites as $site)<option value="{{ $site->id }}">{{ $site->name }}</option>@endforeach</select></div>
-                    <div class="field"><label>Project</label><select name="project_id"><option value="">No project</option>@foreach ($projects as $project)<option value="{{ $project->id }}">{{ $project->code ? $project->code.' - ' : '' }}{{ $project->name }}</option>@endforeach</select></div>
-                    <div class="field"><label>Structure / Task</label><select name="project_task_id"><option value="">No task</option>@foreach ($projectTasks as $task)<option value="{{ $task->id }}">{{ $task->boq_item_number ? $task->boq_item_number.' - ' : '' }}{{ $task->title }}</option>@endforeach</select></div>
-                    <div class="field"><label>Requested Qty</label><input name="requested_quantity" type="number" min="0.01" step="0.01" required></div>
-                    <div class="field"><label>Requested By</label><input name="requested_by" placeholder="Engineer / Supervisor"></div>
-                    <div class="field"><label>Priority</label><select name="priority"><option value="normal">Normal</option><option value="urgent">Urgent</option><option value="high">High</option></select></div>
-                    <div class="field wide"><label>Purpose</label><input name="purpose" placeholder="For slab, excavation, height work"></div>
-                    <div class="field"><button class="btn" type="submit">Save Request</button></div>
-                </form>
-            </div>
-        </section>
-
+        
         <section class="card safety-panel">
             <div class="safety-panel-head"><h2>Approve & Issue Requests</h2><p>Approve request and issue from available store/site stock.</p></div>
             <div class="table-wrap safety-requests-wrap">
