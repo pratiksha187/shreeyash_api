@@ -175,7 +175,8 @@
             min-width: 0;
         }
 
-        .purchase-material-select {
+        .purchase-material-select,
+        .purchase-supplier-select {
             text-align: left;
         }
 
@@ -383,7 +384,13 @@
                 </div>
                 <div class="field wide">
                     <label>Party Name</label>
-                    <input name="supplier_name">
+                    <select class="js-supplier-select" name="supplier_id" required>
+                        <option value="">Select party</option>
+                        @foreach ($suppliers as $supplier)
+                            <option value="{{ $supplier->id }}" data-name="{{ $supplier->name }}" @selected((string) old('supplier_id') === (string) $supplier->id)>{{ $supplier->name }}</option>
+                        @endforeach
+                    </select>
+                    <input name="supplier_name" type="hidden" value="{{ old('supplier_name') }}" required>
                 </div>
                 <div class="field">
                     <label>Challan No</label>
@@ -477,7 +484,22 @@
                                     </select>
                                 </td>
                                 <td><input class="purchase-date-input sheet-highlight" form="{{ $formId }}" name="purchase_date" type="date" value="{{ $purchase->purchase_date->toDateString() }}" required></td>
-                                <td><input class="purchase-text-input" form="{{ $formId }}" name="supplier_name" value="{{ $purchase->supplier_name }}"></td>
+                                <td>
+                                    <select class="purchase-supplier-select js-supplier-select" form="{{ $formId }}" name="supplier_id" required>
+                                        @php
+                                            $matchedSupplier = $suppliers->firstWhere('name', $purchase->supplier_name);
+                                        @endphp
+                                        @if (! $matchedSupplier)
+                                            <option value="" selected>{{ $purchase->supplier_name ?: 'Select party' }}</option>
+                                        @else
+                                            <option value="">Select party</option>
+                                        @endif
+                                        @foreach ($suppliers as $supplier)
+                                            <option value="{{ $supplier->id }}" data-name="{{ $supplier->name }}" @selected($matchedSupplier && (int) $matchedSupplier->id === (int) $supplier->id)>{{ $supplier->name }}</option>
+                                        @endforeach
+                                    </select>
+                                    <input form="{{ $formId }}" name="supplier_name" type="hidden" value="{{ $purchase->supplier_name }}" required>
+                                </td>
                                 <td><input form="{{ $formId }}" name="invoice_no" value="{{ $purchase->invoice_no }}"></td>
                                 <td>
                                     <select class="purchase-material-select js-material-select" form="{{ $formId }}" name="material_id" required>
@@ -546,6 +568,18 @@
         }
 
         document.querySelectorAll('[data-purchase-row]').forEach((row) => {
+            const applySupplier = () => {
+                const supplierSelect = row.querySelector('.js-supplier-select');
+                const selected = supplierSelect?.selectedOptions[0];
+                const supplierName = row.querySelector('input[name="supplier_name"]');
+
+                if (!supplierSelect || !selected || !selected.value || !supplierName) {
+                    return;
+                }
+
+                supplierName.value = selected.dataset.name || selected.textContent.trim();
+            };
+
             const applyMaterial = () => {
                 const materialSelect = row.querySelector('.js-material-select');
                 const selected = materialSelect?.selectedOptions[0];
@@ -595,15 +629,18 @@
 
             row.querySelectorAll('input, select').forEach((input) => {
                 input.addEventListener('input', () => {
+                    applySupplier();
                     applyMaterial();
                     recalculate();
                 });
                 input.addEventListener('change', () => {
+                    applySupplier();
                     applyMaterial();
                     recalculate();
                 });
             });
 
+            applySupplier();
             applyMaterial();
             recalculate();
         });

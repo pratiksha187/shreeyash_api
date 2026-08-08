@@ -7,6 +7,7 @@ use App\Models\LabourSite;
 use App\Models\Material;
 use App\Models\ProductPurchase;
 use App\Models\StockMovement;
+use App\Models\Supplier;
 use App\Services\MaterialStockService;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
@@ -64,6 +65,9 @@ class ProductPurchaseController extends Controller
             'purchases' => $purchases,
             'materials' => $this->hasTable('materials')
                 ? Material::query()->forCurrentCompany()->where('is_active', true)->orderBy('name')->get()
+                : collect(),
+            'suppliers' => $this->hasTable('suppliers')
+                ? Supplier::query()->forCurrentCompany()->where('is_active', true)->orderBy('name')->get(['id', 'name'])
                 : collect(),
             'sites' => LabourSite::query()->forCurrentCompany()->where('is_active', true)->orderBy('name')->get(['id', 'name']),
             'summary' => [
@@ -132,6 +136,7 @@ class ProductPurchaseController extends Controller
         $data = $request->validate([
             'purchase_date' => ['required', 'date'],
             'material_id' => ['required', 'integer'],
+            'supplier_id' => ['required', 'integer'],
             'stock_labour_site_id' => ['nullable', 'integer'],
             'supplier_name' => ['nullable', 'string', 'max:255'],
             'invoice_no' => ['nullable', 'string', 'max:100'],
@@ -150,8 +155,10 @@ class ProductPurchaseController extends Controller
         $data['pcs'] = $data['pcs'] ?? 0;
         $data['weight_kg'] = $data['weight_kg'] ?? 0;
         $this->applyMaterialMasterData($data);
+        $this->applySupplierMasterData($data);
         $data['quantity'] = $this->billingQuantity($data);
         $data['unit'] = $data['unit'] ?: ((float) $data['weight_kg'] > 0 ? 'Kg' : 'Nos');
+        unset($data['supplier_id']);
 
         return $data;
     }
@@ -183,6 +190,31 @@ class ProductPurchaseController extends Controller
         if ($material->unit) {
             $data['unit'] = $material->unit;
         }
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     */
+    private function applySupplierMasterData(array &$data): void
+    {
+        if (! $this->hasTable('suppliers')) {
+            throw ValidationException::withMessages([
+                'supplier_id' => 'Supplier Master is required before saving a product purchase.',
+            ]);
+        }
+
+        $supplier = Supplier::query()
+            ->forCurrentCompany()
+            ->where('is_active', true)
+            ->find($data['supplier_id']);
+
+        if (! $supplier) {
+            throw ValidationException::withMessages([
+                'supplier_id' => 'Selected party was not found in Supplier Master.',
+            ]);
+        }
+
+        $data['supplier_name'] = $supplier->name;
     }
 
     /**
