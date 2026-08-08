@@ -46,6 +46,17 @@
                     </select>
                 </div>
                 <div class="field">
+                    <label>Project</label>
+                    <select name="project_id">
+                        <option value="">All Projects</option>
+                        @foreach ($projects as $project)
+                            <option value="{{ $project->id }}" @selected((int) $selectedProjectId === (int) $project->id)>
+                                {{ $project->code ? $project->code.' - ' : '' }}{{ $project->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="field">
                     <label>&nbsp;</label>
                     <button class="btn" type="submit">Show Requests</button>
                 </div>
@@ -59,7 +70,7 @@
                 <thead>
                     <tr>
                         <th>Engineer</th>
-                        <th>Site</th>
+                        <th>Project / Site</th>
                         <th>Material</th>
                         <th>Requested</th>
                         <th>Available</th>
@@ -80,7 +91,11 @@
                                 <strong>{{ $requestRow->engineer?->name ?? '-' }}</strong>
                                 <div class="table-subtext">{{ $requestRow->engineer?->mobile }}</div>
                             </td>
-                            <td>{{ $requestRow->site?->name ?? $requestRow->site_project ?? 'Main Store' }}</td>
+                            <td>
+                                <strong>{{ $requestRow->project?->name ?? '-' }}</strong>
+                                <div class="table-subtext">Task: {{ $requestRow->task?->title ?? '-' }}</div>
+                                <div class="table-subtext">Site: {{ $requestRow->site?->name ?? $requestRow->site_project ?? 'Main Store' }}</div>
+                            </td>
                             <td>
                                 <strong>{{ $requestRow->material_name ?: $material?->name }}</strong>
                                 <div class="table-subtext">{{ $material?->material_type ?? '-' }} | {{ $requestRow->unit ?: $material?->unit ?? '-' }}</div>
@@ -111,6 +126,22 @@
                                             @endforeach
                                         </select>
                                     @endif
+                                    <select name="project_id">
+                                        <option value="">No project link</option>
+                                        @foreach ($projects as $project)
+                                            <option value="{{ $project->id }}" @selected((int) $requestRow->project_id === (int) $project->id)>
+                                                {{ $project->code ? $project->code.' - ' : '' }}{{ $project->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    <select name="project_task_id">
+                                        <option value="">No task link</option>
+                                        @foreach ($projectTasks as $task)
+                                            <option value="{{ $task->id }}" @selected((int) $requestRow->project_task_id === (int) $task->id)>
+                                                {{ $task->boq_item_number ? $task->boq_item_number.' - ' : '' }}{{ $task->title }}
+                                            </option>
+                                        @endforeach
+                                    </select>
                                     <select name="status">
                                         <option value="pending" @selected($requestRow->status === 'pending')>Pending</option>
                                         <option value="approved" @selected($requestRow->status === 'approved')>Approved</option>

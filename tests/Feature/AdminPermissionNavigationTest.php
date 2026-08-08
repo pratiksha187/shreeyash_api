@@ -77,6 +77,22 @@ class AdminPermissionNavigationTest extends TestCase
             ->assertDontSee('Vehicles');
     }
 
+    public function test_company_admin_can_open_erp_gap_analysis(): void
+    {
+        $response = $this->withSession([
+            'admin_logged_in' => true,
+            'admin_email' => 'admin@example.com',
+            'admin_permissions' => ['erp_gap_analysis'],
+            'admin_role' => 'company_admin',
+        ])->get('/admin/erp-gap-analysis');
+
+        $response->assertOk()
+            ->assertSee('ERP Gap Analysis')
+            ->assertSee('Planning &amp; Estimation', false)
+            ->assertSee('Contractor Management')
+            ->assertSee('Finance &amp; Accounts', false);
+    }
+
     public function test_engg_access_does_not_grant_unchecked_modules(): void
     {
         $this->app['session']->start();

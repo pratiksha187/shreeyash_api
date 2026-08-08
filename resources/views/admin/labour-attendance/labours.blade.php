@@ -53,6 +53,25 @@
                     <label for="trade">Trade</label>
                     <input id="trade" name="trade" type="text" value="{{ old('trade') }}">
                 </div>
+                <div class="field">
+                    <label for="labour_type">Labour Type</label>
+                    <select id="labour_type" name="labour_type">
+                        <option value="daily_wage" @selected(old('labour_type', 'daily_wage') === 'daily_wage')>Daily Wage</option>
+                        <option value="permanent" @selected(old('labour_type') === 'permanent')>Permanent</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="work_category">Work Category</label>
+                    <input id="work_category" name="work_category" type="text" value="{{ old('work_category') }}" placeholder="Mason, Helper, Excavation">
+                </div>
+                <div class="field">
+                    <label for="daily_wage_rate">Daily Wage Rate</label>
+                    <input id="daily_wage_rate" name="daily_wage_rate" type="number" min="0" step="0.01" value="{{ old('daily_wage_rate', 0) }}">
+                </div>
+                <div class="field">
+                    <label for="overtime_rate">Overtime Rate</label>
+                    <input id="overtime_rate" name="overtime_rate" type="number" min="0" step="0.01" value="{{ old('overtime_rate', 0) }}">
+                </div>
             </div>
             <div class="actions">
                 <button class="btn" type="submit">Add Labour</button>
@@ -95,7 +114,8 @@
                     <th>Labour Name</th>
                     <th>Mobile</th>
                     <th>Code</th>
-                    <th>Trade</th>
+                    <th>Trade / Category</th>
+                    <th>Wage</th>
                     <th>Status</th>
                     <th>Attendance</th>
                     <th>Created</th>
@@ -110,7 +130,14 @@
                         <td>{{ $labour->name }}</td>
                         <td>{{ $labour->mobile ?? '-' }}</td>
                         <td>{{ $labour->labour_code ?? '-' }}</td>
-                        <td>{{ $labour->trade ?? '-' }}</td>
+                        <td>
+                            {{ $labour->trade ?? '-' }}
+                            <div class="table-subtext">{{ ucfirst(str_replace('_', ' ', $labour->labour_type ?? 'daily_wage')) }} | {{ $labour->work_category ?? '-' }}</div>
+                        </td>
+                        <td>
+                            {{ number_format((float) $labour->daily_wage_rate, 2) }}
+                            <div class="table-subtext">OT {{ number_format((float) $labour->overtime_rate, 2) }}</div>
+                        </td>
                         <td>
                             <span class="status-pill {{ $labour->is_active ? 'status-approved' : 'status-rejected' }}">
                                 {{ $labour->is_active ? 'Active' : 'Inactive' }}
@@ -131,7 +158,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td class="empty" colspan="10">No labours added yet.</td>
+                        <td class="empty" colspan="11">No labours added yet.</td>
                     </tr>
                 @endforelse
             </tbody>

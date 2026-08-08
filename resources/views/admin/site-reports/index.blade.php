@@ -94,7 +94,7 @@
                 <h1>{{ $site->name }}</h1>
                 <p>{{ $site->address ?: 'Site data' }} | {{ \Carbon\Carbon::parse($filters['from_date'])->format('d M Y') }} to {{ \Carbon\Carbon::parse($filters['to_date'])->format('d M Y') }}</p>
             </div>
-            <div class="actions" style="margin-top: 0;">
+            <div class="actions">
                 <a class="btn" href="{{ route('admin.site-reports.pdf', $filters) }}">Download PDF</a>
                 <a class="btn secondary" href="{{ route('admin.site-reports.word', $filters) }}">Download Word</a>
             </div>

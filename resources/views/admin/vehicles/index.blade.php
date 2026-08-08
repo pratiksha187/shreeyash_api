@@ -50,6 +50,8 @@
                         <td>
                             <a class="table-link" href="{{ route('admin.vehicles.show', $vehicle) }}">Calendar</a>
                             |
+                            <a class="table-link" href="{{ route('admin.vehicle-maintenance.index', ['vehicle_id' => $vehicle->id]) }}">Maintenance</a>
+                            |
                             <a class="table-link" href="{{ route('admin.vehicles.edit', $vehicle) }}">Edit</a>
                         </td>
                     </tr>

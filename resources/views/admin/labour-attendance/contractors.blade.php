@@ -5,10 +5,41 @@
 @section('headerSubtitle', 'Create and manage contractors')
 
 @section('content')
+    <style>
+        .contractor-summary {
+            min-width: 220px;
+            line-height: 1.45;
+        }
+
+        .contractor-summary strong {
+            display: block;
+        }
+
+        .contractor-summary span {
+            display: block;
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .contractor-wide {
+            grid-column: span 2;
+        }
+
+        .contractor-full {
+            grid-column: 1 / -1;
+        }
+
+        @media (max-width: 760px) {
+            .contractor-wide {
+                grid-column: 1 / -1;
+            }
+        }
+    </style>
+
     <div class="page-header">
         <div>
             <h1>Contractor Master</h1>
-            <p>Maintain contractor names and mobile numbers used by the mobile app.</p>
+            <p>Maintain contractor agreements, work orders, measurements and RA billing details.</p>
         </div>
         <a class="btn secondary" href="{{ route('admin.labour-attendance.index') }}">View Attendance</a>
     </div>
@@ -35,6 +66,86 @@
                     <input id="contractor_mobile" name="mobile" type="text" value="{{ old('mobile') }}">
                 </div>
             </div>
+
+            <h2 class="section-title">Contract & Work Order</h2>
+            <div class="form-grid three">
+                <div class="field">
+                    <label for="agreement_no">Agreement No</label>
+                    <input id="agreement_no" name="agreement_no" type="text" value="{{ old('agreement_no') }}">
+                </div>
+                <div class="field">
+                    <label for="contract_no">Contract No</label>
+                    <input id="contract_no" name="contract_no" type="text" value="{{ old('contract_no') }}">
+                </div>
+                <div class="field">
+                    <label for="work_order_no">Work Order No</label>
+                    <input id="work_order_no" name="work_order_no" type="text" value="{{ old('work_order_no') }}">
+                </div>
+                <div class="field">
+                    <label for="contract_start_date">Start Date</label>
+                    <input id="contract_start_date" name="contract_start_date" type="date" value="{{ old('contract_start_date') }}">
+                </div>
+                <div class="field">
+                    <label for="contract_end_date">End Date</label>
+                    <input id="contract_end_date" name="contract_end_date" type="date" value="{{ old('contract_end_date') }}">
+                </div>
+                <div class="field">
+                    <label for="contract_value">Contract Value</label>
+                    <input id="contract_value" name="contract_value" type="number" min="0" step="0.01" value="{{ old('contract_value') }}">
+                </div>
+            </div>
+
+            <h2 class="section-title">Progress & Billing</h2>
+            <div class="form-grid three">
+                <div class="field">
+                    <label for="progress_percent">Progress %</label>
+                    <input id="progress_percent" name="progress_percent" type="number" min="0" max="100" step="0.01" value="{{ old('progress_percent') }}">
+                </div>
+                <div class="field">
+                    <label for="last_measurement_date">Measurement Date</label>
+                    <input id="last_measurement_date" name="last_measurement_date" type="date" value="{{ old('last_measurement_date') }}">
+                </div>
+                <div class="field">
+                    <label for="last_ra_bill_no">RA Bill No</label>
+                    <input id="last_ra_bill_no" name="last_ra_bill_no" type="text" value="{{ old('last_ra_bill_no') }}">
+                </div>
+                <div class="field">
+                    <label for="last_ra_bill_amount">RA Bill Amount</label>
+                    <input id="last_ra_bill_amount" name="last_ra_bill_amount" type="number" min="0" step="0.01" value="{{ old('last_ra_bill_amount') }}">
+                </div>
+                <div class="field">
+                    <label for="retention_percent">Retention %</label>
+                    <input id="retention_percent" name="retention_percent" type="number" min="0" max="100" step="0.01" value="{{ old('retention_percent') }}">
+                </div>
+                <div class="field">
+                    <label for="recovery_amount">Recovery Amount</label>
+                    <input id="recovery_amount" name="recovery_amount" type="number" min="0" step="0.01" value="{{ old('recovery_amount') }}">
+                </div>
+                <div class="field">
+                    <label for="tds_percent">TDS %</label>
+                    <input id="tds_percent" name="tds_percent" type="number" min="0" max="100" step="0.01" value="{{ old('tds_percent') }}">
+                </div>
+                <div class="field">
+                    <label for="gst_percent">GST %</label>
+                    <input id="gst_percent" name="gst_percent" type="number" min="0" max="100" step="0.01" value="{{ old('gst_percent') }}">
+                </div>
+                <div class="field">
+                    <label for="net_payable_amount">Net Payable</label>
+                    <input id="net_payable_amount" name="net_payable_amount" type="number" min="0" step="0.01" value="{{ old('net_payable_amount') }}">
+                </div>
+                <div class="field">
+                    <label for="renewal_due_date">Renewal Due Date</label>
+                    <input id="renewal_due_date" name="renewal_due_date" type="date" value="{{ old('renewal_due_date') }}">
+                </div>
+                <div class="field contractor-wide">
+                    <label for="last_measurement_summary">Measurement Details</label>
+                    <textarea id="last_measurement_summary" name="last_measurement_summary" rows="2">{{ old('last_measurement_summary') }}</textarea>
+                </div>
+                <div class="field contractor-full">
+                    <label for="remarks">Remarks</label>
+                    <textarea id="remarks" name="remarks" rows="2">{{ old('remarks') }}</textarea>
+                </div>
+            </div>
             <div class="actions">
                 <button class="btn" type="submit">Add Contractor</button>
             </div>
@@ -48,6 +159,10 @@
                     <th>ID</th>
                     <th>Contractor Name</th>
                     <th>Mobile</th>
+                    <th>Contract</th>
+                    <th>Progress</th>
+                    <th>RA Billing</th>
+                    <th>Renewal</th>
                     <th>Status</th>
                     <th>Labours</th>
                     <th>Attendance</th>
@@ -61,6 +176,21 @@
                         <td>{{ $contractor->id }}</td>
                         <td>{{ $contractor->name }}</td>
                         <td>{{ $contractor->mobile ?? '-' }}</td>
+                        <td class="contractor-summary">
+                            <strong>{{ $contractor->work_order_no ?: ($contractor->contract_no ?: '-') }}</strong>
+                            <span>Agreement: {{ $contractor->agreement_no ?: '-' }}</span>
+                            <span>Value: {{ $contractor->contract_value !== null ? number_format((float) $contractor->contract_value, 2) : '-' }}</span>
+                        </td>
+                        <td class="contractor-summary">
+                            <strong>{{ $contractor->progress_percent !== null ? number_format((float) $contractor->progress_percent, 2).'%' : '-' }}</strong>
+                            <span>Measurement: {{ $contractor->last_measurement_date?->format('d M Y') ?? '-' }}</span>
+                        </td>
+                        <td class="contractor-summary">
+                            <strong>{{ $contractor->last_ra_bill_no ?: '-' }}</strong>
+                            <span>RA: {{ $contractor->last_ra_bill_amount !== null ? number_format((float) $contractor->last_ra_bill_amount, 2) : '-' }}</span>
+                            <span>Net: {{ $contractor->net_payable_amount !== null ? number_format((float) $contractor->net_payable_amount, 2) : '-' }}</span>
+                        </td>
+                        <td>{{ $contractor->renewal_due_date?->format('d M Y') ?? '-' }}</td>
                         <td>
                             <span class="status-pill {{ $contractor->is_active ? 'status-approved' : 'status-rejected' }}">
                                 {{ $contractor->is_active ? 'Active' : 'Inactive' }}
@@ -82,7 +212,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td class="empty" colspan="8">No contractors added yet.</td>
+                        <td class="empty" colspan="12">No contractors added yet.</td>
                     </tr>
                 @endforelse
             </tbody>

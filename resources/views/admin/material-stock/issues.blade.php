@@ -24,6 +24,7 @@
                         <th>Date</th>
                         <th>Material</th>
                         <th>Site</th>
+                        <th>Project / Task</th>
                         <th>Quantity</th>
                         <th>Engineer</th>
                         <th>Issued By</th>
@@ -36,13 +37,17 @@
                             <td>{{ $issue->issued_at?->format('d M Y h:i A') }}</td>
                             <td>{{ $issue->material?->name }} {{ $issue->material?->unit ? '('.$issue->material->unit.')' : '' }}</td>
                             <td>{{ $issue->site?->name ?? 'Main Store' }}</td>
+                            <td>
+                                <strong>{{ $issue->project?->name ?? '-' }}</strong>
+                                <div class="table-subtext">{{ $issue->task?->title ?? '-' }}</div>
+                            </td>
                             <td>{{ number_format($issue->issued_quantity, 2) }}</td>
                             <td>{{ $issue->request?->engineer?->name ?? '-' }}</td>
                             <td>{{ $issue->issuer?->name ?? session('admin_email', 'Admin') }}</td>
                             <td class="text-wrap">{{ $issue->remarks }}</td>
                         </tr>
                     @empty
-                        <tr><td colspan="7">No issue entries yet.</td></tr>
+                        <tr><td colspan="8">No issue entries yet.</td></tr>
                     @endforelse
                 </tbody>
             </table>
@@ -60,6 +65,7 @@
                         <th>Date</th>
                         <th>Material</th>
                         <th>Site</th>
+                        <th>Project / Task</th>
                         <th>Type</th>
                         <th>Quantity</th>
                         <th>Balance After</th>
@@ -72,13 +78,17 @@
                             <td>{{ $movement->created_at?->format('d M Y h:i A') }}</td>
                             <td>{{ $movement->material?->name }}</td>
                             <td>{{ $movement->site?->name ?? 'Main Store' }}</td>
+                            <td>
+                                <strong>{{ $movement->project?->name ?? '-' }}</strong>
+                                <div class="table-subtext">{{ $movement->task?->title ?? '-' }}</div>
+                            </td>
                             <td>{{ ucwords(str_replace('_', ' ', $movement->type)) }}</td>
                             <td>{{ number_format($movement->quantity, 2) }}</td>
                             <td>{{ number_format($movement->balance_after, 2) }}</td>
                             <td class="text-wrap">{{ $movement->remarks }}</td>
                         </tr>
                     @empty
-                        <tr><td colspan="7">No stock movements yet.</td></tr>
+                        <tr><td colspan="8">No stock movements yet.</td></tr>
                     @endforelse
                 </tbody>
             </table>

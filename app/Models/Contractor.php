@@ -17,12 +17,42 @@ class Contractor extends Model
         'labour_site_id',
         'name',
         'mobile',
+        'agreement_no',
+        'contract_no',
+        'work_order_no',
+        'contract_start_date',
+        'contract_end_date',
+        'contract_value',
+        'progress_percent',
+        'last_measurement_date',
+        'last_measurement_summary',
+        'last_ra_bill_no',
+        'last_ra_bill_amount',
+        'retention_percent',
+        'recovery_amount',
+        'tds_percent',
+        'gst_percent',
+        'net_payable_amount',
+        'renewal_due_date',
+        'remarks',
         'is_active',
     ];
 
     protected function casts(): array
     {
         return [
+            'contract_start_date' => 'date',
+            'contract_end_date' => 'date',
+            'contract_value' => 'decimal:2',
+            'progress_percent' => 'decimal:2',
+            'last_measurement_date' => 'date',
+            'last_ra_bill_amount' => 'decimal:2',
+            'retention_percent' => 'decimal:2',
+            'recovery_amount' => 'decimal:2',
+            'tds_percent' => 'decimal:2',
+            'gst_percent' => 'decimal:2',
+            'net_payable_amount' => 'decimal:2',
+            'renewal_due_date' => 'date',
             'is_active' => 'boolean',
         ];
     }

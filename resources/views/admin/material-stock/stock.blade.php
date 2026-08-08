@@ -46,6 +46,17 @@
                     </select>
                 </div>
                 <div class="field">
+                    <label>Project</label>
+                    <select name="project_id">
+                        <option value="">All Projects</option>
+                        @foreach ($projects as $project)
+                            <option value="{{ $project->id }}" @selected((int) $selectedProjectId === (int) $project->id)>
+                                {{ $project->code ? $project->code.' - ' : '' }}{{ $project->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="field">
                     <label>&nbsp;</label>
                     <button class="btn" type="submit">Show Stock</button>
                 </div>
@@ -73,6 +84,28 @@
                         <option value="">Main Store</option>
                         @foreach ($sites as $site)
                             <option value="{{ $site->id }}">{{ $site->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="field">
+                    <label>Project</label>
+                    <select name="project_id">
+                        <option value="">No project link</option>
+                        @foreach ($projects as $project)
+                            <option value="{{ $project->id }}">
+                                {{ $project->code ? $project->code.' - ' : '' }}{{ $project->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="field">
+                    <label>Project Task</label>
+                    <select name="project_task_id">
+                        <option value="">No task link</option>
+                        @foreach ($projectTasks as $task)
+                            <option value="{{ $task->id }}">
+                                {{ $task->boq_item_number ? $task->boq_item_number.' - ' : '' }}{{ $task->title }}
+                            </option>
                         @endforeach
                     </select>
                 </div>

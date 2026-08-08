@@ -81,12 +81,13 @@ class AuthController extends Controller
 
         $request->session()->regenerate();
         $request->session()->put('admin_logged_in', true);
-        $request->session()->put('admin_email', $admin->email);
-        $request->session()->put('admin_user_id', $admin->id);
-        $request->session()->put('admin_company_id', $admin->company_id);
-        $request->session()->put('admin_role', 'company_admin');
-        $request->session()->put('tenant_database_ready', true);
-        $request->session()->put('admin_permissions', $admin->resolvedAdminPermissions());
+            $request->session()->put('admin_email', $admin->email);
+            $request->session()->put('admin_user_id', $admin->id);
+            $request->session()->put('admin_company_id', $admin->company_id);
+            $request->session()->put('admin_company_name', $admin->company?->name);
+            $request->session()->put('admin_role', 'company_admin');
+            $request->session()->put('tenant_database_ready', true);
+            $request->session()->put('admin_permissions', $admin->resolvedAdminPermissions());
 
         return redirect()->route('admin.dashboard');
     }
@@ -98,6 +99,7 @@ class AuthController extends Controller
             'admin_email',
             'admin_user_id',
             'admin_company_id',
+            'admin_company_name',
             'admin_role',
             'tenant_database_ready',
             'admin_permissions',

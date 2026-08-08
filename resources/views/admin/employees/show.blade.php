@@ -10,7 +10,7 @@
             <h1>{{ $employee->name }}</h1>
             <p>{{ $employee->designation ?? 'Employee' }} · {{ $employee->mobile ?? '-' }}</p>
         </div>
-        <div class="actions" style="margin-top:0;">
+        <div class="actions">
             <a class="btn" href="{{ route('admin.employees.edit', $employee) }}">Edit Employee</a>
             <a class="btn secondary" href="{{ route('admin.employees.index') }}">Back to Employees</a>
         </div>

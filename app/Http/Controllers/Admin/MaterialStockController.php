@@ -8,6 +8,8 @@ use App\Models\Material;
 use App\Models\MaterialIssue;
 use App\Models\MaterialRequest;
 use App\Models\MaterialStock;
+use App\Models\Project;
+use App\Models\ProjectTask;
 use App\Models\StockMovement;
 use App\Services\MaterialStockService;
 use App\Support\Tenant;
@@ -60,12 +62,13 @@ class MaterialStockController extends Controller
         return back()->with('success', 'Material added successfully.');
     }
 
-    public function updateMaterial(Request $request, Material $material): RedirectResponse
+    public function updateMaterial(Request $request, int $material): RedirectResponse
     {
         if (! $this->hasTable('materials')) {
             return back()->with('error', 'Materials table is missing. Please create the materials table first.');
         }
 
+        $material = Material::query()->forCurrentCompany()->findOrFail($material);
         $this->ensureCurrentCompany($material);
 
         $data = $request->validate([
@@ -88,8 +91,11 @@ class MaterialStockController extends Controller
                 'stocks' => $this->emptyPaginator(),
                 'materials' => $this->activeMaterials(),
                 'sites' => $this->activeSites(),
+                'projects' => $this->activeProjects(),
+                'projectTasks' => collect(),
                 'selectedMaterialId' => null,
                 'selectedSiteId' => null,
+                'selectedProjectId' => null,
                 'summary' => [
                     'materials' => $this->hasTable('materials') ? Material::query()->forCurrentCompany()->count() : 0,
                     'low_stock' => 0,
@@ -101,6 +107,7 @@ class MaterialStockController extends Controller
         $filters = $request->validate([
             'material_id' => ['nullable', 'integer'],
             'labour_site_id' => ['nullable', 'integer'],
+            'project_id' => ['nullable', 'integer'],
         ]);
 
         $stocks = MaterialStock::query()
@@ -117,8 +124,11 @@ class MaterialStockController extends Controller
             'stocks' => $stocks,
             'materials' => $this->activeMaterials(),
             'sites' => $this->activeSites(),
+            'projects' => $this->activeProjects(),
+            'projectTasks' => $this->projectTasks($filters['project_id'] ?? null),
             'selectedMaterialId' => $filters['material_id'] ?? null,
             'selectedSiteId' => $filters['labour_site_id'] ?? null,
+            'selectedProjectId' => $filters['project_id'] ?? null,
             'summary' => [
                 'materials' => Material::query()->forCurrentCompany()->count(),
                 'low_stock' => MaterialStock::query()
@@ -141,12 +151,15 @@ class MaterialStockController extends Controller
             'labour_site_id' => ['nullable', 'integer'],
             'type' => ['required', Rule::in([StockMovement::ADJUSTMENT_IN, StockMovement::ADJUSTMENT_OUT, StockMovement::RETURN_IN])],
             'quantity' => ['required', 'numeric', 'min:0.01', 'max:999999999.99'],
+            'project_id' => ['nullable', 'integer'],
+            'project_task_id' => ['nullable', 'integer'],
             'remarks' => ['nullable', 'string', 'max:2000'],
         ]);
 
         if (! Material::query()->forCurrentCompany()->whereKey($data['material_id'])->exists()) {
             return back()->with('error', 'Selected material was not found in Material Master.');
         }
+        $this->ensureProjectTaskLink($data['project_id'] ?? null, $data['project_task_id'] ?? null);
 
         if ($data['type'] === StockMovement::ADJUSTMENT_OUT) {
             $this->stockService->removeStock(
@@ -156,7 +169,9 @@ class MaterialStockController extends Controller
                 StockMovement::ADJUSTMENT_OUT,
                 null,
                 null,
-                $data['remarks'] ?? 'Manual stock adjustment'
+                $data['remarks'] ?? 'Manual stock adjustment',
+                $data['project_id'] ? (int) $data['project_id'] : null,
+                $data['project_task_id'] ? (int) $data['project_task_id'] : null
             );
         } else {
             $this->stockService->addStock(
@@ -166,7 +181,9 @@ class MaterialStockController extends Controller
                 $data['type'],
                 null,
                 null,
-                $data['remarks'] ?? 'Manual stock adjustment'
+                $data['remarks'] ?? 'Manual stock adjustment',
+                $data['project_id'] ? (int) $data['project_id'] : null,
+                $data['project_task_id'] ? (int) $data['project_task_id'] : null
             );
         }
 
@@ -182,8 +199,11 @@ class MaterialStockController extends Controller
                 'materials' => collect(),
                 'statuses' => MaterialRequest::STATUSES,
                 'sites' => $this->activeSites(),
+                'projects' => $this->activeProjects(),
+                'projectTasks' => collect(),
                 'selectedStatus' => null,
                 'selectedSiteId' => null,
+                'selectedProjectId' => null,
                 'summary' => [
                     'pending' => 0,
                     'purchase_required' => 0,
@@ -195,6 +215,7 @@ class MaterialStockController extends Controller
         $filters = $request->validate([
             'status' => ['nullable', Rule::in(MaterialRequest::STATUSES)],
             'labour_site_id' => ['nullable', 'integer'],
+            'project_id' => ['nullable', 'integer'],
         ]);
 
         $requests = MaterialRequest::query()
@@ -202,6 +223,7 @@ class MaterialStockController extends Controller
             ->with($this->requestRelations())
             ->when(isset($filters['status']), fn ($query) => $query->where('status', $filters['status']))
             ->when(isset($filters['labour_site_id']), fn ($query) => $query->where('labour_site_id', $filters['labour_site_id']))
+            ->when(isset($filters['project_id']), fn ($query) => $query->where('project_id', $filters['project_id']))
             ->latest()
             ->paginate(20)
             ->withQueryString();
@@ -216,8 +238,11 @@ class MaterialStockController extends Controller
             'materials' => $this->activeMaterials(),
             'statuses' => MaterialRequest::STATUSES,
             'sites' => $this->activeSites(),
+            'projects' => $this->activeProjects(),
+            'projectTasks' => $this->projectTasks($filters['project_id'] ?? null),
             'selectedStatus' => $filters['status'] ?? null,
             'selectedSiteId' => $filters['labour_site_id'] ?? null,
+            'selectedProjectId' => $filters['project_id'] ?? null,
             'summary' => [
                 'pending' => MaterialRequest::query()->forCurrentCompany()->where('status', 'pending')->count(),
                 'purchase_required' => MaterialRequest::query()->forCurrentCompany()->where('status', 'purchase_required')->count(),
@@ -240,9 +265,12 @@ class MaterialStockController extends Controller
         $data = $request->validate([
             'status' => ['required', Rule::in(['pending', 'approved', 'partially_approved', 'rejected', 'purchase_required', 'cancelled'])],
             'material_id' => ['nullable', 'integer'],
+            'project_id' => ['nullable', 'integer'],
+            'project_task_id' => ['nullable', 'integer'],
             'approved_quantity' => ['nullable', 'numeric', 'min:0', 'max:999999999.99'],
             'admin_note' => ['nullable', 'string', 'max:2000'],
         ]);
+        $this->ensureProjectTaskLink($data['project_id'] ?? null, $data['project_task_id'] ?? null);
 
         $materialId = $this->resolvedRequestMaterialId($materialRequest, $data['material_id'] ?? null);
         $approvedQuantity = (float) ($data['approved_quantity'] ?? 0);
@@ -252,6 +280,8 @@ class MaterialStockController extends Controller
 
         $materialRequest->update([
             'material_id' => $materialId,
+            'project_id' => $data['project_id'] ? (int) $data['project_id'] : null,
+            'project_task_id' => $data['project_task_id'] ? (int) $data['project_task_id'] : null,
             'status' => $data['status'],
             'approved_quantity' => $approvedQuantity,
             'admin_note' => $data['admin_note'] ?? null,
@@ -303,6 +333,8 @@ class MaterialStockController extends Controller
                 'material_request_id' => $materialRequest->id,
                 'material_id' => $materialRequest->material_id,
                 'labour_site_id' => $materialRequest->labour_site_id,
+                'project_id' => $materialRequest->project_id,
+                'project_task_id' => $materialRequest->project_task_id,
                 'issued_quantity' => $quantity,
                 'issued_by' => session('admin_user_id'),
                 'issued_at' => now(),
@@ -316,7 +348,9 @@ class MaterialStockController extends Controller
                 StockMovement::ISSUE_OUT,
                 MaterialIssue::class,
                 $issue->id,
-                $data['remarks'] ?? 'Material issued against request #'.$materialRequest->id
+                $data['remarks'] ?? 'Material issued against request #'.$materialRequest->id,
+                $materialRequest->project_id ? (int) $materialRequest->project_id : null,
+                $materialRequest->project_task_id ? (int) $materialRequest->project_task_id : null
             );
 
             $materialRequest->issued_quantity = (float) $materialRequest->issued_quantity + $quantity;
@@ -341,12 +375,12 @@ class MaterialStockController extends Controller
         return view('admin.material-stock.issues', [
             'issues' => MaterialIssue::query()
                 ->forCurrentCompany()
-                ->with(['request.engineer:id,name,mobile', 'material:id,name,unit', 'site:id,name', 'issuer:id,name'])
+                ->with(['request.engineer:id,name,mobile', 'material:id,name,unit', 'site:id,name', 'project:id,name,code', 'task:id,title', 'issuer:id,name'])
                 ->latest('issued_at')
                 ->paginate(20),
             'movements' => StockMovement::query()
                 ->forCurrentCompany()
-                ->with(['material:id,name,unit', 'site:id,name'])
+                ->with(['material:id,name,unit', 'site:id,name', 'project:id,name,code', 'task:id,title'])
                 ->latest()
                 ->limit(50)
                 ->get(),
@@ -365,6 +399,28 @@ class MaterialStockController extends Controller
     private function activeSites()
     {
         return LabourSite::query()->forCurrentCompany()->where('is_active', true)->orderBy('name')->get(['id', 'name']);
+    }
+
+    private function activeProjects()
+    {
+        return Project::query()
+            ->forCurrentCompany()
+            ->orderBy('name')
+            ->get(['id', 'name', 'code']);
+    }
+
+    private function projectTasks(mixed $projectId)
+    {
+        if (! $projectId) {
+            return collect();
+        }
+
+        return ProjectTask::query()
+            ->forCurrentCompany()
+            ->where('project_id', $projectId)
+            ->orderBy('sort_order')
+            ->orderBy('title')
+            ->get(['id', 'project_id', 'title', 'boq_item_number']);
     }
 
     private function totalAvailableQuantity(int $materialId): float
@@ -401,7 +457,7 @@ class MaterialStockController extends Controller
      */
     private function requestRelations(): array
     {
-        $relations = ['engineer:id,name,mobile,designation', 'site:id,name'];
+        $relations = ['engineer:id,name,mobile,designation', 'site:id,name', 'project:id,name,code', 'task:id,title,boq_item_number'];
 
         if ($this->hasTable('materials')) {
             $relations[] = 'material:id,name,material_type,unit';
@@ -455,5 +511,26 @@ class MaterialStockController extends Controller
             'unit' => $materialRequest->unit,
             'is_active' => true,
         ])->id;
+    }
+
+    private function ensureProjectTaskLink(mixed $projectId, mixed $projectTaskId): void
+    {
+        if ($projectId && ! Project::query()->forCurrentCompany()->whereKey($projectId)->exists()) {
+            abort(422, 'Selected project was not found.');
+        }
+
+        if (! $projectTaskId) {
+            return;
+        }
+
+        $taskQuery = ProjectTask::query()->forCurrentCompany()->whereKey($projectTaskId);
+
+        if ($projectId) {
+            $taskQuery->where('project_id', $projectId);
+        }
+
+        if (! $taskQuery->exists()) {
+            abort(422, 'Selected project task was not found.');
+        }
     }
 }

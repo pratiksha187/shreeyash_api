@@ -15,15 +15,22 @@
     </script>
     <style>
         :root {
-            --bg: #f3f6fb;
+            --bg: #f6faff;
             --panel: #ffffff;
             --text: #1f2937;
-            --muted: #64748b;
-            --line: #e2e8f0;
-            --primary: #1d4ed8;
-            --primary-dark: #1e3a8a;
-            --sidebar: #111827;
-            --sidebar-soft: #1f2937;
+            --muted: #5c7594;
+            --line: #d6e2ef;
+            --primary: #f47c20;
+            --primary-dark: #d75f00;
+            --brand-blue: #005da8;
+            --brand-blue-dark: #003c72;
+            --brand-blue-soft: #0b6fbd;
+            --topbar: #f47c20;
+            --topbar-dark: #d75f00;
+            --sidebar: #eaf4ff;
+            --sidebar-soft: #d7ebff;
+            --sidebar-active: #f47c20;
+            --admin-header-height: 84px;
             --success-bg: #dcfce7;
             --success-text: #166534;
             --danger: #b91c1c;
@@ -48,7 +55,7 @@
         .admin-shell {
             min-height: 100vh;
             display: grid;
-            grid-template-columns: 260px minmax(0, 1fr);
+            grid-template-columns: 240px minmax(0, 1fr);
             transition: grid-template-columns 180ms ease;
         }
 
@@ -58,19 +65,22 @@
             z-index: 20;
             height: 100vh;
             overflow-y: auto;
-            padding: 22px 16px;
+            padding: 0 12px 22px;
             background: var(--sidebar);
-            color: #f8fafc;
+            color: var(--brand-blue-dark);
             transition: padding 180ms ease, transform 180ms ease, visibility 180ms ease;
         }
 
         .sidebar-head {
             display: flex;
-            align-items: flex-start;
+            align-items: center;
             justify-content: space-between;
             gap: 12px;
-            padding: 8px 8px 24px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+            min-height: var(--admin-header-height);
+            margin: 0 -12px 22px;
+            padding: 0 18px;
+            border-bottom: 1px solid var(--line);
+            background: #ffffff;
         }
 
         .sidebar-toggle {
@@ -157,7 +167,9 @@
         .brand {
             display: flex;
             align-items: center;
-            gap: 12px;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
             min-width: 0;
             padding: 0;
         }
@@ -165,34 +177,35 @@
         .sidebar .sidebar-toggle {
             width: 42px;
             height: 42px;
-            border-color: rgba(255, 255, 255, 0.16);
-            background: rgba(15, 23, 42, 0.4);
-            color: #f8fafc;
+            border-color: #b8d8f2;
+            background: #ffffff;
+            color: var(--brand-blue);
         }
 
         .sidebar .sidebar-toggle:hover {
             background: var(--sidebar-soft);
         }
 
-        .brand-mark {
-            display: grid;
-            width: 42px;
-            height: 42px;
-            place-items: center;
-            border-radius: 8px;
-            background: var(--primary);
-            font-weight: 800;
+        .brand-logo {
+            display: block;
+            width: 172px;
+            max-width: 100%;
+            max-height: 90px;
+            height: auto;
+            object-fit: contain;
         }
 
         .brand strong {
             display: block;
-            font-size: 17px;
+            color: #fff;
+            font-size: 20px;
+            letter-spacing: 0;
         }
 
         .brand span {
             display: block;
             margin-top: 3px;
-            color: #cbd5e1;
+            color: #fff3e0;
             font-size: 12px;
         }
 
@@ -209,11 +222,38 @@
             gap: 10px;
             min-height: 42px;
             padding: 10px 12px;
-            border-radius: 8px;
-            color: #cbd5e1;
+            border-radius: 4px;
+            color: var(--brand-blue-dark);
             text-decoration: none;
             font-size: 14px;
             font-weight: 700;
+        }
+
+        .nav-item-main {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+        }
+
+        .nav-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 22px;
+            height: 22px;
+            flex: 0 0 auto;
+            color: var(--brand-blue);
+        }
+
+        .nav-icon svg {
+            width: 18px;
+            height: 18px;
+            stroke: currentColor;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            fill: none;
         }
 
         .nav-item-label {
@@ -240,23 +280,29 @@
 
         .nav a.active,
         .nav a:hover {
-            background: var(--sidebar-soft);
+            background: var(--sidebar-active);
+            color: #fff;
+        }
+
+        .nav a.active .nav-icon,
+        .nav a:hover .nav-icon {
             color: #fff;
         }
 
         .nav-group {
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 8px;
-            background: rgba(15, 23, 42, 0.35);
+            border: 1px solid #c9def1;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.58);
         }
 
         .nav-group summary {
             display: flex;
             align-items: center;
             justify-content: space-between;
+            gap: 10px;
             min-height: 38px;
             padding: 10px 12px;
-            color: #f8fafc;
+            color: var(--brand-blue-dark);
             cursor: pointer;
             font-size: 12px;
             font-weight: 900;
@@ -265,13 +311,40 @@
             text-transform: uppercase;
         }
 
+        .nav-group-title {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+        }
+
+        .nav-group-icon {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            flex: 0 0 auto;
+            color: var(--brand-blue);
+        }
+
+        .nav-group-icon svg {
+            width: 19px;
+            height: 19px;
+            stroke: currentColor;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            fill: none;
+        }
+
         .nav-group summary::-webkit-details-marker {
             display: none;
         }
 
         .nav-group summary::after {
             content: '+';
-            color: #94a3b8;
+            color: var(--brand-blue);
             font-size: 16px;
             line-height: 1;
         }
@@ -281,7 +354,8 @@
         }
 
         .nav-group.active {
-            border-color: rgba(59, 130, 246, 0.45);
+            border-color: rgba(244, 124, 32, 0.85);
+            background: #fff7f0;
         }
 
         .nav-group-links {
@@ -307,7 +381,7 @@
         }
 
         html.sidebar-collapsed .sidebar {
-            padding: 18px 10px;
+            padding: 0 10px 22px;
             transform: none;
         }
 
@@ -315,16 +389,23 @@
             align-items: center;
             flex-direction: column;
             gap: 14px;
-            padding: 4px 0 18px;
+            min-height: var(--admin-header-height);
+            margin: 0 -10px 18px;
+            padding: 0;
         }
 
         html.sidebar-collapsed .brand {
             justify-content: center;
         }
 
-        html.sidebar-collapsed .brand strong,
-        html.sidebar-collapsed .brand span {
-            display: none;
+        html.sidebar-collapsed .brand-logo {
+            width: 54px;
+            max-width: 54px;
+            height: 54px;
+            object-fit: cover;
+            object-position: left center;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.12);
         }
 
         html.sidebar-collapsed .nav {
@@ -346,15 +427,17 @@
             text-transform: uppercase;
         }
 
-        html.sidebar-collapsed .nav-group summary span {
+        html.sidebar-collapsed .nav-group-label {
             display: none;
         }
 
         html.sidebar-collapsed .nav-group summary::before {
-            content: attr(data-short);
-            color: #f8fafc;
-            font-size: 13px;
-            font-weight: 900;
+            display: none;
+        }
+
+        html.sidebar-collapsed .nav-group-icon {
+            display: inline-flex;
+            color: var(--brand-blue);
         }
 
         html.sidebar-collapsed .nav-group summary::after,
@@ -364,7 +447,12 @@
 
         html.sidebar-collapsed .nav-group.active summary,
         html.sidebar-collapsed .nav-group summary:hover {
-            background: var(--sidebar-soft);
+            background: var(--primary);
+        }
+
+        html.sidebar-collapsed .nav-group.active .nav-group-icon,
+        html.sidebar-collapsed .nav-group summary:hover .nav-group-icon {
+            color: #fff;
         }
 
         .topbar {
@@ -374,18 +462,33 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            min-height: 72px;
-            padding: 0 28px;
-            border-bottom: 1px solid var(--line);
-            background: rgba(255, 255, 255, 0.94);
-            backdrop-filter: blur(10px);
+            min-height: var(--admin-header-height);
+            padding: 0 20px;
+            border-bottom: 3px solid var(--brand-blue);
+            background: linear-gradient(180deg, var(--topbar) 0%, var(--topbar-dark) 100%);
+            color: #fff;
+            box-shadow: 0 2px 8px rgba(0, 60, 114, 0.22);
         }
 
         .topbar-left {
             display: flex;
             align-items: center;
+            flex: 1 1 auto;
             gap: 14px;
             min-width: 0;
+        }
+
+        .topbar .sidebar-toggle {
+            width: 42px;
+            height: 42px;
+            border-color: rgba(255, 255, 255, 0.26);
+            background: rgba(255, 255, 255, 0.12);
+            color: #fff;
+        }
+
+        .topbar .sidebar-toggle:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.38);
         }
 
         .topbar-title {
@@ -394,22 +497,89 @@
 
         .topbar-title strong {
             display: block;
-            font-size: 18px;
+            color: #fff;
+            font-size: 15px;
+            font-weight: 900;
+            text-transform: uppercase;
         }
 
         .topbar-title span {
             display: block;
             margin-top: 3px;
-            color: var(--muted);
-            font-size: 13px;
+            color: #fff3e8;
+            font-size: 12px;
+            font-weight: 700;
         }
 
         .admin-user {
             display: flex;
             align-items: center;
-            gap: 10px;
-            color: var(--muted);
-            font-weight: 700;
+            min-width: 0;
+            flex: 0 1 auto;
+            flex-wrap: nowrap;
+            justify-content: flex-end;
+            gap: 10px 14px;
+            overflow: hidden;
+            color: #fff;
+            font-weight: 800;
+        }
+
+        .admin-email {
+            display: block;
+            flex: 1 1 180px;
+            min-width: 0;
+            max-width: 260px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .topbar-meta,
+        .topbar-icon {
+            display: inline-flex;
+            align-items: center;
+            flex: 0 0 auto;
+            gap: 6px;
+            color: #fff6e9;
+            font-size: 13px;
+            font-weight: 800;
+            white-space: nowrap;
+        }
+
+        .topbar-icon {
+            justify-content: center;
+            width: 30px;
+            height: 30px;
+            border-radius: 4px;
+            position: relative;
+            background: transparent;
+        }
+
+        .topbar-meta svg,
+        .topbar-icon svg {
+            width: 17px;
+            height: 17px;
+            stroke: currentColor;
+            stroke-width: 2.2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            fill: none;
+        }
+
+        .topbar-badge {
+            position: absolute;
+            top: 1px;
+            right: 1px;
+            min-width: 16px;
+            height: 16px;
+            padding: 0 4px;
+            border-radius: 999px;
+            background: #ef4444;
+            color: #fff;
+            font-size: 10px;
+            font-weight: 900;
+            line-height: 16px;
+            text-align: center;
         }
 
         .avatar {
@@ -418,42 +588,53 @@
             height: 36px;
             place-items: center;
             border-radius: 50%;
-            background: #dbeafe;
-            color: var(--primary-dark);
+            background: #ffffff;
+            color: var(--brand-blue);
+            font-weight: 900;
         }
 
         .logout-form {
+            flex: 0 0 auto;
             margin: 0;
         }
 
         .logout-button {
             min-height: 36px;
             padding: 8px 12px;
-            border: 1px solid var(--line);
-            border-radius: 8px;
-            background: #fff;
-            color: #334155;
+            border: 1px solid rgba(255, 255, 255, 0.38);
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.12);
+            color: #fff;
             cursor: pointer;
             font-weight: 800;
         }
 
         .main {
             width: 100%;
-            max-width: 1180px;
-            padding: 28px;
+            max-width: 1460px;
+            margin: 0 auto;
+            padding: 32px 36px 36px;
         }
 
         .page-header {
             display: flex;
-            align-items: flex-start;
+            align-items: center;
             justify-content: space-between;
             gap: 18px;
-            margin-bottom: 22px;
+            margin-bottom: 24px;
+        }
+
+        .page-header .actions {
+            margin-top: 0;
+        }
+
+        .section-spacer {
+            margin-top: 34px;
         }
 
         h1 {
             margin: 0;
-            font-size: 28px;
+            font-size: 30px;
             line-height: 1.2;
         }
 
@@ -467,7 +648,7 @@
             align-items: center;
             justify-content: center;
             min-height: 40px;
-            padding: 10px 14px;
+            padding: 10px 16px;
             border: 0;
             border-radius: 8px;
             background: var(--primary);
@@ -478,8 +659,8 @@
         }
 
         .btn.secondary {
-            background: #e2e8f0;
-            color: #1f2937;
+            background: #e5f0fb;
+            color: var(--brand-blue-dark);
         }
 
         .btn.danger {
@@ -505,18 +686,19 @@
             border: 1px solid var(--line);
             border-radius: 8px;
             background: var(--panel);
-            box-shadow: 0 1px 4px rgba(15, 23, 42, 0.06);
+            box-shadow: 0 4px 14px rgba(0, 93, 168, 0.06);
         }
 
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(4, minmax(0, 1fr));
-            gap: 16px;
-            margin-bottom: 22px;
+            gap: 20px;
+            margin-bottom: 28px;
         }
 
         .stat-card {
-            padding: 18px;
+            min-height: 118px;
+            padding: 22px 24px;
         }
 
         .stat-card span {
@@ -1217,10 +1399,11 @@
 
         th,
         td {
-            padding: 14px 16px;
+            padding: 15px 20px;
             border-bottom: 1px solid var(--line);
             text-align: left;
-            white-space: nowrap;
+            vertical-align: middle;
+            white-space: normal;
         }
 
         th {
@@ -1229,6 +1412,7 @@
             font-size: 12px;
             letter-spacing: 0.04em;
             text-transform: uppercase;
+            white-space: nowrap;
         }
 
         tr:last-child td {
@@ -1243,17 +1427,17 @@
 
         .form-card {
             max-width: none;
-            padding: 24px;
+            padding: 26px 30px;
         }
 
         .report-filter {
-            margin-bottom: 22px;
+            margin-bottom: 28px;
         }
 
         .form-grid {
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 18px;
+            gap: 20px 22px;
         }
 
         .form-grid.three {
@@ -1265,7 +1449,7 @@
         }
 
         .form-section {
-            margin-bottom: 28px;
+            margin-bottom: 30px;
         }
 
         .form-section:last-of-type {
@@ -1275,7 +1459,7 @@
         .section-title {
             margin: 0 0 18px;
             padding-bottom: 10px;
-            border-bottom: 2px solid #c88f32;
+            border-bottom: 2px solid var(--primary);
             color: #0f172a;
             font-size: 24px;
             line-height: 1.2;
@@ -1304,7 +1488,7 @@
         textarea:focus {
             border-color: var(--primary);
             outline: none;
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
+            box-shadow: 0 0 0 3px rgba(244, 124, 32, 0.18);
         }
 
         textarea {
@@ -1383,6 +1567,8 @@
 
         .actions {
             display: flex;
+            align-items: center;
+            flex-wrap: wrap;
             gap: 10px;
             margin-top: 22px;
         }
@@ -1702,11 +1888,108 @@
             display: flex;
             flex-wrap: wrap;
             gap: 8px;
-            min-width: 130px;
+            align-items: center;
+            min-width: 0;
         }
 
         .table-actions form {
             margin: 0;
+        }
+
+        .pm-flow {
+            margin-bottom: 28px;
+            padding: 18px;
+            border-left: 4px solid var(--primary);
+        }
+
+        .pm-flow-head {
+            margin-bottom: 16px;
+        }
+
+        .pm-flow-head span {
+            display: block;
+            margin-bottom: 3px;
+            color: var(--muted);
+            font-size: 12px;
+            font-weight: 900;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .pm-flow-head strong {
+            display: block;
+            color: #0f172a;
+            font-size: 22px;
+            line-height: 1.2;
+        }
+
+        .pm-flow-steps {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .pm-flow-step {
+            position: relative;
+            display: grid;
+            grid-template-columns: 40px minmax(0, 1fr);
+            gap: 10px;
+            min-height: 118px;
+            padding: 14px;
+            border: 1px solid #f7c99d;
+            border-radius: 8px;
+            background: #fff;
+            color: var(--brand-blue-dark);
+            text-decoration: none;
+        }
+
+        .pm-flow-step:not(:last-child)::after {
+            position: absolute;
+            top: 50%;
+            right: -12px;
+            z-index: 1;
+            width: 12px;
+            height: 2px;
+            background: var(--primary);
+            content: '';
+        }
+
+        .pm-flow-number {
+            display: inline-grid;
+            width: 36px;
+            height: 36px;
+            place-items: center;
+            border-radius: 50%;
+            background: var(--primary);
+            color: #fff;
+            font-weight: 900;
+        }
+
+        .pm-flow-text {
+            display: grid;
+            gap: 6px;
+            min-width: 0;
+        }
+
+        .pm-flow-text strong {
+            color: #0f172a;
+            font-size: 15px;
+            line-height: 1.25;
+        }
+
+        .pm-flow-text small {
+            color: var(--muted);
+            font-size: 12px;
+            font-weight: 700;
+            line-height: 1.35;
+        }
+
+        .pm-flow-text em {
+            align-self: end;
+            color: var(--primary-dark);
+            font-size: 12px;
+            font-style: normal;
+            font-weight: 900;
         }
 
         .detail-item {
@@ -2019,6 +2302,24 @@
             white-space: normal;
         }
 
+        body:not(.vehicle-show-page) .main {
+            max-width: 1460px;
+            margin-right: auto;
+            margin-left: auto;
+            padding: 32px 36px 36px;
+        }
+
+        body:not(.vehicle-show-page) .page-header {
+            align-items: center;
+        }
+
+        body:not(.vehicle-show-page) .table-wrap,
+        body:not(.vehicle-show-page) .form-card,
+        body:not(.vehicle-show-page) .stats-grid,
+        body:not(.vehicle-show-page) .detail-grid {
+            width: 100%;
+        }
+
         @media (max-width: 900px) {
             .admin-shell {
                 grid-template-columns: 1fr;
@@ -2118,6 +2419,19 @@
 
             .main {
                 padding: 22px 18px;
+            }
+
+            .pm-flow-steps {
+                grid-template-columns: 1fr;
+            }
+
+            .pm-flow-step:not(:last-child)::after {
+                top: auto;
+                right: auto;
+                bottom: -12px;
+                left: 31px;
+                width: 2px;
+                height: 12px;
             }
         }
 
@@ -2231,32 +2545,94 @@
         <aside class="sidebar" id="admin-sidebar">
             <div class="sidebar-head">
                 <div class="brand">
-                    <div class="brand-mark">A</div>
-                    <div>
-                        <strong>Attendance Admin</strong>
-                        <span>Employee management</span>
-                    </div>
+                    <img class="brand-logo" src="{{ asset('images/logo.png') }}" alt="ConstructKaro">
                 </div>
-                <button class="sidebar-toggle" type="button" data-sidebar-toggle aria-controls="admin-sidebar" aria-label="Toggle sidebar">
-                    <span class="sidebar-toggle-icon" aria-hidden="true"><span></span></span>
-                </button>
             </div>
 
             <nav class="nav">
+                @php
+                    $navIcons = [
+                        'dashboard' => ['M3 11l9-8 9 8', 'M5 10v10h14V10', 'M9 20v-6h6v6'],
+                        'companies' => ['M4 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16', 'M16 8h2a2 2 0 0 1 2 2v11', 'M8 7h4', 'M8 11h4', 'M8 15h4'],
+                        'erp_gap_analysis' => ['M4 19V5', 'M4 19h16', 'M8 16v-5', 'M12 16V8', 'M16 16v-8'],
+                        'project_management' => ['M3 7h6l2 2h10v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z', 'M8 13h8', 'M8 17h5'],
+                        'employees' => ['M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2', 'M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8', 'M22 21v-2a4 4 0 0 0-3-3.87', 'M16 3.13a4 4 0 0 1 0 7.75'],
+                        'attendance_reports' => ['M4 5h16', 'M4 19h16', 'M7 5v14', 'M17 5v14', 'M9 10h6', 'M9 14h4'],
+                        'missed_requests' => ['M12 8v5l3 2', 'M21 12a9 9 0 1 1-3-6.7'],
+                        'leave_requests' => ['M7 3v4', 'M17 3v4', 'M4 9h16', 'M5 5h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2'],
+                        'labour_attendance' => ['M6 20v-2a6 6 0 0 1 12 0v2', 'M9 10a3 3 0 1 0 6 0 3 3 0 0 0-6 0', 'M4 12h16'],
+                        'labour_costing' => ['M4 7h16v10H4z', 'M8 11h8', 'M8 15h5', 'M12 3v4', 'M9 5h6'],
+                        'driver_attendance' => ['M5 17h14l-1.5-6h-11z', 'M7 17a2 2 0 1 0 0 4 2 2 0 0 0 0-4', 'M17 17a2 2 0 1 0 0 4 2 2 0 0 0 0-4', 'M8 11V7h8v4'],
+                        'payments' => ['M3 7h18v10H3z', 'M7 12h.01', 'M17 12h.01', 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6'],
+                        'challans' => ['M7 3h8l4 4v14H7z', 'M15 3v5h5', 'M9 13h6', 'M9 17h6'],
+                        'diesel_purchases' => ['M6 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16', 'M8 8h6', 'M16 8h2l2 3v7a2 2 0 0 1-2 2h-2'],
+                        'machinery_diesel_logs' => ['M3 17h18', 'M5 17l2-7h10l2 7', 'M8 17a2 2 0 1 0 0 4 2 2 0 0 0 0-4', 'M16 17a2 2 0 1 0 0 4 2 2 0 0 0 0-4'],
+                        'product_purchases' => ['M6 7h15l-2 8H8z', 'M6 7 5 3H2', 'M9 21a1 1 0 1 0 0-2 1 1 0 0 0 0 2', 'M18 21a1 1 0 1 0 0-2 1 1 0 0 0 0 2'],
+                        'purchase_workflows' => ['M7 3h10l4 4v14H7z', 'M17 3v5h5', 'M8 10h7', 'M8 14h8', 'M8 18h5'],
+                        'purchase_orders' => ['M6 2h12v20H6z', 'M9 6h6', 'M9 10h6', 'M9 14h3', 'M14 18h2'],
+                        'material_stock' => ['M21 8l-9-5-9 5 9 5 9-5z', 'M3 8v8l9 5 9-5V8', 'M12 13v8'],
+                        'site_master' => ['M12 21s7-4.5 7-11a7 7 0 1 0-14 0c0 6.5 7 11 7 11z', 'M12 10a2 2 0 1 0 0-4 2 2 0 0 0 0 4'],
+                        'contractor_master' => ['M16 11a4 4 0 1 0-8 0', 'M4 21a8 8 0 0 1 16 0', 'M12 3v2', 'M8 5l-1 2', 'M16 5l1 2'],
+                        'labour_master' => ['M7 20v-2a5 5 0 0 1 10 0v2', 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8', 'M4 8h16'],
+                        'supplier_master' => ['M4 7h16v12H4z', 'M8 7V5h8v2', 'M8 12h8', 'M8 16h5'],
+                        'unit_master' => ['M4 7h16', 'M7 7v10', 'M17 7v10', 'M4 17h16'],
+                        'dpr_reports' => ['M6 2h9l5 5v15H6z', 'M15 2v6h5', 'M9 13h7', 'M9 17h5'],
+                        'site_reports' => ['M4 19h16', 'M6 19V9l6-4 6 4v10', 'M10 19v-5h4v5'],
+                        'complaints' => ['M21 15a4 4 0 0 1-4 4H7l-4 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z', 'M8 9h8', 'M8 13h5'],
+                        'fdd_test_records' => ['M9 3h6', 'M10 3v6l-5 9a3 3 0 0 0 3 4h8a3 3 0 0 0 3-4l-5-9V3', 'M8 15h8'],
+                        'mir_file_reports' => ['M7 3h10v18H7z', 'M10 7h4', 'M10 11h4', 'M10 15h2'],
+                        'vehicles' => ['M3 13h18l-2-6H5z', 'M7 13v-3h10v3', 'M7 17a2 2 0 1 0 0 4 2 2 0 0 0 0-4', 'M17 17a2 2 0 1 0 0 4 2 2 0 0 0 0-4'],
+                        'vehicle_maintenance' => ['M14.7 6.3a4 4 0 0 0-5.4 5.4', 'M5 21l4-4', 'M15 9l-6 6', 'M16 3l5 5'],
+                        'default' => ['M12 3l8 4v6c0 5-3.5 8-8 8s-8-3-8-8V7z'],
+                    ];
+
+                    $navGroupIcons = [
+                        'ConstructKaro' => $navIcons['companies'],
+                        'Overview' => $navIcons['dashboard'],
+                        'Projects' => $navIcons['project_management'],
+                        'HR' => $navIcons['employees'],
+                        'Purchase Management' => $navIcons['product_purchases'],
+                        'Store & Inventory' => $navIcons['material_stock'],
+                        'Masters' => $navIcons['site_master'],
+                        'Site Work' => $navIcons['dpr_reports'],
+                        'Quality' => $navIcons['fdd_test_records'],
+                        'Fleet' => $navIcons['vehicles'],
+                    ];
+                @endphp
                 @foreach (app(\App\Support\AdminNavigation::class)->groups(request()) as $group)
                     <details class="nav-group {{ $group['active'] ? 'active' : '' }}" {{ $group['active'] ? 'open' : '' }}>
                         @php
                             $shortLabel = collect(explode(' ', $group['label']))
                                 ->map(fn ($word) => strtoupper(substr($word, 0, 1)))
                                 ->implode('');
+                            $groupIconPaths = $navGroupIcons[$group['label']] ?? $navIcons['default'];
                         @endphp
                         <summary data-short="{{ $shortLabel }}" title="{{ $group['label'] }}">
-                            <span>{{ $group['label'] }}</span>
+                            <span class="nav-group-title">
+                                <span class="nav-group-icon" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24">
+                                        @foreach ($groupIconPaths as $path)
+                                            <path d="{{ $path }}"></path>
+                                        @endforeach
+                                    </svg>
+                                </span>
+                                <span class="nav-group-label">{{ $group['label'] }}</span>
+                            </span>
                         </summary>
                         <div class="nav-group-links">
                             @foreach ($group['items'] as $item)
+                                @php($iconPaths = $navIcons[$item['key']] ?? $navIcons['default'])
                                 <a class="{{ $item['active'] ? 'active' : '' }}" href="{{ $item['url'] }}">
-                                    <span class="nav-item-label">{{ $item['label'] }}</span>
+                                    <span class="nav-item-main">
+                                        <span class="nav-icon" aria-hidden="true">
+                                            <svg viewBox="0 0 24 24">
+                                                @foreach ($iconPaths as $path)
+                                                    <path d="{{ $path }}"></path>
+                                                @endforeach
+                                            </svg>
+                                        </span>
+                                        <span class="nav-item-label">{{ $item['label'] }}</span>
+                                    </span>
                                     @if (! empty($item['badge']))
                                         <span class="nav-badge">{{ $item['badge'] }}</span>
                                     @endif
@@ -2275,13 +2651,42 @@
                         <span class="sidebar-toggle-icon" aria-hidden="true"><span></span></span>
                     </button>
                     <div class="topbar-title">
-                        <strong>@yield('headerTitle', 'Admin Panel')</strong>
+                        <strong>{{ session('admin_company_name', 'CONSTRUCTKARO TECHNOLOGIES PVT. LTD.') }}</strong>
                         <span>@yield('headerSubtitle', 'Manage attendance app data')</span>
                     </div>
                 </div>
                 <div class="admin-user">
+                    <span class="topbar-meta">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M7 3v4"></path>
+                            <path d="M17 3v4"></path>
+                            <path d="M4 9h16"></path>
+                            <path d="M5 5h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2"></path>
+                        </svg>
+                        Fin-Yr. : {{ now()->month >= 4 ? now()->format('Y').'-'.now()->addYear()->format('Y') : now()->subYear()->format('Y').'-'.now()->format('Y') }}
+                    </span>
+                    <span class="topbar-meta">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M12 8v5l3 2"></path>
+                            <path d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0"></path>
+                        </svg>
+                        {{ strtoupper(now()->format('D')) }} {{ now()->format('h:i:s A') }}
+                    </span>
+                    <span class="topbar-icon" title="Messages">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M4 6h16v12H4z"></path>
+                            <path d="M4 7l8 6 8-6"></path>
+                        </svg>
+                        <span class="topbar-badge">1</span>
+                    </span>
+                    <span class="topbar-icon" title="Notifications">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path>
+                            <path d="M10 21h4"></path>
+                        </svg>
+                    </span>
                     <div class="avatar">AD</div>
-                    <span>{{ session('admin_email', 'Admin') }}</span>
+                    <span class="admin-email">{{ session('admin_email', 'Admin') }}</span>
                     <form class="logout-form" method="POST" action="{{ route('admin.logout') }}">
                         @csrf
                         <button class="logout-button" type="submit">Logout</button>

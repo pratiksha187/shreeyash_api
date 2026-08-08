@@ -26,7 +26,9 @@ class MaterialStockService
         string $type = StockMovement::PURCHASE_IN,
         ?string $referenceType = null,
         ?int $referenceId = null,
-        ?string $remarks = null
+        ?string $remarks = null,
+        ?int $projectId = null,
+        ?int $projectTaskId = null
     ): MaterialStock {
         if ($quantity <= 0) {
             throw ValidationException::withMessages([
@@ -34,12 +36,12 @@ class MaterialStockService
             ]);
         }
 
-        return DB::transaction(function () use ($materialId, $siteId, $quantity, $type, $referenceType, $referenceId, $remarks) {
+        return DB::transaction(function () use ($materialId, $siteId, $quantity, $type, $referenceType, $referenceId, $remarks, $projectId, $projectTaskId) {
             $stock = $this->stockRow($materialId, $siteId);
             $stock->available_quantity = (float) $stock->available_quantity + $quantity;
             $stock->save();
 
-            $this->movement($materialId, $siteId, $type, $quantity, (float) $stock->available_quantity, $referenceType, $referenceId, $remarks);
+            $this->movement($materialId, $siteId, $type, $quantity, (float) $stock->available_quantity, $referenceType, $referenceId, $remarks, $projectId, $projectTaskId);
 
             return $stock;
         });
@@ -52,7 +54,9 @@ class MaterialStockService
         string $type = StockMovement::ISSUE_OUT,
         ?string $referenceType = null,
         ?int $referenceId = null,
-        ?string $remarks = null
+        ?string $remarks = null,
+        ?int $projectId = null,
+        ?int $projectTaskId = null
     ): MaterialStock {
         if ($quantity <= 0) {
             throw ValidationException::withMessages([
@@ -60,7 +64,7 @@ class MaterialStockService
             ]);
         }
 
-        return DB::transaction(function () use ($materialId, $siteId, $quantity, $type, $referenceType, $referenceId, $remarks) {
+        return DB::transaction(function () use ($materialId, $siteId, $quantity, $type, $referenceType, $referenceId, $remarks, $projectId, $projectTaskId) {
             $stock = $this->stockRow($materialId, $siteId);
 
             if ((float) $stock->available_quantity < $quantity) {
@@ -72,7 +76,7 @@ class MaterialStockService
             $stock->available_quantity = (float) $stock->available_quantity - $quantity;
             $stock->save();
 
-            $this->movement($materialId, $siteId, $type, $quantity, (float) $stock->available_quantity, $referenceType, $referenceId, $remarks);
+            $this->movement($materialId, $siteId, $type, $quantity, (float) $stock->available_quantity, $referenceType, $referenceId, $remarks, $projectId, $projectTaskId);
 
             return $stock;
         });
@@ -109,11 +113,15 @@ class MaterialStockService
         float $balanceAfter,
         ?string $referenceType,
         ?int $referenceId,
-        ?string $remarks
+        ?string $remarks,
+        ?int $projectId,
+        ?int $projectTaskId
     ): void {
         StockMovement::query()->create([
             'material_id' => $materialId,
             'labour_site_id' => $siteId,
+            'project_id' => $projectId,
+            'project_task_id' => $projectTaskId,
             'type' => $type,
             'quantity' => $quantity,
             'balance_after' => $balanceAfter,

@@ -19,6 +19,10 @@ class Labour extends Model
         'mobile',
         'labour_code',
         'trade',
+        'labour_type',
+        'work_category',
+        'daily_wage_rate',
+        'overtime_rate',
         'is_active',
     ];
 
@@ -26,6 +30,8 @@ class Labour extends Model
     {
         return [
             'is_active' => 'boolean',
+            'daily_wage_rate' => 'decimal:2',
+            'overtime_rate' => 'decimal:2',
         ];
     }
 
@@ -37,5 +43,10 @@ class Labour extends Model
     public function labourAttendances(): HasMany
     {
         return $this->hasMany(LabourAttendance::class);
+    }
+
+    public function costingRecords(): HasMany
+    {
+        return $this->hasMany(LabourCostingRecord::class);
     }
 }

@@ -136,7 +136,7 @@
         </form>
     </div>
 
-    <div class="page-header" style="margin-top: 28px;">
+    <div class="page-header section-spacer">
         <div>
             <h1>Employer Login Users</h1>
             <p>Company admins can login to the same admin panel. Employees login from the app/API with mobile and password.</p>
@@ -193,7 +193,7 @@
         </table>
     </div>
 
-    <div class="page-header" style="margin-top: 28px;">
+    <div class="page-header section-spacer">
         <div>
             <h1>Subscription History</h1>
         </div>

@@ -62,22 +62,24 @@
                 <tbody>
                     @forelse ($materials as $material)
                         <tr>
-                            <form method="POST" action="{{ route('admin.materials.update', $material) }}">
-                                @csrf
-                                @method('PUT')
-                                <td><input name="name" value="{{ $material->name }}" required></td>
-                                <td><input name="material_type" value="{{ $material->material_type }}"></td>
-                                <td><input name="unit" value="{{ $material->unit }}"></td>
-                                <td><input name="minimum_stock" type="number" min="0" step="0.01" value="{{ number_format($material->minimum_stock, 2, '.', '') }}"></td>
-                                <td>{{ number_format((float) $material->stocks_sum_available_quantity, 2) }}</td>
-                                <td>
-                                    <select name="is_active">
-                                        <option value="1" @selected($material->is_active)>Active</option>
-                                        <option value="0" @selected(! $material->is_active)>Inactive</option>
-                                    </select>
-                                </td>
-                                <td><button class="btn small" type="submit">Update</button></td>
-                            </form>
+                            @php($formId = 'material-update-'.$material->id)
+                            <td><input form="{{ $formId }}" name="name" value="{{ $material->name }}" required></td>
+                            <td><input form="{{ $formId }}" name="material_type" value="{{ $material->material_type }}"></td>
+                            <td><input form="{{ $formId }}" name="unit" value="{{ $material->unit }}"></td>
+                            <td><input form="{{ $formId }}" name="minimum_stock" type="number" min="0" step="0.01" value="{{ number_format($material->minimum_stock, 2, '.', '') }}"></td>
+                            <td>{{ number_format((float) $material->stocks_sum_available_quantity, 2) }}</td>
+                            <td>
+                                <select form="{{ $formId }}" name="is_active">
+                                    <option value="1" @selected($material->is_active)>Active</option>
+                                    <option value="0" @selected(! $material->is_active)>Inactive</option>
+                                </select>
+                            </td>
+                            <td>
+                                <form id="{{ $formId }}" method="POST" action="{{ route('admin.materials.update.post', $material) }}">
+                                    @csrf
+                                    <button class="btn small" type="submit">Update</button>
+                                </form>
+                            </td>
                         </tr>
                     @empty
                         <tr><td colspan="7">No materials added yet.</td></tr>

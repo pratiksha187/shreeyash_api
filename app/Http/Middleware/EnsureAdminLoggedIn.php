@@ -61,6 +61,8 @@ class EnsureAdminLoggedIn
                 $request->session()->put('admin_permissions', $this->adminPermissions($request));
             }
 
+            $request->session()->put('admin_company_name', $company->name);
+
             if (
                 $request->session()->get('admin_role') === 'company_admin'
                 && ! $request->session()->get('tenant_database_ready')
@@ -139,6 +141,7 @@ class EnsureAdminLoggedIn
 
         $request->session()->put('admin_user_id', $admin->id);
         $request->session()->put('admin_company_id', $admin->company_id);
+        $request->session()->put('admin_company_name', $admin->company?->name);
         $request->session()->put('admin_role', 'company_admin');
         $request->session()->put('admin_permissions', $admin->resolvedAdminPermissions());
     }
@@ -165,6 +168,7 @@ class EnsureAdminLoggedIn
             'admin_email',
             'admin_user_id',
             'admin_company_id',
+            'admin_company_name',
             'admin_role',
             'tenant_database_ready',
             'admin_permissions',

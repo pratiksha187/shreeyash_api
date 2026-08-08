@@ -121,7 +121,7 @@
             <h1>Today Present Employees</h1>
             <p>Employees marked present today with in and out time.</p>
         </div>
-        <div class="actions" style="margin-top:0;">
+        <div class="actions">
             <a class="btn" href="{{ route('admin.leave-requests.index') }}">Leave Requests</a>
             <a class="btn secondary" href="{{ route('admin.attendance-reports.index') }}">Attendance Reports</a>
         </div>
@@ -208,7 +208,7 @@
         </table>
     </div>
 
-    <div class="page-header" style="margin-top: 28px;">
+    <div class="page-header section-spacer">
         <div>
             <h1>Recent Vehicles</h1>
             <p>Latest vehicle in and out records.</p>
@@ -243,7 +243,7 @@
         </table>
     </div>
 
-    <div class="page-header" style="margin-top: 28px;">
+    <div class="page-header section-spacer">
         <div>
             <h1>Recent Challans</h1>
             <p>Latest challan records added to the system.</p>

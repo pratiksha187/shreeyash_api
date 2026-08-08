@@ -20,6 +20,8 @@ class StockMovement extends Model
         'company_id',
         'material_id',
         'labour_site_id',
+        'project_id',
+        'project_task_id',
         'type',
         'quantity',
         'balance_after',
@@ -44,5 +46,15 @@ class StockMovement extends Model
     public function site(): BelongsTo
     {
         return $this->belongsTo(LabourSite::class, 'labour_site_id');
+    }
+
+    public function project(): BelongsTo
+    {
+        return $this->belongsTo(Project::class);
+    }
+
+    public function task(): BelongsTo
+    {
+        return $this->belongsTo(ProjectTask::class, 'project_task_id');
     }
 }

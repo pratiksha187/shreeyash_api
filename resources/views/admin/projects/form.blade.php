@@ -50,6 +50,30 @@
         </div>
 
         <div class="field">
+            <label for="work_order_number">Work Order Number</label>
+            <input id="work_order_number" name="work_order_number" type="text" value="{{ old('work_order_number', $project->work_order_number ?? '') }}" placeholder="WO / agreement no">
+            @error('work_order_number') <div class="error">{{ $message }}</div> @enderror
+        </div>
+
+        <div class="field">
+            <label for="work_order_date">Work Order Date</label>
+            <input id="work_order_date" name="work_order_date" type="date" value="{{ old('work_order_date', isset($project) ? $project->work_order_date?->toDateString() : '') }}">
+            @error('work_order_date') <div class="error">{{ $message }}</div> @enderror
+        </div>
+
+        <div class="field">
+            <label for="boq_reference">BOQ Reference</label>
+            <input id="boq_reference" name="boq_reference" type="text" value="{{ old('boq_reference', $project->boq_reference ?? '') }}" placeholder="BOQ file / revision">
+            @error('boq_reference') <div class="error">{{ $message }}</div> @enderror
+        </div>
+
+        <div class="field">
+            <label for="sor_reference">SOR / Rate Analysis Reference</label>
+            <input id="sor_reference" name="sor_reference" type="text" value="{{ old('sor_reference', $project->sor_reference ?? '') }}" placeholder="SOR year / rate sheet">
+            @error('sor_reference') <div class="error">{{ $message }}</div> @enderror
+        </div>
+
+        <div class="field">
             <label for="status">Status</label>
             <select id="status" name="status" required>
                 @foreach ($statuses as $value => $label)
@@ -75,6 +99,36 @@
             <label for="budget_amount">Budget Amount</label>
             <input id="budget_amount" name="budget_amount" type="number" min="0" step="0.01" value="{{ old('budget_amount', $project->budget_amount ?? 0) }}">
             @error('budget_amount') <div class="error">{{ $message }}</div> @enderror
+        </div>
+
+        <div class="field">
+            <label for="quantity_unit">Quantity Unit</label>
+            <input id="quantity_unit" name="quantity_unit" type="text" value="{{ old('quantity_unit', $project->quantity_unit ?? '') }}" placeholder="Cum, MT, Sqm, Km">
+            @error('quantity_unit') <div class="error">{{ $message }}</div> @enderror
+        </div>
+
+        <div class="field">
+            <label for="planned_quantity">Planned Quantity</label>
+            <input id="planned_quantity" name="planned_quantity" type="number" min="0" step="0.001" value="{{ old('planned_quantity', $project->planned_quantity ?? 0) }}">
+            @error('planned_quantity') <div class="error">{{ $message }}</div> @enderror
+        </div>
+
+        <div class="field">
+            <label for="executed_quantity">Executed Quantity</label>
+            <input id="executed_quantity" name="executed_quantity" type="number" min="0" step="0.001" value="{{ old('executed_quantity', $project->executed_quantity ?? 0) }}">
+            @error('executed_quantity') <div class="error">{{ $message }}</div> @enderror
+        </div>
+
+        <div class="field">
+            <label for="estimated_cost">Estimated Cost</label>
+            <input id="estimated_cost" name="estimated_cost" type="number" min="0" step="0.01" value="{{ old('estimated_cost', $project->estimated_cost ?? 0) }}">
+            @error('estimated_cost') <div class="error">{{ $message }}</div> @enderror
+        </div>
+
+        <div class="field">
+            <label for="actual_cost">Actual Cost</label>
+            <input id="actual_cost" name="actual_cost" type="number" min="0" step="0.01" value="{{ old('actual_cost', $project->actual_cost ?? 0) }}">
+            @error('actual_cost') <div class="error">{{ $message }}</div> @enderror
         </div>
 
         <div class="field">

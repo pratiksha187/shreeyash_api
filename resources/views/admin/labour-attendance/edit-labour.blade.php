@@ -52,6 +52,25 @@
                     <input id="trade" name="trade" type="text" value="{{ old('trade', $labour->trade) }}">
                 </div>
                 <div class="field">
+                    <label for="labour_type">Labour Type</label>
+                    <select id="labour_type" name="labour_type">
+                        <option value="daily_wage" @selected(old('labour_type', $labour->labour_type ?? 'daily_wage') === 'daily_wage')>Daily Wage</option>
+                        <option value="permanent" @selected(old('labour_type', $labour->labour_type) === 'permanent')>Permanent</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="work_category">Work Category</label>
+                    <input id="work_category" name="work_category" type="text" value="{{ old('work_category', $labour->work_category) }}">
+                </div>
+                <div class="field">
+                    <label for="daily_wage_rate">Daily Wage Rate</label>
+                    <input id="daily_wage_rate" name="daily_wage_rate" type="number" min="0" step="0.01" value="{{ old('daily_wage_rate', $labour->daily_wage_rate ?? 0) }}">
+                </div>
+                <div class="field">
+                    <label for="overtime_rate">Overtime Rate</label>
+                    <input id="overtime_rate" name="overtime_rate" type="number" min="0" step="0.01" value="{{ old('overtime_rate', $labour->overtime_rate ?? 0) }}">
+                </div>
+                <div class="field">
                     <label for="is_active">Status</label>
                     <select id="is_active" name="is_active">
                         <option value="1" @selected((string) old('is_active', (int) $labour->is_active) === '1')>Active</option>

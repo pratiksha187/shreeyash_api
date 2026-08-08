@@ -91,7 +91,7 @@
             <h1>{{ $vehicle->vehicle_number }}</h1>
             <p>{{ $vehicle->vehicle_type ?? 'Vehicle' }} billing period: {{ $monthLabel }}.</p>
         </div>
-        <div class="actions" style="margin-top: 0;">
+        <div class="actions">
             <a class="btn secondary" href="{{ route('admin.vehicles.index') }}">Back to Vehicles</a>
             <a class="btn" href="{{ route('admin.vehicles.edit', $vehicle) }}">Edit Vehicle</a>
         </div>

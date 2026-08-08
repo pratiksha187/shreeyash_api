@@ -227,10 +227,7 @@ class LabourAttendanceController extends Controller
     {
         $this->ensureDecoupledLabourMasterSchema();
 
-        $data = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'mobile' => ['nullable', 'string', 'max:20'],
-        ]);
+        $data = $request->validate($this->contractorRules());
 
         Contractor::query()->create($data);
 
@@ -242,11 +239,7 @@ class LabourAttendanceController extends Controller
         $this->ensureDecoupledLabourMasterSchema();
         $contractor = $this->findContractor($contractor);
 
-        $data = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'mobile' => ['nullable', 'string', 'max:20'],
-            'is_active' => ['required', 'boolean'],
-        ]);
+        $data = $request->validate($this->contractorRules(includeStatus: true));
 
         $contractor->update($data);
 
@@ -278,6 +271,10 @@ class LabourAttendanceController extends Controller
             'mobile' => ['nullable', 'string', 'max:20'],
             'labour_code' => ['nullable', 'string', 'max:50'],
             'trade' => ['nullable', 'string', 'max:100'],
+            'labour_type' => ['required', Rule::in(['permanent', 'daily_wage'])],
+            'work_category' => ['nullable', 'string', 'max:120'],
+            'daily_wage_rate' => ['nullable', 'numeric', 'min:0', 'max:999999999.99'],
+            'overtime_rate' => ['nullable', 'numeric', 'min:0', 'max:999999999.99'],
         ]);
 
         Labour::query()->create($data);
@@ -297,6 +294,10 @@ class LabourAttendanceController extends Controller
             'mobile' => ['nullable', 'string', 'max:20'],
             'labour_code' => ['nullable', 'string', 'max:50'],
             'trade' => ['nullable', 'string', 'max:100'],
+            'labour_type' => ['required', Rule::in(['permanent', 'daily_wage'])],
+            'work_category' => ['nullable', 'string', 'max:120'],
+            'daily_wage_rate' => ['nullable', 'numeric', 'min:0', 'max:999999999.99'],
+            'overtime_rate' => ['nullable', 'numeric', 'min:0', 'max:999999999.99'],
             'is_active' => ['required', 'boolean'],
         ]);
 
@@ -381,6 +382,41 @@ class LabourAttendanceController extends Controller
         return Contractor::query()
             ->forCurrentCompany()
             ->findOrFail($contractor);
+    }
+
+    /**
+     * @return array<string, array<int, string>>
+     */
+    private function contractorRules(bool $includeStatus = false): array
+    {
+        $rules = [
+            'name' => ['required', 'string', 'max:255'],
+            'mobile' => ['nullable', 'string', 'max:20'],
+            'agreement_no' => ['nullable', 'string', 'max:255'],
+            'contract_no' => ['nullable', 'string', 'max:255'],
+            'work_order_no' => ['nullable', 'string', 'max:255'],
+            'contract_start_date' => ['nullable', 'date'],
+            'contract_end_date' => ['nullable', 'date', 'after_or_equal:contract_start_date'],
+            'contract_value' => ['nullable', 'numeric', 'min:0', 'max:999999999999.99'],
+            'progress_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'last_measurement_date' => ['nullable', 'date'],
+            'last_measurement_summary' => ['nullable', 'string'],
+            'last_ra_bill_no' => ['nullable', 'string', 'max:255'],
+            'last_ra_bill_amount' => ['nullable', 'numeric', 'min:0', 'max:999999999999.99'],
+            'retention_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'recovery_amount' => ['nullable', 'numeric', 'min:0', 'max:999999999999.99'],
+            'tds_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'gst_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'net_payable_amount' => ['nullable', 'numeric', 'min:0', 'max:999999999999.99'],
+            'renewal_due_date' => ['nullable', 'date'],
+            'remarks' => ['nullable', 'string'],
+        ];
+
+        if ($includeStatus) {
+            $rules['is_active'] = ['required', 'boolean'];
+        }
+
+        return $rules;
     }
 
     private function findLabour(int $labour): Labour

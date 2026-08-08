@@ -13,6 +13,7 @@
 
         .purchase-panel {
             padding: 18px;
+            overflow: hidden;
         }
 
         .purchase-panel-head {
@@ -37,7 +38,7 @@
         }
 
         .purchase-table-scroll {
-            overflow-x: visible;
+            overflow-x: hidden;
             width: 100%;
         }
 
@@ -209,9 +210,65 @@
             accent-color: #2563eb;
         }
 
+        .purchase-entry-grid {
+            display: grid;
+            grid-template-columns: repeat(6, minmax(0, 1fr));
+            gap: 14px 12px;
+            align-items: end;
+        }
+
+        .purchase-entry-grid .field {
+            min-width: 0;
+        }
+
+        .purchase-entry-grid .field.wide {
+            grid-column: span 2;
+        }
+
+        .purchase-entry-grid input,
+        .purchase-entry-grid select,
+        .purchase-entry-grid textarea {
+            width: 100%;
+            min-width: 0;
+        }
+
+        .purchase-entry-grid textarea {
+            min-height: 52px;
+            resize: vertical;
+        }
+
+        .purchase-entry-grid .amount-preview {
+            min-height: 52px;
+            display: flex;
+            align-items: center;
+            padding: 0 14px;
+            border: 1px solid #cbd5e1;
+            border-radius: 7px;
+            background: #f8fafc;
+            color: #0f172a;
+            font-size: 18px;
+            font-weight: 900;
+        }
+
         @media (max-width: 640px) {
             .purchase-panel-head {
                 flex-direction: column;
+            }
+        }
+
+        @media (max-width: 1280px) {
+            .purchase-entry-grid {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 760px) {
+            .purchase-entry-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .purchase-entry-grid .field.wide {
+                grid-column: span 1;
             }
         }
     </style>
@@ -301,64 +358,72 @@
             <div class="purchase-panel-head">
                 <div>
                     <h2>Add Purchase</h2>
-                    <p>Amount uses Weight KG × Rate. If weight is blank, it uses PCS × Rate.</p>
+                    <p>Amount uses Weight KG x Rate. If weight is blank, it uses PCS x Rate.</p>
                 </div>
             </div>
 
-            <form id="create-purchase-form" method="POST" action="{{ route('admin.product-purchases.store') }}">
+            <form id="create-purchase-form" class="purchase-entry-grid" method="POST" action="{{ route('admin.product-purchases.store') }}" data-purchase-row>
                 @csrf
+                <div class="field">
+                    <label>Stock Site</label>
+                    <select name="stock_labour_site_id">
+                        <option value="">Main Store</option>
+                        @foreach ($sites as $site)
+                            <option value="{{ $site->id }}">{{ $site->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="field">
+                    <label>Date</label>
+                    <input class="sheet-highlight" name="purchase_date" type="date" value="{{ now()->toDateString() }}" required>
+                </div>
+                <div class="field wide">
+                    <label>Party Name</label>
+                    <input name="supplier_name">
+                </div>
+                <div class="field">
+                    <label>Challan No</label>
+                    <input name="invoice_no">
+                </div>
+                <div class="field wide">
+                    <label>Item Name</label>
+                    <input name="product_name" required>
+                </div>
+                <div class="field">
+                    <label>Size</label>
+                    <input class="sheet-highlight" name="size">
+                </div>
+                <div class="field">
+                    <label>PCS</label>
+                    <input class="js-pcs" name="pcs" type="number" min="0" step="0.01" value="0">
+                </div>
+                <div class="field">
+                    <label>Weight In KG</label>
+                    <input class="js-weight" name="weight_kg" type="number" min="0" step="0.01" value="0">
+                </div>
+                <div class="field">
+                    <label>Rate</label>
+                    <input class="js-rate" name="rate" type="number" min="0" step="0.01" value="0" required>
+                </div>
+                <div class="field">
+                    <label>Amt</label>
+                    <div class="amount-preview js-total-preview">0.00</div>
+                    <input class="js-total" type="hidden" value="0.00" readonly>
+                    <input name="material_id" type="hidden">
+                    <input name="unit" type="hidden">
+                    <input name="quantity" type="hidden" value="0">
+                    <input name="tax_amount" type="hidden" value="0">
+                    <input name="transport_amount" type="hidden" value="0">
+                </div>
+                <div class="field wide">
+                    <label>Remark</label>
+                    <textarea name="remarks"></textarea>
+                </div>
+                <div class="field">
+                    <label>&nbsp;</label>
+                    <button class="btn" type="submit">Save Purchase</button>
+                </div>
             </form>
-
-            <div class="purchase-table-scroll">
-                <table class="purchase-table">
-                    <thead>
-                        <tr>
-                            <th>Stock Site</th>
-                            <th>Date</th>
-                            <th>Party Name</th>
-                            <th>Challan No</th>
-                            <th>Item Name</th>
-                            <th>Size</th>
-                            <th>PCS</th>
-                            <th>Weight In KG</th>
-                            <th>Rate</th>
-                            <th>Amt</th>
-                            <th>Remark</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr data-purchase-row>
-                            <td>
-                                <select class="purchase-text-input" form="create-purchase-form" name="stock_labour_site_id">
-                                    <option value="">Main Store</option>
-                                    @foreach ($sites as $site)
-                                        <option value="{{ $site->id }}">{{ $site->name }}</option>
-                                    @endforeach
-                                </select>
-                            </td>
-                            <td><input class="purchase-date-input sheet-highlight" form="create-purchase-form" name="purchase_date" type="date" value="{{ now()->toDateString() }}" required></td>
-                            <td><input class="purchase-text-input" form="create-purchase-form" name="supplier_name"></td>
-                            <td><input form="create-purchase-form" name="invoice_no"></td>
-                            <td><input class="purchase-text-input" form="create-purchase-form" name="product_name" required></td>
-                            <td><input class="sheet-highlight" form="create-purchase-form" name="size"></td>
-                            <td><input class="js-pcs" form="create-purchase-form" name="pcs" type="number" min="0" step="0.01" value="0"></td>
-                            <td><input class="js-weight" form="create-purchase-form" name="weight_kg" type="number" min="0" step="0.01" value="0"></td>
-                            <td><input class="js-rate" form="create-purchase-form" name="rate" type="number" min="0" step="0.01" value="0" required></td>
-                            <td>
-                                <input class="js-total" type="number" value="0.00" readonly>
-                                <input form="create-purchase-form" name="material_id" type="hidden">
-                                <input form="create-purchase-form" name="unit" type="hidden">
-                                <input form="create-purchase-form" name="quantity" type="hidden" value="0">
-                                <input form="create-purchase-form" name="tax_amount" type="hidden" value="0">
-                                <input form="create-purchase-form" name="transport_amount" type="hidden" value="0">
-                            </td>
-                            <td><textarea form="create-purchase-form" name="remarks"></textarea></td>
-                            <td><button class="btn small" form="create-purchase-form" type="submit">Save</button></td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
         </section>
 
         <section class="card purchase-panel">
@@ -467,6 +532,11 @@
 
                 if (total) {
                     total.value = (billingQuantity * rate).toFixed(2);
+                }
+
+                const totalPreview = row.querySelector('.js-total-preview');
+                if (totalPreview) {
+                    totalPreview.textContent = (billingQuantity * rate).toFixed(2);
                 }
 
                 if (quantity) {

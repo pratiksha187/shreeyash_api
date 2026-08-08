@@ -15,6 +15,8 @@ class MaterialIssue extends Model
         'material_request_id',
         'material_id',
         'labour_site_id',
+        'project_id',
+        'project_task_id',
         'issued_quantity',
         'issued_by',
         'issued_at',
@@ -42,6 +44,16 @@ class MaterialIssue extends Model
     public function site(): BelongsTo
     {
         return $this->belongsTo(LabourSite::class, 'labour_site_id');
+    }
+
+    public function project(): BelongsTo
+    {
+        return $this->belongsTo(Project::class);
+    }
+
+    public function task(): BelongsTo
+    {
+        return $this->belongsTo(ProjectTask::class, 'project_task_id');
     }
 
     public function issuer(): BelongsTo

@@ -25,6 +25,8 @@ class MaterialRequest extends Model
         'company_id',
         'user_id',
         'labour_site_id',
+        'project_id',
+        'project_task_id',
         'material_id',
         'request_date',
         'required_by',
@@ -63,6 +65,16 @@ class MaterialRequest extends Model
     public function site(): BelongsTo
     {
         return $this->belongsTo(LabourSite::class, 'labour_site_id');
+    }
+
+    public function project(): BelongsTo
+    {
+        return $this->belongsTo(Project::class);
+    }
+
+    public function task(): BelongsTo
+    {
+        return $this->belongsTo(ProjectTask::class, 'project_task_id');
     }
 
     public function material(): BelongsTo

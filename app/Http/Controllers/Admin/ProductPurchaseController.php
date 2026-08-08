@@ -117,7 +117,7 @@ class ProductPurchaseController extends Controller
      */
     private function validatedData(Request $request): array
     {
-        return $request->validate([
+        $data = $request->validate([
             'purchase_date' => ['required', 'date'],
             'material_id' => ['nullable', 'integer'],
             'stock_labour_site_id' => ['nullable', 'integer'],
