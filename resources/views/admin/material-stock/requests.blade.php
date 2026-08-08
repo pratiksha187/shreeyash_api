@@ -9,28 +9,31 @@
     <style>
         .material-requests-page .main {
             max-width: none;
+            overflow-x: hidden;
         }
 
         .material-requests-page .stats-grid {
-            grid-template-columns: repeat(4, minmax(180px, 1fr));
-            gap: 18px;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 14px;
+            margin-bottom: 18px;
         }
 
         .material-requests-page .stat-card {
-            min-height: 116px;
+            min-height: 92px;
             display: grid;
             align-content: center;
-            padding: 24px 30px;
+            padding: 18px 24px;
         }
 
         .material-requests-page .request-filter-card {
-            padding: 28px 38px 32px;
+            padding: 22px 30px 24px;
+            margin-bottom: 18px;
         }
 
         .material-requests-page .request-filter-grid {
             display: grid;
-            grid-template-columns: minmax(190px, 1fr) minmax(220px, 1fr) minmax(260px, 1.25fr) 170px;
-            gap: 22px 28px;
+            grid-template-columns: minmax(150px, .9fr) minmax(190px, 1fr) minmax(230px, 1.15fr) 150px;
+            gap: 18px 22px;
             align-items: end;
         }
 
@@ -45,39 +48,41 @@
 
         .material-requests-page .request-filter-grid .filter-action .btn {
             width: 100%;
-            min-height: 52px;
+            min-height: 50px;
             justify-content: center;
         }
 
         .material-requests-page .requests-table-wrap {
-            overflow-x: auto;
+            overflow-x: hidden;
             width: 100%;
         }
 
         .material-requests-page .requests-table {
-            min-width: 1480px;
+            width: 100%;
+            min-width: 0;
             table-layout: fixed;
         }
 
         .material-requests-page .requests-table th,
         .material-requests-page .requests-table td {
-            padding: 14px 12px;
+            padding: 10px 8px;
             vertical-align: top;
             white-space: normal;
+            overflow-wrap: anywhere;
         }
 
         .material-requests-page .requests-table th {
-            font-size: 13px;
+            font-size: 12px;
             letter-spacing: 0;
         }
 
-        .material-requests-page .col-engineer { width: 10%; }
-        .material-requests-page .col-project { width: 15%; }
-        .material-requests-page .col-material { width: 13%; }
+        .material-requests-page .col-engineer { width: 11%; }
+        .material-requests-page .col-project { width: 14%; }
+        .material-requests-page .col-material { width: 12%; }
         .material-requests-page .col-requested { width: 11%; }
-        .material-requests-page .col-available { width: 12%; }
+        .material-requests-page .col-available { width: 11%; }
         .material-requests-page .col-status { width: 9%; }
-        .material-requests-page .col-approve { width: 18%; }
+        .material-requests-page .col-approve { width: 20%; }
         .material-requests-page .col-issue { width: 12%; }
 
         .material-requests-page .inline-status-form {
@@ -92,19 +97,19 @@
         .material-requests-page .inline-status-form textarea {
             width: 100%;
             min-width: 0;
-            min-height: 38px;
-            padding: 8px 10px;
-            font-size: 13px;
+            min-height: 34px;
+            padding: 7px 8px;
+            font-size: 12px;
         }
 
         .material-requests-page .inline-status-form textarea {
-            min-height: 58px;
+            min-height: 46px;
             resize: vertical;
         }
 
         .material-requests-page .inline-status-form .btn.small {
             width: 100%;
-            min-height: 38px;
+            min-height: 34px;
             justify-content: center;
         }
 
