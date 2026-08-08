@@ -231,10 +231,14 @@ class MaterialStockController extends Controller
         $availableByRequest = $requests->getCollection()->mapWithKeys(fn (MaterialRequest $request) => [
             $request->id => $request->material_id ? $this->totalAvailableQuantity((int) $request->material_id) : 0.0,
         ]);
+        $stockRowsByRequest = $requests->getCollection()->mapWithKeys(fn (MaterialRequest $request) => [
+            $request->id => $request->material_id ? $this->stockRowsForMaterial((int) $request->material_id) : collect(),
+        ]);
 
         return view('admin.material-stock.requests', [
             'requests' => $requests,
             'availableByRequest' => $availableByRequest,
+            'stockRowsByRequest' => $stockRowsByRequest,
             'materials' => $this->activeMaterials(),
             'statuses' => MaterialRequest::STATUSES,
             'sites' => $this->activeSites(),
@@ -433,6 +437,22 @@ class MaterialStockController extends Controller
             ->forCurrentCompany()
             ->where('material_id', $materialId)
             ->sum('available_quantity');
+    }
+
+    private function stockRowsForMaterial(int $materialId)
+    {
+        if (! $this->hasTable('material_stocks')) {
+            return collect();
+        }
+
+        return MaterialStock::query()
+            ->forCurrentCompany()
+            ->with('site:id,name')
+            ->where('material_id', $materialId)
+            ->where('available_quantity', '>', 0)
+            ->orderByRaw('labour_site_id IS NOT NULL')
+            ->orderBy('labour_site_id')
+            ->get();
     }
 
     private function ensureCurrentCompany(Material|MaterialRequest $record): void

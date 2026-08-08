@@ -82,8 +82,12 @@ class ProductPurchaseController extends Controller
         $data = $this->validatedData($request);
         $data['total_amount'] = $this->totalAmount($data);
 
-        $purchase = ProductPurchase::query()->create($data);
-        $this->recordPurchaseStock($purchase);
+        $purchase = DB::transaction(function () use ($data) {
+            $purchase = ProductPurchase::query()->create($data);
+            $this->recordPurchaseStock($purchase);
+
+            return $purchase;
+        });
 
         return redirect()
             ->route('admin.product-purchases.index', ['month' => Carbon::parse($data['purchase_date'])->format('Y-m')])
@@ -96,7 +100,11 @@ class ProductPurchaseController extends Controller
         $data = $this->validatedData($request);
         $data['total_amount'] = $this->totalAmount($data);
 
-        $productPurchase->update($data);
+        DB::transaction(function () use ($productPurchase, $data) {
+            $this->reversePurchaseStock($productPurchase, 'Stock reversed before product purchase update '.$productPurchase->invoice_no);
+            $productPurchase->update($data);
+            $this->recordPurchaseStock($productPurchase->refresh());
+        });
 
         return redirect()
             ->route('admin.product-purchases.index', ['month' => Carbon::parse($data['purchase_date'])->format('Y-m')])
@@ -107,7 +115,10 @@ class ProductPurchaseController extends Controller
     {
         $productPurchase = $this->findCurrentCompanyPurchase($productPurchase);
 
-        $productPurchase->delete();
+        DB::transaction(function () use ($productPurchase) {
+            $this->reversePurchaseStock($productPurchase, 'Stock reversed after product purchase delete '.$productPurchase->invoice_no);
+            $productPurchase->delete();
+        });
 
         return back()
             ->with('success', 'Product purchase deleted successfully.');
@@ -223,6 +234,41 @@ class ProductPurchaseController extends Controller
             $purchase->id,
             'Stock added from product purchase '.$purchase->invoice_no
         );
+    }
+
+    private function reversePurchaseStock(ProductPurchase $purchase, string $remarks): void
+    {
+        if (! $purchase->material_id || (float) $purchase->quantity <= 0 || ! $this->purchaseWasPostedToStock($purchase)) {
+            return;
+        }
+
+        if (! $this->hasTable('materials') || ! $this->hasTable('material_stocks') || ! $this->hasTable('stock_movements')) {
+            return;
+        }
+
+        $this->stockService->removeStock(
+            (int) $purchase->material_id,
+            $purchase->stock_labour_site_id ? (int) $purchase->stock_labour_site_id : null,
+            (float) $purchase->quantity,
+            StockMovement::PURCHASE_REVERSE,
+            ProductPurchase::class,
+            $purchase->id,
+            $remarks
+        );
+    }
+
+    private function purchaseWasPostedToStock(ProductPurchase $purchase): bool
+    {
+        if (! $this->hasTable('stock_movements')) {
+            return false;
+        }
+
+        return StockMovement::query()
+            ->forCurrentCompany()
+            ->where('reference_type', ProductPurchase::class)
+            ->where('reference_id', $purchase->id)
+            ->where('type', StockMovement::PURCHASE_IN)
+            ->exists();
     }
 
     private function findCurrentCompanyPurchase(int $productPurchase): ProductPurchase

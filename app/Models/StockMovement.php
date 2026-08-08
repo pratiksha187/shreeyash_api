@@ -11,6 +11,7 @@ class StockMovement extends Model
     use BelongsToCompany;
 
     public const PURCHASE_IN = 'purchase_in';
+    public const PURCHASE_REVERSE = 'purchase_reverse';
     public const ISSUE_OUT = 'issue_out';
     public const ADJUSTMENT_IN = 'adjustment_in';
     public const ADJUSTMENT_OUT = 'adjustment_out';

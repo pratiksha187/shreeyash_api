@@ -83,6 +83,9 @@
                     @forelse ($requests as $requestRow)
                         @php
                             $available = $availableByRequest[$requestRow->id] ?? 0;
+                            $sourceStocks = $stockRowsByRequest[$requestRow->id] ?? collect();
+                            $firstSourceStock = $sourceStocks->first();
+                            $firstSourceAvailable = $firstSourceStock ? (float) $firstSourceStock->available_quantity : 0;
                             $remainingApproved = max(0, (float) $requestRow->approved_quantity - (float) $requestRow->issued_quantity);
                             $material = $requestRow->relationLoaded('material') ? $requestRow->material : null;
                         @endphp
@@ -109,7 +112,14 @@
                             </td>
                             <td>
                                 {{ number_format($available, 2) }} {{ $requestRow->unit ?: $material?->unit }}
-                                <div class="table-subtext">All stock locations</div>
+                                <div class="table-subtext">Total all stores</div>
+                                @if ($sourceStocks->isNotEmpty())
+                                    <div class="table-subtext">
+                                        @foreach ($sourceStocks->take(3) as $sourceStock)
+                                            {{ $sourceStock->site?->name ?? 'Main Store' }}: {{ number_format($sourceStock->available_quantity, 2) }}@if (! $loop->last), @endif
+                                        @endforeach
+                                    </div>
+                                @endif
                             </td>
                             <td><span class="status-pill status-{{ $requestRow->status }}">{{ ucwords(str_replace('_', ' ', $requestRow->status)) }}</span></td>
                             <td>
@@ -157,15 +167,19 @@
                             </td>
                             <td>
                                 @if (in_array($requestRow->status, ['approved', 'partially_approved'], true) && $remainingApproved > 0 && $available > 0 && $requestRow->material_id)
-                                    <form class="inline-status-form" method="POST" action="{{ route('admin.material-requests.issue', $requestRow) }}">
+                                    <form class="inline-status-form material-issue-form" method="POST" action="{{ route('admin.material-requests.issue', $requestRow) }}">
                                         @csrf
-                                        <select name="issue_source_labour_site_id">
-                                            <option value="">From Main Store</option>
-                                            @foreach ($sites as $site)
-                                                <option value="{{ $site->id }}">From {{ $site->name }}</option>
+                                        <select name="issue_source_labour_site_id" class="issue-source-select">
+                                            @foreach ($sourceStocks as $sourceStock)
+                                                <option
+                                                    value="{{ $sourceStock->labour_site_id }}"
+                                                    data-available="{{ number_format($sourceStock->available_quantity, 2, '.', '') }}"
+                                                >
+                                                    From {{ $sourceStock->site?->name ?? 'Main Store' }} ({{ number_format($sourceStock->available_quantity, 2) }} available)
+                                                </option>
                                             @endforeach
                                         </select>
-                                        <input name="issued_quantity" type="number" min="0.01" max="{{ min($remainingApproved, $available) }}" step="0.01" value="{{ number_format(min($remainingApproved, $available), 2, '.', '') }}">
+                                        <input class="issue-quantity-input" name="issued_quantity" type="number" min="0.01" max="{{ number_format(min($remainingApproved, $firstSourceAvailable ?: $available), 2, '.', '') }}" step="0.01" value="{{ number_format(min($remainingApproved, $firstSourceAvailable ?: $available), 2, '.', '') }}" data-remaining="{{ number_format($remainingApproved, 2, '.', '') }}">
                                         <textarea name="remarks" placeholder="Issue remarks"></textarea>
                                         <button class="btn small" type="submit">Issue Material</button>
                                     </form>
@@ -191,4 +205,30 @@
     </div>
 
     <div class="pagination">{{ $requests->links('admin.pagination') }}</div>
+
+    <script>
+        document.querySelectorAll('.material-issue-form').forEach((form) => {
+            const source = form.querySelector('.issue-source-select');
+            const quantity = form.querySelector('.issue-quantity-input');
+
+            const applySourceLimit = () => {
+                const selected = source?.selectedOptions[0];
+                if (!selected || !quantity) {
+                    return;
+                }
+
+                const available = parseFloat(selected.dataset.available || 0);
+                const remaining = parseFloat(quantity.dataset.remaining || 0);
+                const allowed = Math.min(available, remaining);
+                quantity.max = allowed.toFixed(2);
+
+                if (parseFloat(quantity.value || 0) > allowed || parseFloat(quantity.value || 0) <= 0) {
+                    quantity.value = allowed.toFixed(2);
+                }
+            };
+
+            source?.addEventListener('change', applySourceLimit);
+            applySourceLimit();
+        });
+    </script>
 @endsection
