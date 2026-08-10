@@ -57,6 +57,7 @@ class LabourAttendancePhotoTest extends TestCase
 
         $this->assertNotNull($attendance);
         $this->assertNotNull($attendance->photo_path);
+        $this->assertStringStartsWith('labour-attendance/' . $engineer->id . '/' . $labour->id . '/', $attendance->photo_path);
         Storage::disk('public')->assertExists($attendance->photo_path);
 
         $this->withoutMiddleware(EnsureAdminLoggedIn::class);
@@ -112,6 +113,7 @@ class LabourAttendancePhotoTest extends TestCase
 
         $this->assertNotNull($attendance);
         $this->assertNotNull($attendance->photo_path);
+        $this->assertStringStartsWith('labour-attendance/' . $engineer->id . '/' . $labour->id . '/', $attendance->photo_path);
         Storage::disk('public')->assertExists($attendance->photo_path);
     }
 
@@ -313,6 +315,7 @@ class LabourAttendancePhotoTest extends TestCase
 
         $this->assertNotNull($attendance);
         $this->assertSame($labour->id, $attendance->labour_id);
+        $this->assertStringStartsWith('labour-attendance/' . $engineer->id . '/' . $labour->id . '/', $attendance->photo_path);
         Storage::disk('public')->assertExists($attendance->photo_path);
     }
 

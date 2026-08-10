@@ -22,7 +22,8 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class LabourAttendanceController extends Controller
 {
-    private const PHOTO_UPLOAD_DIR = 'leber_image';
+    private const PHOTO_UPLOAD_DIR = 'labour-attendance';
+    private const LEGACY_PHOTO_UPLOAD_DIR = 'leber_image';
 
     public function master(): View
     {
@@ -490,8 +491,10 @@ class LabourAttendanceController extends Controller
 
         $patterns = [
             storage_path('app/public/' . self::PHOTO_UPLOAD_DIR . '/*/' . $attendanceId . '/*'),
+            storage_path('app/public/' . self::LEGACY_PHOTO_UPLOAD_DIR . '/*/' . $attendanceId . '/*'),
             storage_path('app/public/labour-attendance/*/' . $attendanceId . '/*'),
             public_path('storage/' . self::PHOTO_UPLOAD_DIR . '/*/' . $attendanceId . '/*'),
+            public_path('storage/' . self::LEGACY_PHOTO_UPLOAD_DIR . '/*/' . $attendanceId . '/*'),
             public_path('storage/labour-attendance/*/' . $attendanceId . '/*'),
         ];
         $publicDiskDirs = [];
@@ -502,14 +505,17 @@ class LabourAttendanceController extends Controller
         if ($engineerId > 0 && $labourId > 0) {
             $publicDiskDirs = [
                 self::PHOTO_UPLOAD_DIR . '/' . $engineerId . '/' . $labourId,
+                self::LEGACY_PHOTO_UPLOAD_DIR . '/' . $engineerId . '/' . $labourId,
                 'labour-attendance/' . $engineerId . '/' . $labourId,
             ];
 
             array_push(
                 $patterns,
                 storage_path('app/public/' . self::PHOTO_UPLOAD_DIR . '/' . $engineerId . '/' . $labourId . '/*'),
+                storage_path('app/public/' . self::LEGACY_PHOTO_UPLOAD_DIR . '/' . $engineerId . '/' . $labourId . '/*'),
                 storage_path('app/public/labour-attendance/' . $engineerId . '/' . $labourId . '/*'),
                 public_path('storage/' . self::PHOTO_UPLOAD_DIR . '/' . $engineerId . '/' . $labourId . '/*'),
+                public_path('storage/' . self::LEGACY_PHOTO_UPLOAD_DIR . '/' . $engineerId . '/' . $labourId . '/*'),
                 public_path('storage/labour-attendance/' . $engineerId . '/' . $labourId . '/*'),
             );
         }
@@ -566,7 +572,9 @@ class LabourAttendanceController extends Controller
             preg_replace('#^storage/app/public/labour-attendance/#', self::PHOTO_UPLOAD_DIR . '/', $normalizedPath),
             preg_replace('#^.*public/storage/labour-attendance/#', self::PHOTO_UPLOAD_DIR . '/', $normalizedPath),
             preg_replace('#^.*storage/app/public/labour-attendance/#', self::PHOTO_UPLOAD_DIR . '/', $normalizedPath),
+            preg_replace('#^' . preg_quote(self::LEGACY_PHOTO_UPLOAD_DIR, '#') . '/#', self::PHOTO_UPLOAD_DIR . '/', $normalizedPath),
             preg_replace('#^' . preg_quote(self::PHOTO_UPLOAD_DIR, '#') . '/#', 'labour-attendance/', $normalizedPath),
+            preg_replace('#^' . preg_quote(self::PHOTO_UPLOAD_DIR, '#') . '/#', self::LEGACY_PHOTO_UPLOAD_DIR . '/', $normalizedPath),
         ])
             ->filter()
             ->map(fn (string $path) => str_replace('\\', '/', $path))

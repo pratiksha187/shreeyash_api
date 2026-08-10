@@ -20,7 +20,8 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class LabourAttendanceController extends Controller
 {
     private const PHOTO_MAX_UPLOAD_KB = 20480;
-    private const PHOTO_UPLOAD_DIR = 'leber_image';
+    private const PHOTO_UPLOAD_DIR = 'labour-attendance';
+    private const LEGACY_PHOTO_UPLOAD_DIR = 'leber_image';
 
     public function sites(): JsonResponse
     {
@@ -674,7 +675,7 @@ class LabourAttendanceController extends Controller
         }
 
         if ($photo instanceof UploadedFile) {
-            return $photo->store(self::PHOTO_UPLOAD_DIR . '/' . $request->user()->id . '/' . $attendance->id, 'public');
+            return $photo->store($this->photoUploadDirectory($request, $attendance), 'public');
         }
 
         $base64Photo = $request->input('photo_base64');
@@ -725,11 +726,16 @@ class LabourAttendanceController extends Controller
             default => $extension,
         };
 
-        $path = self::PHOTO_UPLOAD_DIR . '/' . $request->user()->id . '/' . $attendance->id . '/photo-' . now()->format('YmdHis') . '.' . $extension;
+        $path = $this->photoUploadDirectory($request, $attendance) . '/photo-' . now()->format('YmdHis') . '.' . $extension;
 
         Storage::disk('public')->put($path, $decodedPhoto);
 
         return $path;
+    }
+
+    private function photoUploadDirectory(Request $request, LabourAttendance $attendance): string
+    {
+        return self::PHOTO_UPLOAD_DIR . '/' . $request->user()->id . '/' . $attendance->labour_id;
     }
 
     private function publicPhotoPath(?string $photoPath): ?string
@@ -755,8 +761,10 @@ class LabourAttendanceController extends Controller
 
         $patterns = [
             storage_path('app/public/' . self::PHOTO_UPLOAD_DIR . '/*/' . $attendanceId . '/*'),
+            storage_path('app/public/' . self::LEGACY_PHOTO_UPLOAD_DIR . '/*/' . $attendanceId . '/*'),
             storage_path('app/public/labour-attendance/*/' . $attendanceId . '/*'),
             public_path('storage/' . self::PHOTO_UPLOAD_DIR . '/*/' . $attendanceId . '/*'),
+            public_path('storage/' . self::LEGACY_PHOTO_UPLOAD_DIR . '/*/' . $attendanceId . '/*'),
             public_path('storage/labour-attendance/*/' . $attendanceId . '/*'),
         ];
         $publicDiskDirs = [];
@@ -767,14 +775,17 @@ class LabourAttendanceController extends Controller
         if ($engineerId > 0 && $labourId > 0) {
             $publicDiskDirs = [
                 self::PHOTO_UPLOAD_DIR . '/' . $engineerId . '/' . $labourId,
+                self::LEGACY_PHOTO_UPLOAD_DIR . '/' . $engineerId . '/' . $labourId,
                 'labour-attendance/' . $engineerId . '/' . $labourId,
             ];
 
             array_push(
                 $patterns,
                 storage_path('app/public/' . self::PHOTO_UPLOAD_DIR . '/' . $engineerId . '/' . $labourId . '/*'),
+                storage_path('app/public/' . self::LEGACY_PHOTO_UPLOAD_DIR . '/' . $engineerId . '/' . $labourId . '/*'),
                 storage_path('app/public/labour-attendance/' . $engineerId . '/' . $labourId . '/*'),
                 public_path('storage/' . self::PHOTO_UPLOAD_DIR . '/' . $engineerId . '/' . $labourId . '/*'),
+                public_path('storage/' . self::LEGACY_PHOTO_UPLOAD_DIR . '/' . $engineerId . '/' . $labourId . '/*'),
                 public_path('storage/labour-attendance/' . $engineerId . '/' . $labourId . '/*'),
             );
         }
@@ -831,7 +842,9 @@ class LabourAttendanceController extends Controller
             preg_replace('#^storage/app/public/labour-attendance/#', self::PHOTO_UPLOAD_DIR . '/', $normalizedPath),
             preg_replace('#^.*public/storage/labour-attendance/#', self::PHOTO_UPLOAD_DIR . '/', $normalizedPath),
             preg_replace('#^.*storage/app/public/labour-attendance/#', self::PHOTO_UPLOAD_DIR . '/', $normalizedPath),
+            preg_replace('#^' . preg_quote(self::LEGACY_PHOTO_UPLOAD_DIR, '#') . '/#', self::PHOTO_UPLOAD_DIR . '/', $normalizedPath),
             preg_replace('#^' . preg_quote(self::PHOTO_UPLOAD_DIR, '#') . '/#', 'labour-attendance/', $normalizedPath),
+            preg_replace('#^' . preg_quote(self::PHOTO_UPLOAD_DIR, '#') . '/#', self::LEGACY_PHOTO_UPLOAD_DIR . '/', $normalizedPath),
         ])
             ->filter()
             ->map(fn (string $path) => str_replace('\\', '/', $path))
