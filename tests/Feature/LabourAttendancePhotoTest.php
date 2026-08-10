@@ -315,4 +315,45 @@ class LabourAttendancePhotoTest extends TestCase
         $this->assertSame($labour->id, $attendance->labour_id);
         Storage::disk('public')->assertExists($attendance->photo_path);
     }
+
+    public function test_admin_labour_attendance_photo_route_resolves_stored_storage_url(): void
+    {
+        Storage::fake('public');
+
+        $engineer = User::factory()->create();
+        $this->actingAs($engineer);
+
+        $photoPath = 'leber_image/1/104/photo.jpg';
+        Storage::disk('public')->put($photoPath, 'fake image contents');
+
+        $site = LabourSite::query()->create(['name' => 'Head Office']);
+        $contractor = Contractor::query()->create([
+            'labour_site_id' => $site->id,
+            'name' => 'Pankaj Damakale',
+        ]);
+        $labour = Labour::query()->create([
+            'contractor_id' => $contractor->id,
+            'name' => 'Divakar Roy',
+            'trade' => 'Helper',
+        ]);
+        $attendance = LabourAttendance::query()->create([
+            'engineer_user_id' => $engineer->id,
+            'labour_site_id' => $site->id,
+            'contractor_id' => $contractor->id,
+            'labour_id' => $labour->id,
+            'attendance_date' => '2026-08-10',
+            'status' => 'present',
+            'remarks' => 'Test',
+            'photo_path' => 'https://adminerp.shreeyashgroup.com/storage/' . $photoPath,
+            'approval_status' => 'pending',
+        ]);
+
+        $this->withoutMiddleware(EnsureAdminLoggedIn::class);
+
+        $this->withSession([
+            'admin_logged_in' => true,
+            'admin_email' => 'admin@example.com',
+        ])->get('/admin/labour-attendance/' . $attendance->id . '/photo')
+            ->assertOk();
+    }
 }

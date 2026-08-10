@@ -781,19 +781,27 @@ class LabourAttendanceController extends Controller
         }
 
         $normalizedPath = str_replace('\\', '/', ltrim($photoPath, '/\\'));
+        $urlPath = parse_url($normalizedPath, PHP_URL_PATH);
+        $urlPath = is_string($urlPath) ? ltrim($urlPath, '/\\') : null;
 
         return collect([
             $photoPath,
             $normalizedPath,
+            $urlPath,
+            $urlPath ? preg_replace('#^storage/#', '', $urlPath) : null,
             preg_replace('#^public/#', '', $normalizedPath),
             preg_replace('#^public/storage/#', '', $normalizedPath),
             preg_replace('#^storage/#', '', $normalizedPath),
             preg_replace('#^storage/app/public/#', '', $normalizedPath),
+            preg_replace('#^.*public/storage/#', '', $normalizedPath),
+            preg_replace('#^.*storage/app/public/#', '', $normalizedPath),
             preg_replace('#^labour-attendance/#', self::PHOTO_UPLOAD_DIR . '/', $normalizedPath),
             preg_replace('#^public/labour-attendance/#', self::PHOTO_UPLOAD_DIR . '/', $normalizedPath),
             preg_replace('#^public/storage/labour-attendance/#', self::PHOTO_UPLOAD_DIR . '/', $normalizedPath),
             preg_replace('#^storage/labour-attendance/#', self::PHOTO_UPLOAD_DIR . '/', $normalizedPath),
             preg_replace('#^storage/app/public/labour-attendance/#', self::PHOTO_UPLOAD_DIR . '/', $normalizedPath),
+            preg_replace('#^.*public/storage/labour-attendance/#', self::PHOTO_UPLOAD_DIR . '/', $normalizedPath),
+            preg_replace('#^.*storage/app/public/labour-attendance/#', self::PHOTO_UPLOAD_DIR . '/', $normalizedPath),
             preg_replace('#^' . preg_quote(self::PHOTO_UPLOAD_DIR, '#') . '/#', 'labour-attendance/', $normalizedPath),
         ])
             ->filter()
