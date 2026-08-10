@@ -108,6 +108,10 @@
             <strong>{{ $summary['pending'] }}</strong>
         </div>
         <div class="card stat-card">
+            <span>Out Pending</span>
+            <strong>{{ $summary['out_pending'] }}</strong>
+        </div>
+        <div class="card stat-card">
             <span>Approved</span>
             <strong>{{ $summary['approved'] }}</strong>
         </div>
@@ -134,6 +138,11 @@
             </thead>
             <tbody>
                 @forelse ($attendances as $attendance)
+                    @php
+                        $isOutPending = in_array($attendance->status, ['present', 'half_day'], true)
+                            && filled($attendance->in_time)
+                            && blank($attendance->out_time);
+                    @endphp
                     <tr>
                         <td>{{ $attendance->attendance_date?->format('d M Y') }}</td>
                         <td class="text-wrap">{{ $attendance->site?->name ?? '-' }}</td>
@@ -175,6 +184,9 @@
                                     Time: {{ $attendance->in_time ? \Illuminate\Support\Str::of($attendance->in_time)->substr(0, 5) : '-' }}
                                     to {{ $attendance->out_time ? \Illuminate\Support\Str::of($attendance->out_time)->substr(0, 5) : '-' }}<br>
                                 @endif
+                                @if ($isOutPending)
+                                    <span class="status-pill status-pending">Out pending</span><br>
+                                @endif
                                 Hours: {{ $attendance->work_hours ?? '-' }}
                                 @if ($attendance->remarks)
                                     <br>{{ $attendance->remarks }}
@@ -201,7 +213,7 @@
                                 @method('PATCH')
                                 <select name="approval_status" required>
                                     @foreach ($approvalStatuses as $approvalStatus)
-                                        <option value="{{ $approvalStatus }}" @selected($attendance->approval_status === $approvalStatus)>
+                                        <option value="{{ $approvalStatus }}" @selected($attendance->approval_status === $approvalStatus) @disabled($isOutPending && $approvalStatus === 'approved')>
                                             {{ ucfirst($approvalStatus) }}
                                         </option>
                                     @endforeach

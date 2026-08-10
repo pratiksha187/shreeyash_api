@@ -135,7 +135,6 @@
                 </div>
         </section>
 
-        
         <section class="card safety-panel">
             <div class="safety-panel-head"><h2>Approve & Issue Requests</h2><p>Approve request and issue from available store/site stock.</p></div>
             <div class="table-wrap safety-requests-wrap">

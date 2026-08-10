@@ -164,6 +164,11 @@ class LabourAttendanceController extends Controller
             'summary' => [
                 'total' => (clone $baseQuery)->count(),
                 'pending' => (clone $baseQuery)->where('approval_status', 'pending')->count(),
+                'out_pending' => (clone $baseQuery)
+                    ->whereIn('status', ['present', 'half_day'])
+                    ->whereNotNull('in_time')
+                    ->whereNull('out_time')
+                    ->count(),
                 'approved' => (clone $baseQuery)->where('approval_status', 'approved')->count(),
                 'rejected' => (clone $baseQuery)->where('approval_status', 'rejected')->count(),
             ],
@@ -351,6 +356,12 @@ class LabourAttendanceController extends Controller
             'admin_note' => ['nullable', 'string', 'max:2000'],
         ]);
 
+        if ($data['approval_status'] === 'approved' && $this->isOutPending($labourAttendance)) {
+            return back()->withErrors([
+                'approval_status' => 'Evening out time is pending for this labour attendance. Please approve after out is submitted.',
+            ]);
+        }
+
         $labourAttendance->fill([
             'approval_status' => $data['approval_status'],
             'admin_note' => $data['admin_note'] ?? null,
@@ -525,5 +536,12 @@ class LabourAttendanceController extends Controller
             ->reject(fn (string $path) => str_contains($path, '..'))
             ->unique()
             ->values();
+    }
+
+    private function isOutPending(LabourAttendance $attendance): bool
+    {
+        return in_array($attendance->status, ['present', 'half_day'], true)
+            && filled($attendance->in_time)
+            && blank($attendance->out_time);
     }
 }
