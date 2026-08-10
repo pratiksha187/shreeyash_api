@@ -356,4 +356,54 @@ class LabourAttendancePhotoTest extends TestCase
         ])->get('/admin/labour-attendance/' . $attendance->id . '/photo')
             ->assertOk();
     }
+
+    public function test_admin_labour_attendance_photo_route_finds_legacy_engineer_labour_folder(): void
+    {
+        Storage::fake('public');
+
+        $engineer = User::factory()->create(['id' => 23]);
+        $this->actingAs($engineer);
+
+        $site = LabourSite::query()->create(['name' => 'Head Office']);
+        $contractor = Contractor::query()->create([
+            'labour_site_id' => $site->id,
+            'name' => 'Pankaj Damakale',
+        ]);
+        Labour::query()->create([
+            'contractor_id' => $contractor->id,
+            'name' => 'Divakar Roy',
+            'trade' => 'Helper',
+        ]);
+        $labour = Labour::query()->create([
+            'contractor_id' => $contractor->id,
+            'name' => 'Bihari Pandit',
+            'trade' => 'Fitter',
+        ]);
+
+        Storage::disk('public')->put(
+            'labour-attendance/' . $engineer->id . '/' . $labour->id . '/uBzYZuSaPAMifvhzMmcrsxpQ8N1BNcJIRFphdaJf.jpg',
+            'fake image contents'
+        );
+
+        $attendance = LabourAttendance::query()->create([
+            'id' => 105,
+            'engineer_user_id' => $engineer->id,
+            'labour_site_id' => $site->id,
+            'contractor_id' => $contractor->id,
+            'labour_id' => $labour->id,
+            'attendance_date' => '2026-08-10',
+            'status' => 'present',
+            'remarks' => 'Test',
+            'photo_path' => 'labour-attendance/' . $engineer->id . '/missing/missing.jpg',
+            'approval_status' => 'pending',
+        ]);
+
+        $this->withoutMiddleware(EnsureAdminLoggedIn::class);
+
+        $this->withSession([
+            'admin_logged_in' => true,
+            'admin_email' => 'admin@example.com',
+        ])->get('/admin/labour-attendance/' . $attendance->id . '/photo')
+            ->assertOk();
+    }
 }

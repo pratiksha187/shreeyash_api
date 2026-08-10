@@ -759,6 +759,35 @@ class LabourAttendanceController extends Controller
             public_path('storage/' . self::PHOTO_UPLOAD_DIR . '/*/' . $attendanceId . '/*'),
             public_path('storage/labour-attendance/*/' . $attendanceId . '/*'),
         ];
+        $publicDiskDirs = [];
+
+        $engineerId = (int) $labourAttendance->engineer_user_id;
+        $labourId = (int) $labourAttendance->labour_id;
+
+        if ($engineerId > 0 && $labourId > 0) {
+            $publicDiskDirs = [
+                self::PHOTO_UPLOAD_DIR . '/' . $engineerId . '/' . $labourId,
+                'labour-attendance/' . $engineerId . '/' . $labourId,
+            ];
+
+            array_push(
+                $patterns,
+                storage_path('app/public/' . self::PHOTO_UPLOAD_DIR . '/' . $engineerId . '/' . $labourId . '/*'),
+                storage_path('app/public/labour-attendance/' . $engineerId . '/' . $labourId . '/*'),
+                public_path('storage/' . self::PHOTO_UPLOAD_DIR . '/' . $engineerId . '/' . $labourId . '/*'),
+                public_path('storage/labour-attendance/' . $engineerId . '/' . $labourId . '/*'),
+            );
+        }
+
+        foreach ($publicDiskDirs as $directory) {
+            $file = collect(Storage::disk('public')->files($directory))
+                ->sortDesc()
+                ->first();
+
+            if ($file) {
+                return Storage::disk('public')->path($file);
+            }
+        }
 
         foreach ($patterns as $pattern) {
             $file = collect(glob($pattern) ?: [])
