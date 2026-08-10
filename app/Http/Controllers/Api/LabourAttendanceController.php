@@ -167,7 +167,10 @@ class LabourAttendanceController extends Controller
             ->whereIn('id', $labourIds);
 
         if ($contractor) {
-            $laboursQuery->where('contractor_id', $contractor->id);
+            $laboursQuery->where(function ($query) use ($contractor) {
+                $query->where('contractor_id', $contractor->id)
+                    ->orWhereNull('contractor_id');
+            });
         }
 
         $labours = $laboursQuery->get()
@@ -658,6 +661,17 @@ class LabourAttendanceController extends Controller
     private function storeAttendancePhoto(Request $request, LabourAttendance $attendance): ?string
     {
         $photo = $request->file('photo');
+
+        if (! $photo instanceof UploadedFile) {
+            foreach (['image', 'labour_photo', 'labor_photo', 'leber_photo', 'labour_image', 'labor_image', 'leber_image', 'attendance_photo'] as $key) {
+                $aliasPhoto = $request->file($key);
+
+                if ($aliasPhoto instanceof UploadedFile) {
+                    $photo = $aliasPhoto;
+                    break;
+                }
+            }
+        }
 
         if ($photo instanceof UploadedFile) {
             return $photo->store(self::PHOTO_UPLOAD_DIR . '/' . $request->user()->id . '/' . $attendance->id, 'public');

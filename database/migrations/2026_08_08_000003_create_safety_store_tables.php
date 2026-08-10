@@ -117,7 +117,7 @@ return new class extends Migration
                 $table->text('remarks')->nullable();
                 $table->timestamps();
 
-                $table->index(['company_id', 'safety_item_id', 'labour_site_id']);
+                $table->index(['company_id', 'safety_item_id', 'labour_site_id'], 'safety_movements_company_item_site_index');
             });
         }
     }

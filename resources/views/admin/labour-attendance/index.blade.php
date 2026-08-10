@@ -163,11 +163,7 @@
                         </td>
                         <td>
                             @if ($attendance->photo_path)
-                                @php
-                                    $photoPath = str_replace('\\', '/', ltrim($attendance->photo_path, '/\\'));
-                                    $photoPath = preg_replace('#^(public/storage|public|storage|storage/app/public)/#', '', $photoPath);
-                                    $photoUrl = asset('storage/' . $photoPath);
-                                @endphp
+                                @php($photoUrl = route('admin.labour-attendance.photo', $attendance))
                                 <a href="{{ $photoUrl }}" target="_blank">
                                     <img class="thumb" src="{{ $photoUrl }}" alt="Labour attendance photo">
                                 </a>

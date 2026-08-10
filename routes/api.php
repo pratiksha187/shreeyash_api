@@ -98,6 +98,13 @@ Route::middleware([AuthenticateApiToken::class, EnsureCompanySubscriptionActive:
     Route::post('/labor/attendances', [LabourAttendanceController::class, 'store'])->name('api.labor-attendances.store');
     Route::get('/labor/attendances/{labourAttendance}/photo', [LabourAttendanceController::class, 'photo'])->name('api.labor-attendances.photo');
     Route::get('/labor/attendances/{labourAttendance}', [LabourAttendanceController::class, 'show'])->name('api.labor-attendances.show');
+    Route::get('/leber/sites', [LabourAttendanceController::class, 'sites'])->name('api.leber.sites');
+    Route::get('/leber/sites/{labourSite}/contractors', [LabourAttendanceController::class, 'contractors'])->name('api.leber.contractors');
+    Route::get('/leber/contractors/{contractor}/lebers', [LabourAttendanceController::class, 'labours'])->name('api.leber.lebers');
+    Route::get('/leber/attendances', [LabourAttendanceController::class, 'index'])->name('api.leber-attendances.index');
+    Route::post('/leber/attendances', [LabourAttendanceController::class, 'store'])->name('api.leber-attendances.store');
+    Route::get('/leber/attendances/{labourAttendance}/photo', [LabourAttendanceController::class, 'photo'])->name('api.leber-attendances.photo');
+    Route::get('/leber/attendances/{labourAttendance}', [LabourAttendanceController::class, 'show'])->name('api.leber-attendances.show');
     Route::get('/labour-sites', [LabourAttendanceController::class, 'sites'])->name('api.labour-sites.index');
 
     Route::get('/machinery-diesel-logs', [MachineryDieselLogController::class, 'index'])->name('api.machinery-diesel-logs.index');

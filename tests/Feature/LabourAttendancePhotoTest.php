@@ -270,4 +270,49 @@ class LabourAttendancePhotoTest extends TestCase
             'remarks' => '10+1',
         ]);
     }
+
+    public function test_labour_attendance_accepts_legacy_leber_endpoint_and_photo_key(): void
+    {
+        Storage::fake('public');
+
+        $engineer = User::factory()->create([
+            'api_token' => hash('sha256', 'mobile-token'),
+        ]);
+        $this->actingAs($engineer);
+        $this->withoutMiddleware(AuthenticateApiToken::class);
+
+        $site = LabourSite::query()->create(['name' => 'Khanav']);
+        $contractor = Contractor::query()->create([
+            'labour_site_id' => $site->id,
+            'name' => 'Irfan Ali',
+        ]);
+        $labour = Labour::query()->create([
+            'contractor_id' => $contractor->id,
+            'name' => 'Nitesh Kumar',
+            'trade' => 'Carpenter',
+        ]);
+
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer mobile-token',
+        ])->post('/api/leber/attendances', [
+            'leberSiteId' => $site->id,
+            'contractorId' => $contractor->id,
+            'leberId' => $labour->id,
+            'date' => '2026-08-10',
+            'status' => 'Present',
+            'inTime' => '09:00',
+            'note' => 'Test',
+            'leber_image' => UploadedFile::fake()->image('labour.jpg', 320, 320),
+        ]);
+
+        $attendance = LabourAttendance::query()->first();
+
+        $response->assertCreated()
+            ->assertJsonPath('labour_attendance.remarks', 'Test')
+            ->assertJsonPath('labour_attendance.photo_url', fn ($value) => is_string($value) && str_contains($value, '/api/'));
+
+        $this->assertNotNull($attendance);
+        $this->assertSame($labour->id, $attendance->labour_id);
+        Storage::disk('public')->assertExists($attendance->photo_path);
+    }
 }
