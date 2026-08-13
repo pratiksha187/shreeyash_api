@@ -10,6 +10,7 @@ use App\Models\MaterialRequest;
 use App\Models\MaterialStock;
 use App\Models\Project;
 use App\Models\ProjectTask;
+use App\Models\PurchaseWorkflow;
 use App\Models\StockMovement;
 use App\Services\MaterialStockService;
 use App\Support\Tenant;
@@ -194,11 +195,13 @@ class MaterialStockController extends Controller
         $stockRowsByRequest = $requests->getCollection()->mapWithKeys(fn (MaterialRequest $request) => [
             $request->id => $request->material_id ? $this->stockRowsForMaterial((int) $request->material_id) : collect(),
         ]);
+        $vendorComparisonsByRequest = $this->vendorComparisonsByRequest($requests->getCollection());
 
         return view('admin.material-stock.requests', [
             'requests' => $requests,
             'availableByRequest' => $availableByRequest,
             'stockRowsByRequest' => $stockRowsByRequest,
+            'vendorComparisonsByRequest' => $vendorComparisonsByRequest,
             'materials' => $this->activeMaterials(),
             'statuses' => MaterialRequest::STATUSES,
             'sites' => $this->activeSites(),
@@ -519,6 +522,45 @@ class MaterialStockController extends Controller
             ->orderByRaw('labour_site_id IS NOT NULL')
             ->orderBy('labour_site_id')
             ->get();
+    }
+
+    private function vendorComparisonsByRequest($requests)
+    {
+        if (! $this->hasTable('purchase_workflows') || $requests->isEmpty()) {
+            return collect();
+        }
+
+        $materialNames = $requests
+            ->map(fn (MaterialRequest $request) => $this->normalizedMaterialName($request->material_name ?: $request->material?->name))
+            ->filter()
+            ->unique()
+            ->values();
+
+        if ($materialNames->isEmpty()) {
+            return collect();
+        }
+
+        $comparisonsByMaterial = PurchaseWorkflow::query()
+            ->forCurrentCompany()
+            ->where(function ($query) use ($materialNames) {
+                foreach ($materialNames as $name) {
+                    $query->orWhereRaw('LOWER(TRIM(material_name)) = ?', [$name]);
+                }
+            })
+            ->latest('id')
+            ->get()
+            ->groupBy(fn (PurchaseWorkflow $workflow) => $this->normalizedMaterialName($workflow->material_name));
+
+        return $requests->mapWithKeys(function (MaterialRequest $request) use ($comparisonsByMaterial) {
+            $materialName = $this->normalizedMaterialName($request->material_name ?: $request->material?->name);
+
+            return [$request->id => $comparisonsByMaterial->get($materialName, collect())->take(5)->values()];
+        });
+    }
+
+    private function normalizedMaterialName(?string $materialName): string
+    {
+        return strtolower(trim((string) $materialName));
     }
 
     private function ensureCurrentCompany(Material|MaterialRequest $record): void

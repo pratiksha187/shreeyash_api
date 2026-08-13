@@ -158,6 +158,46 @@
             text-align: center;
         }
 
+        .material-requests-page .vendor-comparison-list {
+            display: grid;
+            gap: 8px;
+        }
+
+        .material-requests-page .vendor-comparison-item {
+            display: grid;
+            gap: 4px;
+            padding: 10px 12px;
+            border: 1px solid #fde7c7;
+            border-radius: 8px;
+            background: #fffaf3;
+        }
+
+        .material-requests-page .vendor-comparison-item strong {
+            color: #0f172a;
+            font-size: 13px;
+            line-height: 1.2;
+        }
+
+        .material-requests-page .vendor-comparison-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            color: #526584;
+            font-size: 12px;
+            font-weight: 800;
+        }
+
+        .material-requests-page .vendor-comparison-status {
+            display: inline-flex;
+            width: fit-content;
+            padding: 4px 8px;
+            border-radius: 999px;
+            background: #fff1d6;
+            color: #c2410c;
+            font-size: 11px;
+            font-weight: 900;
+        }
+
         .material-requests-page .request-delete-card form {
             margin: 0;
         }
@@ -334,6 +374,7 @@
                             $firstSourceAvailable = $firstSourceStock ? (float) $firstSourceStock->available_quantity : 0;
                             $remainingApproved = max(0, (float) $requestRow->approved_quantity - (float) $requestRow->issued_quantity);
                             $material = $requestRow->relationLoaded('material') ? $requestRow->material : null;
+                            $vendorComparisons = $vendorComparisonsByRequest[$requestRow->id] ?? collect();
                             $detailId = 'request-detail-'.$requestRow->id;
                         @endphp
                         <tr>
@@ -457,6 +498,29 @@
                                         @else
                                             <div class="request-message-card">
                                                 <span class="table-subtext">No issue action</span>
+                                            </div>
+                                        @endif
+
+                                        <h3>Compare Vendor</h3>
+                                        @if ($vendorComparisons->isNotEmpty())
+                                            <div class="vendor-comparison-list">
+                                                @foreach ($vendorComparisons as $comparison)
+                                                    <div class="vendor-comparison-item">
+                                                        <strong>{{ $comparison->selected_vendor ?: $comparison->vendor_names ?: '-' }}</strong>
+                                                        <div class="vendor-comparison-meta">
+                                                            <span>{{ $comparison->material_name }}</span>
+                                                            <span>|</span>
+                                                            <span>Amount {{ number_format((float) $comparison->quoted_amount, 2) }}</span>
+                                                        </div>
+                                                        <span class="vendor-comparison-status">
+                                                            {{ $comparison->approval_status === 'approved' && $comparison->selected_vendor ? 'Fixed' : ucwords(str_replace('_', ' ', $comparison->approval_status)) }}
+                                                        </span>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        @else
+                                            <div class="request-message-card">
+                                                <span class="table-subtext">No vendor comparison added for this material.</span>
                                             </div>
                                         @endif
                                     </div>
