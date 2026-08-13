@@ -28,6 +28,7 @@ class ProductPurchase extends Model
         'tax_amount',
         'transport_amount',
         'total_amount',
+        'bill_photo_path',
         'remarks',
     ];
 

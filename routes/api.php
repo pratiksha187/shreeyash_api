@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\MachineryDieselLogController;
 use App\Http\Controllers\Api\MaterialRequestController;
 use App\Http\Controllers\Api\MissedAttendanceRequestController;
 use App\Http\Controllers\Api\PaymentController;
+use App\Http\Controllers\Api\ProductPurchaseController;
 use App\Http\Controllers\Api\ProjectTaskController;
 use App\Http\Controllers\Api\SafetyRequestController;
 use App\Http\Controllers\Api\SupplierController;
@@ -82,6 +83,10 @@ Route::middleware([AuthenticateApiToken::class, EnsureCompanySubscriptionActive:
     Route::get('/supplier', [SupplierController::class, 'index'])->name('api.supplier.index');
     Route::post('/supplier', [SupplierController::class, 'store'])->name('api.supplier.store');
     Route::get('/supplier/{supplier}', [SupplierController::class, 'show'])->name('api.supplier.show');
+    Route::get('/product-purchases', [ProductPurchaseController::class, 'index'])->name('api.product-purchases.index');
+    Route::post('/product-purchases', [ProductPurchaseController::class, 'store'])->name('api.product-purchases.store');
+    Route::get('/product-purchase', [ProductPurchaseController::class, 'index'])->name('api.product-purchase.index');
+    Route::post('/product-purchase', [ProductPurchaseController::class, 'store'])->name('api.product-purchase.store');
     Route::get('/project-tasks', [ProjectTaskController::class, 'index'])->name('api.project-tasks.index');
     Route::get('/project-tasks/{projectTask}', [ProjectTaskController::class, 'show'])->name('api.project-tasks.show');
     Route::patch('/project-tasks/{projectTask}', [ProjectTaskController::class, 'update'])->name('api.project-tasks.update');
