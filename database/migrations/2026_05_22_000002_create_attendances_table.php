@@ -13,8 +13,8 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->date('attendance_date');
             $table->string('status')->default('present');
-            $table->timestamp('check_in_at')->nullable();
-            $table->timestamp('check_out_at')->nullable();
+            $table->dateTime('check_in_at')->nullable();
+            $table->dateTime('check_out_at')->nullable();
             $table->decimal('latitude', 10, 7)->nullable();
             $table->decimal('longitude', 10, 7)->nullable();
             $table->string('remarks', 500)->nullable();

@@ -14,7 +14,7 @@ return new class extends Migration
             }
 
             if (! Schema::hasColumn('attendances', 'leave_approved_at')) {
-                $table->timestamp('leave_approved_at')->nullable()->after('leave_approval_status');
+                $table->dateTime('leave_approved_at')->nullable()->after('leave_approval_status');
             }
 
             if (! Schema::hasColumn('attendances', 'leave_admin_note')) {
