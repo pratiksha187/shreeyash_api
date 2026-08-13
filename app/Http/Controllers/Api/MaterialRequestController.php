@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\LabourSite;
 use App\Models\Material;
 use App\Models\MaterialRequest;
+use App\Models\MaterialStock;
 use App\Support\Tenant;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -78,18 +79,19 @@ class MaterialRequestController extends Controller
             'status' => ['nullable', 'string', 'max:40'],
             'labour_site_id' => ['nullable', 'integer'],
             'material_id' => ['nullable', 'integer'],
+            'project_id' => ['nullable', 'integer'],
             'from_date' => ['nullable', 'date'],
             'to_date' => ['nullable', 'date', 'after_or_equal:from_date'],
             'search' => ['nullable', 'string', 'max:100'],
             'limit' => ['nullable', 'integer', 'min:1', 'max:200'],
         ]);
 
-        $requests = MaterialRequest::query()
-            ->forCurrentCompany()
-            ->with($this->requestRelations(includeEngineer: true))
+        $baseQuery = MaterialRequest::query()->forCurrentCompany();
+        $filteredQuery = (clone $baseQuery)
             ->when(isset($filters['status']), fn ($query) => $query->where('status', $filters['status']))
             ->when(isset($filters['labour_site_id']), fn ($query) => $query->where('labour_site_id', $filters['labour_site_id']))
             ->when(isset($filters['material_id']), fn ($query) => $query->where('material_id', $filters['material_id']))
+            ->when(isset($filters['project_id']), fn ($query) => $query->where('project_id', $filters['project_id']))
             ->when(isset($filters['from_date']), fn ($query) => $query->whereDate('request_date', '>=', $filters['from_date']))
             ->when(isset($filters['to_date']), fn ($query) => $query->whereDate('request_date', '<=', $filters['to_date']))
             ->when(isset($filters['search']), function ($query) use ($filters) {
@@ -100,15 +102,26 @@ class MaterialRequestController extends Controller
                         ->orWhere('site_project', 'like', "%{$search}%")
                         ->orWhere('purpose', 'like', "%{$search}%");
                 });
-            })
+            });
+
+        $requests = (clone $filteredQuery)
+            ->forCurrentCompany()
+            ->with($this->requestRelations(includeEngineer: true, includeProject: true))
             ->latest('request_date')
             ->latest('id')
             ->limit($filters['limit'] ?? 100)
             ->get()
-            ->map(fn (MaterialRequest $materialRequest) => $this->requestPayload($materialRequest));
+            ->map(fn (MaterialRequest $materialRequest) => $this->requestPayload($materialRequest, includeAvailability: true));
 
         return response()->json([
             'message' => 'All material requests fetched successfully.',
+            'summary' => [
+                'pending' => (clone $baseQuery)->where('status', 'pending')->count(),
+                'purchase_required' => (clone $baseQuery)->where('status', 'purchase_required')->count(),
+                'issued' => (clone $baseQuery)->where('status', 'issued')->count(),
+                'current_page' => $requests->count(),
+                'total_filtered' => (clone $filteredQuery)->count(),
+            ],
             'material_requests' => $requests,
         ]);
     }
@@ -214,13 +227,18 @@ class MaterialRequestController extends Controller
         ];
     }
 
-    private function requestPayload(MaterialRequest $materialRequest): array
+    private function requestPayload(MaterialRequest $materialRequest, bool $includeAvailability = false): array
     {
         $material = $materialRequest->relationLoaded('material') ? $materialRequest->material : null;
         $site = $materialRequest->relationLoaded('site') ? $materialRequest->site : null;
         $engineer = $materialRequest->relationLoaded('engineer') ? $materialRequest->engineer : null;
+        $project = $materialRequest->relationLoaded('project') ? $materialRequest->project : null;
+        $task = $materialRequest->relationLoaded('task') ? $materialRequest->task : null;
+        $stockRows = $includeAvailability ? $this->stockRowsForMaterial($materialRequest->material_id ? (int) $materialRequest->material_id : null) : collect();
+        $availableQuantity = $stockRows->sum(fn (MaterialStock $stock) => (float) $stock->available_quantity);
+        $remainingApproved = max(0, (float) $materialRequest->approved_quantity - (float) $materialRequest->issued_quantity);
 
-        return [
+        $payload = [
             'id' => $materialRequest->id,
             'user' => $engineer ? [
                 'id' => $engineer->id,
@@ -231,6 +249,16 @@ class MaterialRequestController extends Controller
             'site' => $site ? [
                 'id' => $site->id,
                 'name' => $site->name,
+            ] : null,
+            'project' => $project ? [
+                'id' => $project->id,
+                'name' => $project->name,
+                'code' => $project->code ?? null,
+            ] : null,
+            'task' => $task ? [
+                'id' => $task->id,
+                'title' => $task->title,
+                'boq_item_number' => $task->boq_item_number ?? null,
             ] : null,
             'material' => $material ? $this->materialPayload($material) : null,
             'request_date' => $materialRequest->request_date?->toDateString(),
@@ -251,6 +279,20 @@ class MaterialRequestController extends Controller
             'submitted_at' => $materialRequest->created_at,
             'updated_at' => $materialRequest->updated_at,
         ];
+
+        if ($includeAvailability) {
+            $payload['available_quantity'] = number_format($availableQuantity, 2, '.', '');
+            $payload['remaining_approved_quantity'] = number_format($remainingApproved, 2, '.', '');
+            $payload['available_by_store'] = $stockRows
+                ->map(fn (MaterialStock $stock) => [
+                    'labour_site_id' => $stock->labour_site_id,
+                    'site_name' => $stock->site?->name ?? 'Main Store',
+                    'available_quantity' => $stock->available_quantity,
+                ])
+                ->values();
+        }
+
+        return $payload;
     }
 
     private function normalizeStoreInput(Request $request): void
@@ -387,7 +429,7 @@ class MaterialRequestController extends Controller
     /**
      * @return array<int, string>
      */
-    private function requestRelations(bool $includeIssues = false, bool $includeEngineer = false): array
+    private function requestRelations(bool $includeIssues = false, bool $includeEngineer = false, bool $includeProject = false): array
     {
         $relations = ['site'];
 
@@ -397,6 +439,11 @@ class MaterialRequestController extends Controller
 
         if ($includeEngineer) {
             $relations[] = 'engineer:id,name,mobile';
+        }
+
+        if ($includeProject) {
+            $relations[] = 'project:id,name,code';
+            $relations[] = 'task:id,title,boq_item_number';
         }
 
         if ($includeIssues) {
@@ -411,5 +458,20 @@ class MaterialRequestController extends Controller
         return DB::connection(app(Tenant::class)->connectionName())
             ->getSchemaBuilder()
             ->hasTable($table);
+    }
+
+    private function stockRowsForMaterial(?int $materialId): \Illuminate\Support\Collection
+    {
+        if (! $materialId || ! $this->hasTable('material_stocks')) {
+            return collect();
+        }
+
+        return MaterialStock::query()
+            ->forCurrentCompany()
+            ->with('site:id,name')
+            ->where('material_id', $materialId)
+            ->where('available_quantity', '>', 0)
+            ->orderByDesc('available_quantity')
+            ->get();
     }
 }
