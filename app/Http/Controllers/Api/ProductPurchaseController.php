@@ -65,6 +65,7 @@ class ProductPurchaseController extends Controller
             'supplier_name' => ['nullable', 'string', 'max:255'],
             'vendor_name' => ['nullable', 'string', 'max:255'],
             'shop_name' => ['nullable', 'string', 'max:255'],
+            'stock_labour_site_id' => ['nullable', 'integer'],
             'item_key' => ['nullable', 'string', 'max:80'],
             'material_id' => ['nullable', 'integer'],
             'safety_item_id' => ['nullable', 'integer'],
@@ -78,21 +79,29 @@ class ProductPurchaseController extends Controller
             'unit' => ['nullable', 'string', 'max:50'],
             'quantity' => ['nullable', 'numeric', 'min:0', 'max:999999999.99'],
             'rate' => ['nullable', 'numeric', 'min:0', 'max:999999999.99'],
+            'bill_amount' => ['nullable', 'numeric', 'min:0', 'max:999999999.99'],
+            'amount' => ['nullable', 'numeric', 'min:0', 'max:999999999.99'],
             'tax_amount' => ['nullable', 'numeric', 'min:0', 'max:999999999.99'],
             'transport_amount' => ['nullable', 'numeric', 'min:0', 'max:999999999.99'],
             'remarks' => ['nullable', 'string', 'max:2000'],
+            'material_photo' => $request->hasFile('material_photo') ? ['nullable', 'image', 'max:10240'] : ['nullable'],
             'bill_photo' => $request->hasFile('bill_photo') ? ['nullable', 'image', 'max:10240'] : ['nullable'],
             'photo' => $request->hasFile('photo') ? ['nullable', 'image', 'max:10240'] : ['nullable'],
+            'material_photo_base64' => ['nullable', 'string'],
             'bill_photo_base64' => ['nullable', 'string'],
         ]);
 
         $supplier = $this->resolveSupplier($data);
         $this->applyItem($data);
 
+        $billAmount = (float) ($data['bill_amount'] ?? ($data['amount'] ?? 0));
         $quantity = $this->billingQuantity($data);
-        $rate = (float) ($data['rate'] ?? 0);
+        $rate = (float) ($data['rate'] ?? ($billAmount > 0 && $quantity <= 0 ? $billAmount : 0));
         $taxAmount = (float) ($data['tax_amount'] ?? 0);
         $transportAmount = (float) ($data['transport_amount'] ?? 0);
+        $totalAmount = $billAmount > 0
+            ? $billAmount
+            : round(($quantity * $rate) + $taxAmount + $transportAmount, 2);
 
         $purchase = ProductPurchase::query()->create([
             'material_id' => $data['material_id'] ?? null,
@@ -106,12 +115,13 @@ class ProductPurchaseController extends Controller
             'pcs' => $data['pcs'] ?? 0,
             'weight_kg' => $data['weight_kg'] ?? 0,
             'unit' => $data['unit'] ?? ((float) ($data['weight_kg'] ?? 0) > 0 ? 'Kg' : 'Nos'),
-            'quantity' => $quantity,
+            'quantity' => $quantity > 0 ? $quantity : 1,
             'rate' => $rate,
             'tax_amount' => $taxAmount,
             'transport_amount' => $transportAmount,
-            'total_amount' => round(($quantity * $rate) + $taxAmount + $transportAmount, 2),
-            'bill_photo_path' => $this->storeBillPhoto($request),
+            'total_amount' => $totalAmount,
+            'material_photo_path' => $this->storePurchasePhoto($request, 'material_photo', 'material_photo_base64', 'material'),
+            'bill_photo_path' => $this->storePurchasePhoto($request, 'bill_photo', 'bill_photo_base64', 'bill'),
             'remarks' => $data['remarks'] ?? null,
         ]);
 
@@ -140,6 +150,9 @@ class ProductPurchaseController extends Controller
             'tax_amount' => $purchase->tax_amount,
             'transport_amount' => $purchase->transport_amount,
             'total_amount' => $purchase->total_amount,
+            'bill_amount' => $purchase->total_amount,
+            'material_photo_path' => $purchase->material_photo_path,
+            'material_photo_url' => $purchase->material_photo_path ? Storage::disk('public')->url($purchase->material_photo_path) : null,
             'bill_photo_path' => $purchase->bill_photo_path,
             'bill_photo_url' => $purchase->bill_photo_path ? Storage::disk('public')->url($purchase->bill_photo_path) : null,
             'remarks' => $purchase->remarks,
@@ -157,7 +170,9 @@ class ProductPurchaseController extends Controller
             'product_name' => ['materialName', 'material_name', 'item_name', 'itemName', 'purchased_item'],
             'invoice_no' => ['bill_no', 'billNo', 'invoiceNo'],
             'quantity' => ['qty', 'purchase_quantity'],
-            'bill_photo_base64' => ['billPhotoBase64', 'photo_base64', 'image_base64'],
+            'bill_amount' => ['billAmount', 'total_amount', 'totalAmount', 'amount'],
+            'material_photo_base64' => ['materialPhotoBase64', 'material_photo_base64'],
+            'bill_photo_base64' => ['billPhotoBase64', 'bill_photo_base64'],
             'remarks' => ['remark', 'notes'],
         ];
 
@@ -176,9 +191,18 @@ class ProductPurchaseController extends Controller
         }
 
         if (! $request->hasFile('bill_photo')) {
-            foreach (['photo', 'image', 'billPhoto', 'bill_image', 'billImage'] as $key) {
+            foreach (['billPhoto', 'bill_image', 'billImage'] as $key) {
                 if ($request->hasFile($key)) {
                     $request->files->set('bill_photo', $request->file($key));
+                    break;
+                }
+            }
+        }
+
+        if (! $request->hasFile('material_photo')) {
+            foreach (['photo', 'image', 'materialPhoto', 'material_image', 'materialImage'] as $key) {
+                if ($request->hasFile($key)) {
+                    $request->files->set('material_photo', $request->file($key));
                     break;
                 }
             }
@@ -261,15 +285,15 @@ class ProductPurchaseController extends Controller
         return (float) ($data['quantity'] ?? 0);
     }
 
-    private function storeBillPhoto(Request $request): ?string
+    private function storePurchasePhoto(Request $request, string $fileKey, string $base64Key, string $prefix): ?string
     {
-        $photo = $request->file('bill_photo');
+        $photo = $request->file($fileKey);
 
         if ($photo instanceof UploadedFile && $photo->isValid()) {
             return $photo->store('product-purchases/'.now()->format('Y/m'), 'public');
         }
 
-        $base64 = $request->input('bill_photo_base64');
+        $base64 = $request->input($base64Key);
         if (! is_string($base64) || trim($base64) === '') {
             return null;
         }
@@ -283,7 +307,7 @@ class ProductPurchaseController extends Controller
             return null;
         }
 
-        $path = 'product-purchases/'.now()->format('Y/m').'/bill-'.now()->format('YmdHis').'-'.bin2hex(random_bytes(4)).'.jpg';
+        $path = 'product-purchases/'.now()->format('Y/m').'/'.$prefix.'-'.now()->format('YmdHis').'-'.bin2hex(random_bytes(4)).'.jpg';
         Storage::disk('public')->put($path, $binary);
 
         return $path;
@@ -294,7 +318,8 @@ class ProductPurchaseController extends Controller
         $connection = app(Tenant::class)->connectionName() ?: config('database.default');
         $schema = Schema::connection($connection);
 
-        $this->ensureColumn($schema, 'bill_photo_path', fn (Blueprint $table) => $table->string('bill_photo_path')->nullable()->after('total_amount'));
+        $this->ensureColumn($schema, 'material_photo_path', fn (Blueprint $table) => $table->string('material_photo_path')->nullable()->after('total_amount'));
+        $this->ensureColumn($schema, 'bill_photo_path', fn (Blueprint $table) => $table->string('bill_photo_path')->nullable()->after('material_photo_path'));
     }
 
     private function ensureColumn($schema, string $column, callable $definition): void

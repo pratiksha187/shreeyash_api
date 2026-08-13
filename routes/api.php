@@ -61,9 +61,12 @@ Route::middleware([AuthenticateApiToken::class, EnsureCompanySubscriptionActive:
     Route::get('/material-sites', [MaterialRequestController::class, 'sites'])->name('api.material-sites.index');
     Route::get('/material-requests', [MaterialRequestController::class, 'index'])->name('api.material-requests.index');
     Route::post('/material-requests', [MaterialRequestController::class, 'store'])->name('api.material-requests.store');
+    Route::get('/material-requests-all', [MaterialRequestController::class, 'allMaterialRequests'])->name('api.material-requests.all');
+    Route::get('/material-requests/all', [MaterialRequestController::class, 'allMaterialRequests'])->name('api.material-requests.all-path');
     Route::get('/material-requests/{materialRequest}', [MaterialRequestController::class, 'show'])->name('api.material-requests.show');
     Route::get('/material-request', [MaterialRequestController::class, 'index'])->name('api.material-request.index');
     Route::post('/material-request', [MaterialRequestController::class, 'store'])->name('api.material-request.store');
+    Route::get('/material-request-all', [MaterialRequestController::class, 'allMaterialRequests'])->name('api.material-request.all');
     Route::get('/material-request/{materialRequest}', [MaterialRequestController::class, 'show'])->name('api.material-request.show');
     Route::get('/safety-materials', [SafetyRequestController::class, 'materials'])->name('api.safety-materials.index');
     Route::get('/safety-material', [SafetyRequestController::class, 'materials'])->name('api.safety-material.index');

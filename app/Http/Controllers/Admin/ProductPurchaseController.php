@@ -29,7 +29,7 @@ class ProductPurchaseController extends Controller
 
     public function index(Request $request): View
     {
-        $this->ensureProductPurchaseSafetyColumns();
+        $this->ensureProductPurchaseColumns();
 
         $filters = $request->validate([
             'month' => ['nullable', 'date_format:Y-m'],
@@ -93,7 +93,7 @@ class ProductPurchaseController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $this->ensureProductPurchaseSafetyColumns();
+        $this->ensureProductPurchaseColumns();
 
         $data = $this->validatedData($request);
         $data['total_amount'] = $this->totalAmount($data);
@@ -112,7 +112,7 @@ class ProductPurchaseController extends Controller
 
     public function update(Request $request, int $productPurchase): RedirectResponse
     {
-        $this->ensureProductPurchaseSafetyColumns();
+        $this->ensureProductPurchaseColumns();
 
         $productPurchase = $this->findCurrentCompanyPurchase($productPurchase);
         $data = $this->validatedData($request);
@@ -131,7 +131,7 @@ class ProductPurchaseController extends Controller
 
     public function destroy(int $productPurchase): RedirectResponse
     {
-        $this->ensureProductPurchaseSafetyColumns();
+        $this->ensureProductPurchaseColumns();
 
         $productPurchase = $this->findCurrentCompanyPurchase($productPurchase);
 
@@ -497,18 +497,34 @@ class ProductPurchaseController extends Controller
             ->hasTable($table);
     }
 
-    private function ensureProductPurchaseSafetyColumns(): void
+    private function ensureProductPurchaseColumns(): void
     {
         $connection = app(Tenant::class)->connectionName() ?: config('database.default');
         $schema = Schema::connection($connection);
 
-        if (! $schema->hasTable('product_purchases') || $schema->hasColumn('product_purchases', 'safety_item_id')) {
+        if (! $schema->hasTable('product_purchases')) {
             return;
         }
 
-        $schema->table('product_purchases', function ($table) {
-            $table->unsignedBigInteger('safety_item_id')->nullable()->after('material_id');
-            $table->index('safety_item_id');
-        });
+        if (! $schema->hasColumn('product_purchases', 'safety_item_id')) {
+            $schema->table('product_purchases', function ($table) {
+                $table->unsignedBigInteger('safety_item_id')->nullable()->after('material_id');
+                $table->index('safety_item_id');
+            });
+        }
+
+        if (! $schema->hasColumn('product_purchases', 'material_photo_path')) {
+            $schema->table('product_purchases', function ($table) {
+                $table->string('material_photo_path')->nullable()->after('total_amount');
+            });
+        }
+
+        if (! $schema->hasColumn('product_purchases', 'bill_photo_path')) {
+            $schema->table('product_purchases', function ($table) use ($schema) {
+                $table->string('bill_photo_path')->nullable()->after(
+                    $schema->hasColumn('product_purchases', 'material_photo_path') ? 'material_photo_path' : 'total_amount'
+                );
+            });
+        }
     }
 }

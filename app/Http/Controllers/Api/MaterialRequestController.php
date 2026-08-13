@@ -65,6 +65,54 @@ class MaterialRequestController extends Controller
         ]);
     }
 
+    public function allMaterialRequests(Request $request): JsonResponse
+    {
+        if (! $this->hasTable('material_requests')) {
+            return response()->json([
+                'message' => 'Material request table is not available yet.',
+                'material_requests' => [],
+            ], 503);
+        }
+
+        $filters = $request->validate([
+            'status' => ['nullable', 'string', 'max:40'],
+            'labour_site_id' => ['nullable', 'integer'],
+            'material_id' => ['nullable', 'integer'],
+            'from_date' => ['nullable', 'date'],
+            'to_date' => ['nullable', 'date', 'after_or_equal:from_date'],
+            'search' => ['nullable', 'string', 'max:100'],
+            'limit' => ['nullable', 'integer', 'min:1', 'max:200'],
+        ]);
+
+        $requests = MaterialRequest::query()
+            ->forCurrentCompany()
+            ->with($this->requestRelations(includeEngineer: true))
+            ->when(isset($filters['status']), fn ($query) => $query->where('status', $filters['status']))
+            ->when(isset($filters['labour_site_id']), fn ($query) => $query->where('labour_site_id', $filters['labour_site_id']))
+            ->when(isset($filters['material_id']), fn ($query) => $query->where('material_id', $filters['material_id']))
+            ->when(isset($filters['from_date']), fn ($query) => $query->whereDate('request_date', '>=', $filters['from_date']))
+            ->when(isset($filters['to_date']), fn ($query) => $query->whereDate('request_date', '<=', $filters['to_date']))
+            ->when(isset($filters['search']), function ($query) use ($filters) {
+                $search = $filters['search'];
+
+                $query->where(function ($query) use ($search) {
+                    $query->where('material_name', 'like', "%{$search}%")
+                        ->orWhere('site_project', 'like', "%{$search}%")
+                        ->orWhere('purpose', 'like', "%{$search}%");
+                });
+            })
+            ->latest('request_date')
+            ->latest('id')
+            ->limit($filters['limit'] ?? 100)
+            ->get()
+            ->map(fn (MaterialRequest $materialRequest) => $this->requestPayload($materialRequest));
+
+        return response()->json([
+            'message' => 'All material requests fetched successfully.',
+            'material_requests' => $requests,
+        ]);
+    }
+
     public function store(Request $request): JsonResponse
     {
         if (! $this->hasTable('material_requests')) {
@@ -170,9 +218,16 @@ class MaterialRequestController extends Controller
     {
         $material = $materialRequest->relationLoaded('material') ? $materialRequest->material : null;
         $site = $materialRequest->relationLoaded('site') ? $materialRequest->site : null;
+        $engineer = $materialRequest->relationLoaded('engineer') ? $materialRequest->engineer : null;
 
         return [
             'id' => $materialRequest->id,
+            'user' => $engineer ? [
+                'id' => $engineer->id,
+                'name' => $engineer->name,
+                'mobile' => $engineer->mobile,
+            ] : null,
+            'requested_by' => $engineer?->name,
             'site' => $site ? [
                 'id' => $site->id,
                 'name' => $site->name,
@@ -332,12 +387,16 @@ class MaterialRequestController extends Controller
     /**
      * @return array<int, string>
      */
-    private function requestRelations(bool $includeIssues = false): array
+    private function requestRelations(bool $includeIssues = false, bool $includeEngineer = false): array
     {
         $relations = ['site'];
 
         if ($this->hasTable('materials')) {
             $relations[] = 'material';
+        }
+
+        if ($includeEngineer) {
+            $relations[] = 'engineer:id,name,mobile';
         }
 
         if ($includeIssues) {

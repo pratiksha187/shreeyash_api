@@ -8,23 +8,35 @@ return new class extends Migration
 {
     public function up(): void
     {
-        if (! Schema::hasTable('product_purchases') || Schema::hasColumn('product_purchases', 'bill_photo_path')) {
+        if (! Schema::hasTable('product_purchases')) {
             return;
         }
 
         Schema::table('product_purchases', function (Blueprint $table) {
-            $table->string('bill_photo_path')->nullable()->after('total_amount');
+            if (! Schema::hasColumn('product_purchases', 'material_photo_path')) {
+                $table->string('material_photo_path')->nullable()->after('total_amount');
+            }
+
+            if (! Schema::hasColumn('product_purchases', 'bill_photo_path')) {
+                $table->string('bill_photo_path')->nullable()->after(
+                    Schema::hasColumn('product_purchases', 'material_photo_path') ? 'material_photo_path' : 'total_amount'
+                );
+            }
         });
     }
 
     public function down(): void
     {
-        if (! Schema::hasTable('product_purchases') || ! Schema::hasColumn('product_purchases', 'bill_photo_path')) {
+        if (! Schema::hasTable('product_purchases')) {
             return;
         }
 
         Schema::table('product_purchases', function (Blueprint $table) {
-            $table->dropColumn('bill_photo_path');
+            foreach (['bill_photo_path', 'material_photo_path'] as $column) {
+                if (Schema::hasColumn('product_purchases', $column)) {
+                    $table->dropColumn($column);
+                }
+            }
         });
     }
 };

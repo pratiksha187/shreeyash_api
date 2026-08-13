@@ -199,6 +199,28 @@
             font-size: 12px;
         }
 
+        .purchase-photo-links {
+            display: grid;
+            gap: 6px;
+        }
+
+        .purchase-photo-links a,
+        .purchase-photo-links span {
+            display: block;
+            padding: 5px 6px;
+            border-radius: 6px;
+            background: #f8fafc;
+            color: #0f172a;
+            font-size: 11px;
+            font-weight: 800;
+            text-decoration: none;
+        }
+
+        .purchase-photo-links a {
+            border: 1px solid #bfdbfe;
+            color: #1d4ed8;
+        }
+
         .purchase-filter-toggle {
             display: flex;
             align-items: center;
@@ -475,6 +497,7 @@
                             <th>Weight In KG</th>
                             <th>Rate</th>
                             <th>Amt</th>
+                            <th>Photos</th>
                             <th>Remark</th>
                             <th>Actions</th>
                         </tr>
@@ -557,6 +580,20 @@
                                     <input form="{{ $formId }}" name="tax_amount" type="hidden" value="{{ number_format($purchase->tax_amount, 2, '.', '') }}">
                                     <input form="{{ $formId }}" name="transport_amount" type="hidden" value="{{ number_format($purchase->transport_amount, 2, '.', '') }}">
                                 </td>
+                                <td>
+                                    <div class="purchase-photo-links">
+                                        @if ($purchase->material_photo_path)
+                                            <a href="{{ asset('storage/'.$purchase->material_photo_path) }}" target="_blank" rel="noopener">Material</a>
+                                        @else
+                                            <span>Material -</span>
+                                        @endif
+                                        @if ($purchase->bill_photo_path)
+                                            <a href="{{ asset('storage/'.$purchase->bill_photo_path) }}" target="_blank" rel="noopener">Bill</a>
+                                        @else
+                                            <span>Bill -</span>
+                                        @endif
+                                    </div>
+                                </td>
                                 <td><textarea form="{{ $formId }}" name="remarks">{{ $purchase->remarks }}</textarea></td>
                                 <td>
                                     <div class="purchase-actions">
@@ -575,7 +612,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="12">No product purchase entries found.</td>
+                                <td colspan="13">No product purchase entries found.</td>
                             </tr>
                         @endforelse
                     </tbody>
