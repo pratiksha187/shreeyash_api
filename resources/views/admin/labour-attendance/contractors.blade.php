@@ -66,6 +66,46 @@
             min-width: 1180px;
         }
 
+        .contractor-table-header,
+        .contractor-table-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 16px 20px;
+        }
+
+        .contractor-table-header {
+            border-bottom: 1px solid var(--border);
+        }
+
+        .contractor-table-footer {
+            border-top: 1px solid var(--border);
+        }
+
+        .contractor-table-title {
+            margin: 0;
+            color: var(--muted);
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .contractor-page-size {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--muted);
+            font-size: 13px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .contractor-page-size select {
+            width: auto;
+            min-width: 76px;
+            padding: 8px 28px 8px 10px;
+        }
+
         .contractor-table th,
         .contractor-table td {
             padding: 14px 16px;
@@ -95,6 +135,16 @@
         }
 
         @media (max-width: 760px) {
+            .contractor-table-header,
+            .contractor-table-footer {
+                align-items: stretch;
+                flex-direction: column;
+            }
+
+            .contractor-page-size {
+                justify-content: space-between;
+            }
+
             .contractor-wide {
                 grid-column: 1 / -1;
             }
@@ -217,7 +267,20 @@
         </section>
     </form>
 
-    <div class="card table-wrap contractor-table-wrap">
+    <div class="card">
+        <div class="contractor-table-header">
+            <p class="contractor-table-title">Contractors</p>
+            <form class="contractor-page-size" method="GET" action="{{ route('admin.contractors.index') }}">
+                <label for="per_page">Rows</label>
+                <select id="per_page" name="per_page" onchange="this.form.submit()">
+                    @foreach ([5, 10, 15, 25, 50] as $size)
+                        <option value="{{ $size }}" @selected($perPage === $size)>{{ $size }}</option>
+                    @endforeach
+                </select>
+            </form>
+        </div>
+
+        <div class="table-wrap contractor-table-wrap">
         <table class="contractor-table">
             <thead>
                 <tr>
@@ -282,9 +345,10 @@
                 @endforelse
             </tbody>
         </table>
-    </div>
+        </div>
 
-    <div class="pagination">
-        {{ $contractors->links('admin.pagination') }}
+        <div class="contractor-table-footer">
+            {{ $contractors->links('admin.pagination') }}
+        </div>
     </div>
 @endsection

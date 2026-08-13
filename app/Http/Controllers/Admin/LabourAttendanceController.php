@@ -41,16 +41,21 @@ class LabourAttendanceController extends Controller
         ]);
     }
 
-    public function contractors(): View
+    public function contractors(Request $request): View
     {
         $this->ensureDecoupledLabourMasterSchema();
+        $filters = $request->validate([
+            'per_page' => ['nullable', Rule::in([5, 10, 15, 25, 50])],
+        ]);
 
         return view('admin.labour-attendance.contractors', [
             'contractors' => Contractor::query()
                 ->forCurrentCompany()
                 ->withCount(['labours', 'labourAttendances'])
                 ->orderBy('name')
-                ->paginate(15),
+                ->paginate((int) ($filters['per_page'] ?? 5))
+                ->withQueryString(),
+            'perPage' => (int) ($filters['per_page'] ?? 5),
         ]);
     }
 
