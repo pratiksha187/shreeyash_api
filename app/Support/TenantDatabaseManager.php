@@ -9,14 +9,6 @@ use Illuminate\Support\Facades\DB;
 
 class TenantDatabaseManager
 {
-    public function migrationSignature(): string
-    {
-        $files = glob(database_path('migrations/*.php')) ?: [];
-        sort($files);
-
-        return md5(implode('|', array_map('basename', $files)));
-    }
-
     public function databaseNameForSlug(string $slug): string
     {
         $safeSlug = preg_replace('/[^a-z0-9_]+/', '_', strtolower($slug)) ?: 'company';
@@ -49,21 +41,11 @@ class TenantDatabaseManager
         $this->createDatabase($company->database_name);
         $this->configure($company);
 
-        $this->runTenantMigrations();
+        Artisan::call('migrate', [
+            '--database' => 'tenant',
+            '--force' => true,
+        ]);
 
-        $this->syncCompany($company);
-        $this->syncSubscriptionData($company);
-        $this->syncCompanyAdmins($company);
-
-        DB::purge('tenant');
-    }
-
-    public function migrateExisting(Company $company): void
-    {
-        $company = $this->ensureDatabaseName($company);
-
-        $this->configure($company);
-        $this->runTenantMigrations();
         $this->syncCompany($company);
         $this->syncSubscriptionData($company);
         $this->syncCompanyAdmins($company);
@@ -104,14 +86,6 @@ class TenantDatabaseManager
             $charset,
             $collation
         ));
-    }
-
-    private function runTenantMigrations(): void
-    {
-        Artisan::call('migrate', [
-            '--database' => 'tenant',
-            '--force' => true,
-        ]);
     }
 
     private function syncCompany(Company $company): void

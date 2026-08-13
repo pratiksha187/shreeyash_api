@@ -61,16 +61,22 @@ class EnsureAdminLoggedIn
 
             $request->session()->put('admin_company_name', $company->name);
 
-            $tenantDatabases = app(TenantDatabaseManager::class);
-            $migrationSignature = $tenantDatabases->migrationSignature();
-
-            if (! $company->database_name) {
-                $tenantDatabases->provision($company);
-                $request->session()->put('tenant_database_ready', $migrationSignature);
+            if (
+                $request->session()->get('admin_role') === 'company_admin'
+                && ! $request->session()->get('tenant_database_ready')
+                && ! $company->database_name
+            ) {
+                app(TenantDatabaseManager::class)->provision($company);
+                $request->session()->put('tenant_database_ready', true);
                 $company->refresh();
-            } elseif ($request->session()->get('tenant_database_ready') !== $migrationSignature) {
-                $tenantDatabases->migrateExisting($company);
-                $request->session()->put('tenant_database_ready', $migrationSignature);
+            } elseif (! $company->database_name) {
+                app(TenantDatabaseManager::class)->provision($company);
+                $request->session()->put('tenant_database_ready', true);
+                $company->refresh();
+            }
+
+            if ($company->database_name) {
+                $request->session()->put('tenant_database_ready', true);
             }
 
             app(Tenant::class)->set($company);
