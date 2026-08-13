@@ -9,10 +9,10 @@ return new class extends Migration
     public function up(): void
     {
         if (Schema::hasTable('contractors')) {
-            Schema::table('contractors', function (Blueprint $table) {
-                $this->trySchemaChange(fn () => $table->dropForeign('contractors_site_fk'));
-                $this->trySchemaChange(fn () => $table->dropUnique('contractors_site_name_unique'));
-            });
+            $connection = Schema::getConnection();
+
+            $this->trySchemaChange(fn () => $connection->statement('ALTER TABLE contractors DROP FOREIGN KEY contractors_site_fk'));
+            $this->trySchemaChange(fn () => $connection->statement('ALTER TABLE contractors DROP INDEX contractors_site_name_unique'));
 
             Schema::table('contractors', function (Blueprint $table) {
                 if (Schema::hasColumn('contractors', 'labour_site_id')) {
@@ -22,10 +22,10 @@ return new class extends Migration
         }
 
         if (Schema::hasTable('labours')) {
-            Schema::table('labours', function (Blueprint $table) {
-                $this->trySchemaChange(fn () => $table->dropForeign('labours_contractor_fk'));
-                $this->trySchemaChange(fn () => $table->dropIndex('labours_contractor_name_index'));
-            });
+            $connection = Schema::getConnection();
+
+            $this->trySchemaChange(fn () => $connection->statement('ALTER TABLE labours DROP FOREIGN KEY labours_contractor_fk'));
+            $this->trySchemaChange(fn () => $connection->statement('ALTER TABLE labours DROP INDEX labours_contractor_name_index'));
 
             Schema::table('labours', function (Blueprint $table) {
                 if (Schema::hasColumn('labours', 'contractor_id')) {
