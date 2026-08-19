@@ -57,18 +57,20 @@
     <div class="card table-wrap employees-table-wrap">
         <table class="employees-table">
             <colgroup>
-                <col style="width: 22%;">
-                <col style="width: 24%;">
+                <col style="width: 20%;">
+                <col style="width: 21%;">
+                <col style="width: 14%;">
                 <col style="width: 13%;">
                 <col style="width: 10%;">
+                <col style="width: 10%;">
+                <col style="width: 10%;">
                 <col style="width: 12%;">
-                <col style="width: 12%;">
-                <col style="width: 14%;">
             </colgroup>
             <thead>
                 <tr>
                     <th>Employee</th>
                     <th>Contact</th>
+                    <th>Mobile Device</th>
                     <th>Designation</th>
                     <th>Status</th>
                     <th>Birthday</th>
@@ -91,6 +93,14 @@
                             <div class="employee-contact">
                                 <span>{{ $employee->email }}</span>
                                 <span class="employee-subtext">{{ $employee->mobile ?? 'No mobile' }}</span>
+                            </div>
+                        </td>
+                        <td data-label="Mobile Device">
+                            <div class="employee-contact">
+                                <span>{{ $employee->mobile_device_name ?? 'Not registered' }}</span>
+                                <span class="employee-subtext">
+                                    {{ $employee->mobile_device_registered_at?->format('d M Y h:i A') ?? '-' }}
+                                </span>
                             </div>
                         </td>
                         <td data-label="Designation">
@@ -124,7 +134,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td class="empty" colspan="7">
+                        <td class="empty" colspan="8">
                             {{ $search !== '' || $status !== '' ? 'No employees found for this search.' : 'No employees added yet.' }}
                         </td>
                     </tr>

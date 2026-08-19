@@ -42,6 +42,11 @@
             <span style="font-size:12px;">Hours/Day</span>
             <strong style="font-size:13px;">{{ $employee->hours_per_day ?? '-' }}</strong>
         </div>
+        <div class="card detail-item" style="padding:12px 16px;">
+            <span style="font-size:12px;">Mobile Device</span>
+            <strong style="font-size:13px;">{{ $employee->mobile_device_name ?? 'Not registered' }}</strong>
+            <span style="font-size:12px;">{{ $employee->mobile_device_registered_at?->format('d M Y h:i A') ?? '-' }}</span>
+        </div>
     </div>
 
     <!-- DPR Section with Month Filter -->

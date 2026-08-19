@@ -113,6 +113,15 @@ class AuthController extends Controller
             ], 403);
         }
 
+        if (! $allowsMultiDeviceLogin && $this->deviceRegisteredToAnotherEmployee($user, $deviceId)) {
+            return response()->json([
+                'message' => 'This mobile device is already registered to another employee. Please login from your own mobile device or contact admin.',
+                'errors' => [
+                    'device_id' => ['This mobile device is already registered to another employee.'],
+                ],
+            ], 403);
+        }
+
         $token = Str::random(80);
         $loginData = [
             'api_token' => hash('sha256', $token),
@@ -158,6 +167,16 @@ class AuthController extends Controller
         );
 
         return in_array($mobile, $allowedMobiles, true);
+    }
+
+    private function deviceRegisteredToAnotherEmployee(User $user, string $deviceId): bool
+    {
+        return User::query()
+            ->forCurrentCompany()
+            ->employees()
+            ->where('mobile_device_id', $deviceId)
+            ->whereKeyNot($user->getKey())
+            ->exists();
     }
 
     private function normalizeMobile(?string $mobile): string

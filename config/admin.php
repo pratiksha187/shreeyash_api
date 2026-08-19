@@ -213,12 +213,6 @@ return [
                     'active' => 'admin.purchase-orders.*',
                 ],
                 [
-                    'key' => 'challans',
-                    'label' => 'Challans',
-                    'route' => 'admin.challans.index',
-                    'active' => 'admin.challans.*',
-                ],
-                [
                     'key' => 'diesel_purchases',
                     'label' => 'Diesel Purchase',
                     'route' => 'admin.diesel-purchases.index',

@@ -171,6 +171,7 @@ class SupplierController extends Controller
 
         if (! $schema->hasTable('suppliers')) {
             return;
+            
         }
 
         $this->ensureColumn($schema, 'gst_registration_type', fn (Blueprint $table) => $table->string('gst_registration_type', 80)->nullable()->after('gstin'));
